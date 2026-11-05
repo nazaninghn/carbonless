@@ -1,4 +1,5 @@
 // @ts-check
+import { deferStatus, activePending, deferralCopy } from './deferral.js';
 // "I don't know — answer later": the copy (English / Turkish, following the UI language) and the
 // small pure helpers behind the pending-questions list. A pending question is unanswered on
 // purpose; the backend keeps the ids (CarbonReport.pending_questions) and never stores an answer.
@@ -26,7 +27,7 @@ export function pendingCopy(tr) {
     buttonHint: 'Leaves this question unanswered and adds it to "Pending questions" so you can return to it. No value (not even 0) is saved.',
     saving: 'Saving…',
     title: 'Pending questions',
-    banner: 'You have unanswered questions in this Inventory.',
+    banner: 'This inventory has unanswered questions.',
     badge: 'Unanswered',
     answerLater: 'Answer later',
     returnTo: 'Return to question',
@@ -62,12 +63,43 @@ export function visiblePending(ids, answers) {
 /**
  * Whether "I don't know — answer later" is offered for a question: a real question (not an info
  * screen), not one that repeats per item (a loop's per-item answers are saved item by item), not
- * already answered, in an inventory that can still change.
- * @param {{type?: string, loopSource?: unknown} | null | undefined} question
- * @param {{ answered: boolean, locked: boolean, hasReport: boolean, editing: boolean }} ctx
+ * already answered, in an inventory that can still change — and, given `answers`, one the policy
+ * allows to be left for later: a question that routes the questionnaire, sets the boundary or the
+ * method, defines a loop's items or signs off is never offered (see deferral.js; the server refuses
+ * it too), and a conditional one only while its condition holds.
+ * @param {{id?: string, type?: string, loopSource?: unknown} | null | undefined} question
+ * @param {{ answered: boolean, locked: boolean, hasReport: boolean, editing: boolean, answers?: Record<string, any> }} ctx
  */
-export function canAnswerLater(question, { answered, locked, hasReport, editing }) {
+export function canAnswerLater(question, { answered, locked, hasReport, editing, answers }) {
   if (!question || !hasReport || locked || answered || editing) return false;
   if (question.type === 'info' || question.loopSource) return false;
+  if (answers && question.id) return deferStatus(question.id, answers).ok;
   return true;
+}
+
+/**
+ * Why a question cannot be left for later, in the user's language ('' when it can, or when the reason is
+ * simply that it is answered already / not on the route).
+ * @param {string | undefined} id
+ * @param {Record<string, any>} answers
+ * @param {boolean} tr  true = Turkish UI
+ */
+export function deferralReason(id, answers, tr) {
+  if (!id) return '';
+  const st = deferStatus(id, answers || {});
+  if (st.ok || st.code === 'already_answered' || st.code === 'not_applicable' || st.code === 'unknown' || st.code === 'info') return '';
+  const copy = /** @type {Record<string, string>} */ (deferralCopy(tr));
+  return copy[st.code] || copy.gate;
+}
+
+/**
+ * The pending ids still to show (unique, unanswered, and still on the questionnaire's route: one the
+ * answers have taken off the route is inactive, so it is neither pending nor counted).
+ * @param {unknown} ids
+ * @param {Record<string, any>} answers
+ * @param {(q: any, answers: Record<string, any>, id: string) => boolean} [loopHasItems] the questionnaire's own test
+ *   of whether a loop has items (a loop with none is skipped, so a mark on one of its questions is not pending)
+ */
+export function applicablePending(ids, answers, loopHasItems) {
+  return activePending(Array.isArray(ids) ? ids : [], answers || {}, loopHasItems ? { loopHasItems } : undefined);
 }

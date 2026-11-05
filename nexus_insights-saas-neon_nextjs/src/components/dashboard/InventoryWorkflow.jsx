@@ -50,9 +50,11 @@ export function InventoryProvider({ children }) {
 
   // The dashboard's year follows the inventory being worked on: starting a
   // 2024 inventory with the header on 2026 left every other page on 2026.
-  const announceInventoryYear = (year) => {
+  const announceInventoryYear = (year, inventoryId = null) => {
     if (typeof window === 'undefined' || !Number(year)) return;
-    window.dispatchEvent(new CustomEvent('carbonless:active-inventory', { detail: { year: Number(year) } }));
+    window.dispatchEvent(new CustomEvent('carbonless:active-inventory', {
+      detail: { year: Number(year), inventoryId: inventoryId ? Number(inventoryId) : null },
+    }));
   };
 
   // ✅ Start new inventory
@@ -80,7 +82,7 @@ export function InventoryProvider({ children }) {
       }
 
       setActiveInventoryId(data.report_id);
-      announceInventoryYear(data.reporting_year ?? reportingYear);
+      announceInventoryYear(data.reporting_year ?? reportingYear, data.report_id);
       setInventoryTitle(data.title);
       setStartedBy(null);
       setInventoryStatus('in_progress');
@@ -120,7 +122,7 @@ export function InventoryProvider({ children }) {
 
       const data = await res.json();
       setActiveInventoryId(inventoryId);
-      announceInventoryYear(data.reporting_year);
+      announceInventoryYear(data.reporting_year, inventoryId);
       setInventoryTitle(data.title || `Inventory ${inventoryId}`);
       setStartedBy(data.started_by || null);
       setInventoryStatus(data.status);

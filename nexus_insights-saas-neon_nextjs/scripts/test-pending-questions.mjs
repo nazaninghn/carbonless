@@ -16,7 +16,7 @@ test('English copy has the required labels', () => {
   assert.equal(c.answerLater, 'Answer later');
   assert.equal(c.returnTo, 'Return to question');
   assert.equal(c.badge, 'Unanswered');
-  assert.equal(c.banner, 'You have unanswered questions in this Inventory.');
+  assert.equal(c.banner, 'This inventory has unanswered questions.');
 });
 
 test('Turkish copy is Turkish and has the same keys as English', () => {

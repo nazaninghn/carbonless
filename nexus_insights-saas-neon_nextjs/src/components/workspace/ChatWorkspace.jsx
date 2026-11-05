@@ -559,7 +559,6 @@ function formatQuestionMsg(question, lang) {
   let content = `🔢 **${lang === 'tr' ? 'Soru' : 'Question'} ${question.number}**`;
   if (stageName) content += ` — _${stageName}_`;
   content += '\n';
-  if (question.isoRef) content += `\`${question.isoRef}\`\n\n`;
   content += qText;
   if (qHelper) content += `\n\n💡 _${qHelper}_`;
   if (question.type === 'info') {
@@ -1637,7 +1636,7 @@ export function ChatWorkspace({
               <div className="flex items-center gap-1.5 min-w-0">
                 <FileText className="h-3 w-3 text-[#175022]/40 shrink-0" />
                 <p className="text-[9.5px] text-[#072C0E]/28 truncate">
-                  {currentQuestion.isoRef} — {tr ? `Soru ${currentQuestion.number}` : `Question ${currentQuestion.number}`}
+                  {tr ? `Soru ${currentQuestion.number}` : `Question ${currentQuestion.number}`}
                   {currentQuestion.required ? (tr ? ' · Zorunlu' : ' · Required') : (tr ? ' · İsteğe bağlı' : ' · Optional')}
                 </p>
               </div>

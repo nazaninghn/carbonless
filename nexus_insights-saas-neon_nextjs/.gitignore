@@ -36,3 +36,6 @@ yarn-error.log*
 # TypeScript
 *. tsbuildinfo
 next-env.d. ts
+
+# leftover build cache from the 2026-11-02 .next incident (not source)
+/.next.broken-20261102-102659/

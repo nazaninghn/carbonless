@@ -8,10 +8,11 @@ import {
   ClipboardList, RotateCcw, X, FileText, Download,
   HelpCircle, CheckCircle2, Menu, BarChart3, BookOpen,
   Zap, Fuel, Car, Plane, Flame, Droplets, Truck, Calendar, Save, AlertCircle, Pencil, Check,
-  ThumbsUp, ThumbsDown, LifeBuoy, Maximize2, Minimize2, Minus, GripHorizontal,
+  ThumbsUp, ThumbsDown, LifeBuoy, Maximize2, Minimize2, Minus, GripHorizontal, ArrowLeft,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
-import { pendingCopy, visiblePending, canAnswerLater } from '@/lib/carboniq/pending';
+import { pendingCopy, canAnswerLater, deferralReason } from '@/lib/carboniq/pending';
+import { routeIds, conditionalShowMatches, deferralCopy } from '@/lib/carboniq/deferral';
 import { OPEN_CHAT_EVENT, pendingChatToOpen, clearChatToOpen } from '@/lib/openChat';
 import { COUNTRIES } from '@/lib/data/countries';
 import CompletionReportCard from './CompletionReportCard';
@@ -19,7 +20,12 @@ import { InventoryProvider, useInventory } from './InventoryWorkflow';
 import InventoryLibrary from './InventoryLibrary';
 import ReviewPage from './ReviewPage';
 import SaveDraftModal from './SaveDraftModal';
+import ContentPanel from './ContentPanel';
+import AttentionPanel from './AttentionPanel';
+import { attentionOverview, attentionByStage, attentionCopy } from '@/lib/carboniq/attention';
+import { messageKind, splitHelper, infoScreenKind } from '@/lib/carboniq/contentKinds';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { setUnsaved } from '@/lib/session/unsaved';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Carbon Brain orb animations (injected once via <style> in FreeChatTab)
@@ -236,104 +242,17 @@ const YEAR_SPECIFIC_STEPS = new Set(['B3', 'B4', 'B6']);
 // InventoryWorkflow.jsx (which normalises a resumed report's answers at
 // hydration time and would circularly import this file otherwise).
 
-// Evaluates a question's `conditionalShow` against the current answers.
-// Shared by the forward-skip loop in submitAnswer and the progress denominator,
-// so "is this question reachable?" is answered the same way in both places.
-//
-// A finished loop question (loopSource) stores its answer as an aggregate map
-// keyed by loop item — { 'natural_gas': 'sector_average', 'diesel': 'invoice_meter' }
-// for a scalar per-item answer, or { 'EQ-3D-01': {refill_kg, capacity_kg}, ... }
-// when the per-item question is itself a compound. Neither shape is a bare
-// string/array, so without unpacking them here, any conditionalShow that
-// targets a loop question can never match — which is exactly what made 3A-6a
-// (the estimation-method follow-up) unreachable. `field` lets a condition
-// drill into one compound sub-field (per loop item, or on a plain compound
-// answer) before the value/membership check runs.
-function conditionalShowMatches(conditionalShow, answersMap) {
-  if (!conditionalShow) return true;
-  const { questionId, field, includesValue, inValues, equals, greaterThan, unitIn, hasKey } = conditionalShow;
-  const raw = readAnswerValue(answersMap, questionId);
-  // hasKey: a per-item answer has a non-empty value for this item (3A-5bio
-  // only when a biomass amount was given).
-  if (hasKey) {
-    return !!(raw && typeof raw === 'object' && !Array.isArray(raw) && String(raw[hasKey] ?? '').trim());
-  }
-  // unitIn: an "amount unit" answer (or any item of a per-site loop) was
-  // given in one of these units — 4A-1a only for a TL invoice amount.
-  if (unitIn) {
-    const vals = raw && typeof raw === 'object' ? Object.values(raw) : [raw];
-    return vals.some(v => typeof v === 'string' && unitIn.includes(v.trim().split(/\s+/).pop()));
-  }
-
-  let candidates;
-  if (Array.isArray(raw)) {
-    candidates = raw;
-  } else if (raw && typeof raw === 'object') {
-    const values = Object.values(raw);
-    const isLoopOfCompounds = values.length > 0 && values.every(v => v && typeof v === 'object');
-    if (field) {
-      candidates = isLoopOfCompounds ? values.map(v => v[field]) : [raw[field]];
-    } else {
-      candidates = isLoopOfCompounds ? [] : values; // no scalar to compare without `field`
-    }
-  } else {
-    candidates = [raw];
-  }
-
-  if (inValues) return candidates.some(v => inValues.includes(v));
-  if (equals !== undefined) {
-    return candidates.some(v => (typeof equals === 'number' ? Number(v) === equals : v === equals));
-  }
-  // e.g. K3C7-2 (hybrid office days) only makes sense if hybrid_count > 0.
-  if (greaterThan !== undefined) return candidates.some(v => Number(v) > greaterThan);
-  return candidates.includes(includesValue);
-}
-
-// The questions on this user's route through the survey, in order: walked
-// from the first question along the answers given (nextByValue branches,
-// loops, hidden conditional questions), and past the last answer along each
-// question's default next. Answers left behind on a branch the user later
-// turned away from (6A-2 after switching 6A-1 to "none flagged") are not on
-// the route, so the summaries and the progress count no longer include them.
-// Section pickers and go-back answers only lead back into earlier sections
-// while editing, so the walk takes the forward branch instead.
+// The questions on this user's route through the survey, in order: walked from the first question along the
+// answers given (nextByValue branches, loops, hidden conditional questions), and past the last answer along
+// each question's default next. Answers left behind on a branch the user later turned away from are not on the
+// route, so the summaries, the progress count and the pending list no longer include them. The walk itself
+// lives in lib/carboniq/deferral.js (the server runs the same one, questionnaire/deferral.py); a loop question
+// whose items are not known yet is skipped here, as before. `conditionalShowMatches` ("is this question
+// reachable?") is shared by the forward-skip loop in submitAnswer and the progress denominator.
 function questionPath(answersMap) {
-  const src = answersMap || {};
-  const path = [];
-  const seen = new Set();
-  let id = getInitialQuestionId();
-  while (id && !seen.has(id) && path.length < 2000) {
-    const q = getQuestionById(id);
-    if (!q) break;
-    seen.add(id);
-    if (q.conditionalShow && !(id in src) && !conditionalShowMatches(q.conditionalShow, src)) {
-      id = q.next || q.loopNext || null;
-      continue;
-    }
-    if (q.loopSource && !(id in src) && loopResumeState(q, src).items.length === 0) {
-      id = q.loopNext || q.next || null;
-      continue;
-    }
-    if (q.type === 'section_picker') { id = q.next || null; continue; }
-    path.push(q);
-    const answered = id in src;
-    const value = answered ? readAnswerValue(src, id) : undefined;
-    let next;
-    if (q.loopSource) next = q.loopNext || q.next || null;
-    else if (q.type === 'info' || !answered) {
-      next = q.next || q.loopNext || (q.nextByValue ? Object.values(q.nextByValue).find(Boolean) : null) || null;
-    } else next = getNextQuestionId(q, value);
-    if (next === '4-GİRİŞ' && readAnswerValue(src, 'SCOPE-GROUPING') !== 'separate') {
-      next = getQuestionById('4-GİRİŞ')?.next || next;
-    }
-    const backwards = (n) => !n || seen.has(n) || getQuestionById(n)?.type === 'section_picker';
-    if (next && backwards(next)) {
-      const alts = [q.next, ...Object.values(q.nextByValue || {}), q.loopNext];
-      next = alts.find(n => n && !backwards(n)) || null;
-    }
-    id = next;
-  }
-  return path;
+  return routeIds(answersMap, {
+    loopHasItems: (_pq, src, id) => loopResumeState(getQuestionById(id), src).items.length > 0,
+  }).map(id => getQuestionById(id)).filter(Boolean);
 }
 
 // The survey's progress: real questions answered over the questions that
@@ -1341,7 +1260,7 @@ function withoutQuestionText(content) {
   return content;
 }
 
-const ChatBubble = memo(function ChatBubble({ msg, compactQuestion = false }) {
+const ChatBubble = memo(function ChatBubble({ msg, compactQuestion = false, tr = false, panelsOnly = false }) {
   const base = 'rounded-[20px] px-4 py-3 text-[13.5px] leading-[1.65] max-w-[85%] sm:max-w-[75%]';
   if (msg.role === 'user') {
     return (
@@ -1350,19 +1269,8 @@ const ChatBubble = memo(function ChatBubble({ msg, compactQuestion = false }) {
       </div>
     );
   }
-  if (msg.type === 'warning') {
-    return (
-      <div className="flex gap-3">
-        <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-amber-400 flex items-center justify-center">
-          <span className="block h-2 w-2 rounded-full bg-white/90" />
-        </div>
-        <div className={`${base} rounded-tl-sm border border-amber-200 bg-amber-50 text-amber-800`}>
-          <Markdown text={msg.content} />
-        </div>
-      </div>
-    );
-  }
-  if (msg.type === 'error') {
+  const kind = messageKind(msg);
+  if (kind === 'error') {
     return (
       <div className="flex gap-3">
         <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-red-400 flex items-center justify-center">
@@ -1374,32 +1282,63 @@ const ChatBubble = memo(function ChatBubble({ msg, compactQuestion = false }) {
       </div>
     );
   }
-  if (msg.type === 'info') {
+  // Information, notification and instruction are NOT the question: each is a labelled panel (ContentPanel),
+  // apart from the question and from the answer options. An information screen (a stage's introduction, a
+  // method note) is its title and its explanation inside one panel.
+  if (kind !== 'question' && panelsOnly) {
+    const { head, helper } = splitHelper(msg.content);
+    return (
+      <ContentPanel kind={kind} tr={tr} className="max-w-3xl">
+        <div className={helper ? 'font-semibold' : ''}><Markdown text={head} /></div>
+        {helper && <div className="mt-1"><Markdown text={helper} /></div>}
+      </ContentPanel>
+    );
+  }
+  if (kind === 'question' && panelsOnly) {
+    // The title is the answer panel's heading; what remains of the question message is its explanation.
+    const { helper } = splitHelper(msg.content);
+    return helper ? (
+      <ContentPanel kind="information" tr={tr} collapsed={Boolean(msg.repeat)} className="max-w-3xl">
+        <Markdown text={helper} />
+      </ContentPanel>
+    ) : null;
+  }
+  if (kind !== 'question') {
+    const { head, helper } = splitHelper(msg.content);
     return (
       <div className="flex gap-3">
-        <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#2ABD41] flex items-center justify-center">
-          <span className="block h-2 w-2 rounded-full bg-white/90" />
-        </div>
-        <div className={`${base} rounded-tl-sm border border-[#8BEA99]/30 bg-[#8BEA99]/8 text-[#175022]`}>
-          <Markdown text={msg.content} />
+        <div className="mt-1 h-5 w-5 shrink-0" aria-hidden="true" />
+        <div className="min-w-0 max-w-[85%] flex-1 sm:max-w-[75%]">
+          <ContentPanel kind={kind} tr={tr}>
+            <div className={helper ? 'font-semibold' : ''}><Markdown text={head} /></div>
+            {helper && <div className="mt-1"><Markdown text={helper} /></div>}
+          </ContentPanel>
         </div>
       </div>
     );
   }
-  // assistant (default)
+  // A question: its own text in the bubble; the explanation that goes with it (the helper) is information,
+  // shown as such right under it, never as italic text of the question.
+  const { head, helper } = splitHelper(msg.content);
+  const compact = compactQuestion && withoutQuestionText(head) !== head;
   return (
     <div className="flex gap-3">
       <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#2ABD41] flex items-center justify-center shadow-sm">
         <span className="block h-2 w-2 rounded-full bg-white/80" />
       </div>
       <div className="flex-1 min-w-0 text-[13.5px] leading-[1.7] text-[#175022]">
-        {compactQuestion && withoutQuestionText(msg.content) !== msg.content ? (
+        {compact ? (
           <>
-            <div className="sm:hidden" data-testid="compact-question"><Markdown text={withoutQuestionText(msg.content)} /></div>
-            <div className="hidden sm:block"><Markdown text={msg.content} /></div>
+            <div className="sm:hidden" data-testid="compact-question"><Markdown text={withoutQuestionText(head)} /></div>
+            <div className="hidden sm:block"><Markdown text={head} /></div>
           </>
         ) : (
-          <Markdown text={msg.content} />
+          <Markdown text={head} />
+        )}
+        {helper && (
+          <ContentPanel kind="information" tr={tr} collapsed={Boolean(msg.repeat)} className="mt-2 max-w-[42rem]">
+            <Markdown text={helper} />
+          </ContentPanel>
         )}
       </div>
     </div>
@@ -1417,7 +1356,7 @@ function Chip({ label, selected, onClick, multi, disabled }) {
       aria-checked={selected}
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed ${
+      className={`rounded-full border px-3 py-2 text-[12.5px] font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed sm:py-1.5 ${
         selected
           ? 'btn-primary'
           : 'border-[#175022]/12 bg-white text-[#175022]/70 hover:border-[#8BEA99]/50 hover:bg-[#8BEA99]/8 hover:text-[#175022]'
@@ -1459,7 +1398,7 @@ function CountryCityInput({ value, onChange, lang }) {
   const all = val.country ? (CITIES_BY_COUNTRY[val.country] || []) : [];
   const top = (TOP_CITIES[val.country] || []).filter(c => all.includes(c));
   const ordered = [...top, ...all.filter(c => !top.includes(c))];
-  const inputClass = 'rounded-xl border border-[#175022]/12 bg-white px-3 py-2 text-sm text-[#175022] outline-none focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20';
+  const inputClass = 'rounded-[10px] border border-[#DCE6DE] bg-white px-3 py-2 text-[13px] text-[#0E2A14] outline-none focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20';
   const countryOptions = [...COUNTRY_CODES].sort((a, b) => {
     if (a === 'TR' || b === 'OTHER') return -1;
     if (b === 'TR' || a === 'OTHER') return 1;
@@ -1535,7 +1474,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
   // facility name by its placeholder and the selects with no name at all).
   const uid = useId();
   return (
-    <div className="flex flex-col gap-3 w-full max-w-lg">
+    <div className="flex w-full max-w-2xl flex-col gap-3">
       {fields.map(field => {
         // Hide fields whose conditionalOn toggle is false/unset.
         // Boolean fields store true/false; check both the boolean and the string 'true'.
@@ -1585,7 +1524,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
               // already uses elsewhere, instead.
               <select
                 id={ctrlId}
-                className="rounded-xl border border-[#175022]/12 bg-white px-3 py-2 text-sm text-[#175022] outline-none focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20"
+                className="rounded-[10px] border border-[#DCE6DE] bg-white px-3 py-2 text-[13px] text-[#0E2A14] outline-none focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20"
                 value={fieldVal}
                 onChange={e => setField(e.target.value)}
                 disabled={disabled}
@@ -1612,7 +1551,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
             ) : field.subtype === 'multi_line' ? (
               <textarea
                 id={ctrlId}
-                className="rounded-xl border border-[#175022]/12 bg-white px-3 py-2 text-sm text-[#175022] outline-none placeholder:text-[#175022]/30 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20 resize-none"
+                className="rounded-[10px] border border-[#DCE6DE] bg-white px-3 py-2 text-[13px] text-[#0E2A14] outline-none placeholder:text-[#175022]/30 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20 resize-none"
                 rows={3}
                 value={fieldVal}
                 onChange={e => setField(e.target.value)}
@@ -1623,7 +1562,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
             ) : (
               <input
                 id={ctrlId}
-                className="rounded-xl border border-[#175022]/12 bg-white px-3 py-2 text-sm text-[#175022] outline-none placeholder:text-[#175022]/30 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20"
+                className="rounded-[10px] border border-[#DCE6DE] bg-white px-3 py-2 text-[13px] text-[#0E2A14] outline-none placeholder:text-[#175022]/30 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20"
                 type="text"
                 inputMode={field.type === 'numeric' || field.subtype === 'numeric' ? 'decimal' : 'text'}
                 value={fieldVal}
@@ -2061,7 +2000,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
       <button
         onClick={() => onSubmit()}
         disabled={disabled}
-        className="rounded-full btn-dark px-6 py-2.5 text-sm font-bold transition"
+        className="app-btn btn-dark transition"
       >
         {tr ? 'Devam Et →' : 'Continue →'}
       </button>
@@ -2098,7 +2037,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <button
           onClick={() => onSubmit({ ...value, city: canonicalCity(value?.country, value?.city) })}
           disabled={disabled || !value?.country || cityRequired}
-          className="rounded-full btn-dark px-6 py-2.5 text-sm font-bold transition"
+          className="app-btn btn-dark transition"
         >
           {tr ? 'Onayla →' : 'Confirm →'}
         </button>
@@ -2211,11 +2150,11 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         </div>
         {/* Stays at the bottom of the scrolling answer panel, so a long list
             of chips on a phone never hides it. */}
-        <div className="sticky bottom-0 z-10 -mx-1 bg-white px-1 pt-1 pb-1">
+        <div className="sticky bottom-0 z-10 -mx-1 border-t border-[#EEF3EF] bg-white px-1 pt-2 pb-1">
           <button
             onClick={() => onSubmit()}
             disabled={disabled || vals.length === 0}
-            className="rounded-full btn-dark px-6 py-2.5 text-sm font-bold transition"
+            className="app-btn btn-dark transition"
           >
             {tr ? 'Onayla' : 'Confirm'}{vals.length > 0 ? ` (${vals.length})` : ''} →
           </button>
@@ -2329,7 +2268,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
           <button
             onClick={() => onSubmit({ items: draftFilled ? [...items, draft] : items })}
             disabled={disabled || !canFinish || draftRepeats}
-            className="self-start rounded-full btn-dark px-6 py-2.5 text-sm font-bold transition"
+            className="self-start app-btn btn-dark transition"
           >
             {tr ? 'Tamamla →' : 'Done →'}
           </button>
@@ -2390,11 +2329,11 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
           lang={lang}
           disabled={disabled}
         />
-        <div className="sticky bottom-0 z-10 -mx-1 bg-white px-1 pt-1 pb-1">
+        <div className="sticky bottom-0 z-10 -mx-1 border-t border-[#EEF3EF] bg-white px-1 pt-2 pb-1">
           <button
             onClick={() => onSubmit()}
             disabled={disabled || !allRequiredFilled}
-            className="rounded-full btn-dark px-6 py-2.5 text-sm font-bold transition"
+            className="app-btn btn-dark transition"
           >
             {tr ? 'Onayla →' : 'Confirm →'}
           </button>
@@ -2411,9 +2350,9 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     const charCount = String(value || '').length;
     const mlEmpty = !String(value || '').trim();
     return (
-      <div className="flex flex-col gap-1 w-full max-w-lg">
+      <div className="flex w-full max-w-3xl flex-col gap-1">
         <textarea
-          className="w-full rounded-xl border border-[#175022]/12 bg-white px-4 py-2.5 text-sm text-[#175022] outline-none placeholder:text-[#175022]/30 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20 resize-none"
+          className="w-full resize-none rounded-[10px] border border-[#DCE6DE] bg-white px-3 py-2 text-[13px] leading-snug text-[#0E2A14] outline-none placeholder:text-[#175022]/35 focus:border-[#2ABD41] focus:ring-2 focus:ring-[#2ABD41]/20 disabled:opacity-60"
           rows={4}
           value={value}
           onChange={e => onChange(e.target.value)}
@@ -2440,7 +2379,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <button
           onClick={() => onSubmit()}
           disabled={disabled || (mlRequired && mlEmpty)}
-          className="self-start rounded-full btn-dark px-6 py-2.5 text-sm font-bold transition"
+          className="self-start app-btn btn-dark transition"
         >
           {tr ? 'Onayla →' : 'Confirm →'}
         </button>
@@ -2464,10 +2403,10 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
   const buildSubmitValue = () => (shouldCombineUnit && String(amountStr).trim()) ? `${amountStr} ${selectedUnit}` : amountStr;
 
   return (
-    <div className="flex flex-col gap-2 w-full max-w-sm">
-      <div className="flex gap-2 items-center">
+    <div className={`flex w-full flex-col gap-2 ${(subtype === 'numeric' || type === 'numeric' || unitList.length > 0) ? 'max-w-sm' : 'max-w-xl'}`}>
+      <div className="flex items-center gap-2">
         <input
-          className="flex-1 rounded-xl border border-[#175022]/12 bg-white px-4 py-2.5 text-sm text-[#175022] outline-none placeholder:text-[#175022]/30 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20"
+          className="h-9 min-w-0 flex-1 rounded-[10px] border border-[#DCE6DE] bg-white px-3 text-[13px] text-[#0E2A14] outline-none placeholder:text-[#175022]/35 focus:border-[#2ABD41] focus:ring-2 focus:ring-[#2ABD41]/20 disabled:opacity-60"
           type="text"
           inputMode={
             subtype === 'numeric' || type === 'numeric' ||
@@ -2488,14 +2427,14 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         />
         {/* Fixed unit label when there's only one option (e.g. "%" or "litre") */}
         {unitList.length === 1 && (
-          <span className="shrink-0 rounded-xl border border-[#175022]/12 bg-[#F1FCF2] px-3 py-2.5 text-sm font-semibold text-[#175022]/60">
+          <span className="inline-flex h-9 shrink-0 items-center rounded-[10px] border border-[#DCE6DE] bg-[#F1FCF2] px-3 text-[13px] font-semibold text-[#175022]/70">
             {unitList[0]}
           </span>
         )}
         <button aria-label={tr ? 'Gönder' : 'Send'}
           onClick={() => onSubmit(buildSubmitValue())}
           disabled={disabled || (isRequired && isEmpty)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full btn-dark transition"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] btn-dark transition"
         >
           <Send className="h-3.5 w-3.5" />
         </button>
@@ -2820,7 +2759,7 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
       <div className="flex justify-end">
         <button
           onClick={onContinue}
-          className="rounded-full btn-dark px-6 py-2.5 text-sm font-bold transition"
+          className="app-btn btn-dark transition"
         >
           {tr ? 'Devam Et →' : 'Continue →'}
         </button>
@@ -2832,8 +2771,10 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: Progress Sidebar
 // ─────────────────────────────────────────────────────────────────────────────
-function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed = false }) {
+function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed = false, attention = null }) {
   const tr = lang === 'tr';
+  const ac = attentionCopy(tr);
+  const byStage = useMemo(() => (attention ? attentionByStage(attention, id => getQuestionById(id)?.stage) : {}), [attention]);
   // Default to combined (Scope 1 & 2 together) unless user explicitly chose 'separate'
   const scopeGroupingAnswer = readAnswerValue(answers, 'SCOPE-GROUPING');
   const scopesCombined = scopeGroupingAnswer !== 'separate';
@@ -2897,7 +2838,7 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed =
           <span
             className="text-[10px] font-semibold text-[#175022]/60"
             title={completed ? undefined : (tr
-              ? `Şu ana kadarki cevaplara göre yaklaşık ${applicableTotal} soru; yeni cevaplarla değişebilir.`
+              ? `Şu ana kadarki yanıtlara göre yaklaşık ${applicableTotal} soru; yeni yanıtlarla değişebilir.`
               : `About ${applicableTotal} questions given the answers so far; it can change with new answers.`)}
           >
             {completed
@@ -2939,12 +2880,43 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed =
                 </span>
               </div>
               {answered > 0 && (
-                <span className="text-[9px] text-[#175022]/35 pl-3">{answered} {tr ? 'cevaplandı' : 'answered'}</span>
+                <span className="text-[9px] text-[#175022]/35 pl-3">{answered} {tr ? 'yanıtlandı' : 'answered'}</span>
               )}
+              {(() => {
+                const ids = stage.stageIds || [stage.id];
+                const req = ids.reduce((n, i) => n + (byStage[i]?.required || 0), 0);
+                const later = ids.reduce((n, i) => n + (byStage[i]?.deferred || 0), 0);
+                if (!req && !later) return null;
+                return (
+                  <div className="mt-0.5 flex flex-wrap gap-1 pl-3" data-testid={`stage-attention-${stage.id}`}>
+                    {req > 0 && <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-bold text-red-800">{ac.sidebarRequired(req)}</span>}
+                    {later > 0 && <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800">{ac.sidebarDeferred(later)}</span>}
+                  </div>
+                );
+              })()}
             </div>
           );
         })}
       </div>
+
+      {/* Questions the answers make unnecessary: not asked, not counted, not pending (information only). */}
+      {attention && attention.inactive.length > 0 && !completed && (
+        <details data-testid="inactive-questions" className="border-t border-[#175022]/6 px-3 py-2">
+          <summary className="cursor-pointer text-[10px] font-bold text-[#175022]/55">{ac.sidebarInactive(attention.inactive.length)}</summary>
+          <p className="mt-1 text-[10px] text-[#175022]/50">{ac.inactiveHint}</p>
+          <ul className="mt-1 flex max-h-40 flex-col gap-0.5 overflow-y-auto">
+            {attention.inactive.map(id => {
+              const q = getQuestionById(id);
+              return (
+                <li key={id} data-testid={`inactive-question-${id}`} className="flex items-baseline gap-1.5 text-[10px] text-[#175022]/55">
+                  <span className="shrink-0 font-semibold">{ac.question} {q?.number ?? id}</span>
+                  <span className="truncate">{stripDocLabels(q?.text?.[lang] || q?.text?.en || id)}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
+      )}
     </aside>
   );
 }
@@ -3107,6 +3079,15 @@ export function QuestionnaireTab({
   // the question changes, like advisorInfo.
   const [pendingIds, setPendingIds] = useState([]);
   const [pendingOpen, setPendingOpen] = useState(false);
+  // "Review pending questions" on the dashboard asks for the pending list to be open when the questionnaire opens.
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('carbonless_open_pending') === '1') {
+        sessionStorage.removeItem('carbonless_open_pending');
+        setPendingOpen(true);
+      }
+    } catch { /* stays closed */ }
+  }, []);
   const [laterBusy, setLaterBusy] = useState(false);
   const [laterNotice, setLaterNotice] = useState('');
   useEffect(() => {
@@ -3270,7 +3251,7 @@ export function QuestionnaireTab({
           {
             id: `m-${++msgIdRef.current}`,
             role: 'assistant',
-            type: 'info',
+            type: 'info', kind: 'notification',
             content: tr
               ? '✅ Önceki şirket profiliniz kullanıldı. Şimdi organizasyon sınırınızı tanımlayalım.'
               : "✅ Reused your previous company profile. Let's define your organizational boundary now.",
@@ -3279,6 +3260,7 @@ export function QuestionnaireTab({
             id: `m-${++msgIdRef.current}`,
             role: 'assistant',
             type: nextQ.type === 'info' ? 'info' : 'assistant',
+            kind: nextQ.type === 'info' ? infoScreenKind(nextQ.id) : undefined,
             content: nextQ.text?.[lang] || nextQ.text?.en,
           }] : []),
         ]);
@@ -3290,20 +3272,6 @@ export function QuestionnaireTab({
       setShowReuseDialog(false);
     }
   }, [reportId, reuseLoading, reuseYear, tr, lang, onDirtyChange, previousProfile]);
-
-  // Another inventory of this company already covers `year`? Emission entries
-  // are kept per company and year, so a second inventory for the same year
-  // would share — and overwrite — the first one's numbers.
-  const inventoryForYear = useCallback((year) => (
-    (previousProfile?.other_inventories || []).find(r => String(r.reporting_year) === String(year))
-  ), [previousProfile]);
-  const sameYearWarning = useCallback((year) => {
-    const other = inventoryForYear(year);
-    if (!other) return null;
-    return tr
-      ? `${year} yılı için zaten bir envanteriniz var: “${other.title}”. Aynı yıl için ikinci bir envanter, o envanterle aynı emisyon kayıtlarını kullanır — bu envanterde girdiğiniz değerler öncekinin değerlerinin yerine geçer. Farklı bir yıl için hazırlıyorsanız yılı değiştirin.`
-      : `You already have an inventory for ${year}: “${other.title}”. A second inventory for the same year uses the same emission records — the values you enter here replace the earlier ones. If this inventory is for another year, change the year.`;
-  }, [inventoryForYear, tr]);
 
   // "No, let me re-enter": the user fills the profile in themselves, so the
   // earlier report's answers are no longer offered — only the name and tax
@@ -3382,6 +3350,34 @@ export function QuestionnaireTab({
   const currentQuestion = getQuestionById(currentId);
   // The answer panel, and the question pinned on top of it.
   const inputPanelShown = !completed && (!blockSummaryState || editingQuestionId);
+
+  // What needs attention in this inventory (required questions still unanswered, questions left for later), from
+  // the same route engine and policy the server uses. Read-only; see lib/carboniq/attention.js.
+  const attention = useMemo(() => attentionOverview({
+    answers, pendingIds, currentId, completed: completed || inventoryCompleted,
+    loopHasItems: (_pq, src, id) => loopResumeState(getQuestionById(id), src).items.length > 0,
+  }), [answers, pendingIds, currentId, completed, inventoryCompleted]);
+
+  // An answer typed or chosen but not submitted yet (it is not saved until it is submitted).
+  const hasUnsentAnswer = inputPanelShown && !isTyping && !!currentQuestion && currentQuestion.type !== 'info'
+    && JSON.stringify(answerValue) !== JSON.stringify(getInitialValue(currentQuestion))
+    && JSON.stringify(answerValue) !== JSON.stringify(normalizeAnswerValue(currentQuestion, readAnswerValue(answers, currentId)));
+  // The session guard words its expiry warning by this: an answer typed but not submitted is lost if the session ends.
+  useEffect(() => {
+    setUnsaved('answer', hasUnsentAnswer);
+    return () => setUnsaved('answer', false);
+  }, [hasUnsentAnswer]);
+  const [leaveAsk, setLeaveAsk] = useState(false);
+  // Back to "My Inventories" (the page that lists the inventories and creates a new one). Every submitted answer is
+  // already saved with the inventory, so leaving loses nothing — except an answer not submitted yet, which is
+  // asked about first. The exit itself is the workflow's (onExitToLibrary): its own save check still applies.
+  const leaveToLibrary = useCallback(() => {
+    if (submitting || isSubmittingRef.current) return;
+    if (hasUnsentAnswer && !leaveAsk) { setLeaveAsk(true); return; }
+    setLeaveAsk(false);
+    onExitToLibrary?.();
+  }, [submitting, hasUnsentAnswer, leaveAsk, onExitToLibrary]);
+  useEffect(() => { setLeaveAsk(false); }, [currentId]);
   const pinnedQuestionShown = Boolean(inputPanelShown && currentQuestion && !isTyping);
 
   // ✅ Per-stage answer breakdown for the completion report — reuses the same
@@ -3483,17 +3479,26 @@ export function QuestionnaireTab({
     const welcomeMsg = {
       id: 'welcome',
       role: 'assistant',
+      // an information screen (a stage's introduction) opened directly is shown as the kind of content it is
+      ...(firstQ.type === 'info' ? { type: 'info', kind: infoScreenKind(firstQ.id) } : {}),
       content: `${intro}\n\n${qText}`,
     };
     if (firstQ.helper) {
       welcomeMsg.content += `\n\n_${firstQ.helper?.[lang] || firstQ.helper?.en}_`;
     }
-    // Said once at the top: help is one click away for any question.
-    welcomeMsg.content += tr
-      ? '\n\n💡 Bir soruda takılırsanız ya da ne yazacağınızdan emin değilseniz sağ alttaki **AI Yardımı**\'na sorun — soruyu açıklar ve cevabınızı birlikte bulursunuz.'
-      : '\n\n💡 If you get stuck on a question or are unsure what to enter, ask **Ask AI Help** at the bottom right — it explains the question and helps you find your answer.';
-    setMessages([welcomeMsg]);
-    questionMsgLenRef.current = 1;
+    // Said once at the top: help is one click away for any question. It is an instruction about the screen, not
+    // part of the question: its own message, shown as an instruction panel (not as the question's last lines).
+    const helpTip = {
+      id: 'welcome-help',
+      role: 'assistant',
+      type: 'info',
+      kind: 'instruction',
+      content: tr
+        ? 'Bir soruda takılırsanız ya da ne gireceğinizden emin değilseniz **AI Yardımı** düğmesini kullanın: soruyu açıklar ve yanıtınızı bulmanıza yardımcı olur.'
+        : 'If you are stuck on a question or unsure what to enter, select **Ask AI Help**. It explains the question and helps you find your answer.',
+    };
+    setMessages([welcomeMsg, helpTip]);
+    questionMsgLenRef.current = 2;
     // The item the loop resumes on — not item 0: a second facility used to
     // open with the first one's name (then refused as a duplicate), a
     // second meter with the first one's reading.
@@ -3522,6 +3527,33 @@ export function QuestionnaireTab({
     }, 50);
     return () => { if (scrollTimerRef.current) { clearTimeout(scrollTimerRef.current); scrollTimerRef.current = null; } };
   }, [messages, isTyping]);
+
+  // The conversation stays at its end while the answer panel above or below it changes height (a form that fills in
+  // late used to leave the last lines of the Information panel cut off); once the user scrolls up it stays where they are.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    let stick = true;
+    let user = false;
+    const markUser = () => { user = true; };
+    const onScroll = () => {
+      const near = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+      if (near) stick = true; else if (user) stick = false;
+    };
+    el.addEventListener('wheel', markUser, { passive: true });
+    el.addEventListener('touchstart', markUser, { passive: true });
+    el.addEventListener('keydown', markUser);
+    el.addEventListener('scroll', onScroll, { passive: true });
+    const ro = new ResizeObserver(() => { if (stick) el.scrollTop = el.scrollHeight; });
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      el.removeEventListener('wheel', markUser);
+      el.removeEventListener('touchstart', markUser);
+      el.removeEventListener('keydown', markUser);
+      el.removeEventListener('scroll', onScroll);
+    };
+  }, []);
 
   // Which question the current answerValue was initialised for. Until this
   // catches up with currentId the answer controls belong to the question the
@@ -3885,7 +3917,7 @@ export function QuestionnaireTab({
       const isInfo = q.type === 'info';
       let content = isInfo ? questionText : `**${newTr ? 'Soru' : 'Question'} ${q.number}:** ${questionText}`;
       if (helperText) content += `\n\n_${helperText}_`;
-      setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: isInfo ? 'info' : 'assistant', content }]);
+      setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: isInfo ? 'info' : 'assistant', kind: isInfo ? infoScreenKind(q.id) : undefined, content }]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]); // only language — not currentId/loopState, those use their own effects
@@ -3959,7 +3991,7 @@ export function QuestionnaireTab({
       const touchedFacilities = currentId === '2A-2';
       if (touchedEmissions || touchedFacilities) {
         window.dispatchEvent(new CustomEvent('carbonless:emissions-updated', {
-          detail: { source: 'inventory', year: respData?.reporting_year ?? null },
+          detail: { source: 'inventory', year: respData?.reporting_year ?? null, inventoryId: reportId ?? null },
         }));
       }
       if (saveSuccessTimerRef.current) clearTimeout(saveSuccessTimerRef.current);
@@ -4018,7 +4050,7 @@ export function QuestionnaireTab({
         if (parts.length && inventoryCompleted && !fixHintShownRef.current) {
           fixHintShownRef.current = true;
           parts.push(trL
-            ? 'Düzeltmeniz kaydedildi. Başka değişiklik yoksa üstteki "Bitir" ile imza adımına geçin; sonraki soruları yeniden cevaplamanız gerekmez.'
+            ? 'Düzeltmeniz kaydedildi. Başka değişiklik yoksa üstteki "Bitir" ile imza adımına geçin; sonraki soruları yeniden yanıtlamanız gerekmez.'
             : 'Your fix is saved. If there is nothing else to change, use "Finish" at the top to go to the sign-off step; you do not need to answer the next questions again.');
         }
         if (parts.length) {
@@ -4080,7 +4112,7 @@ export function QuestionnaireTab({
         return [...filtered, {
           id: `m-${++msgIdRef.current}`,
           role: 'assistant',
-          type: 'info',
+          type: 'info', kind: 'notification',
           content: tr
             ? `✅ Tebrikler! Tüm sorular tamamlandı. Raporunuz aşağıda görüntüleniyor.`
             : `✅ Congratulations! All questions completed. Your report is displayed below.`,
@@ -4106,7 +4138,7 @@ export function QuestionnaireTab({
       // the moment the user successfully answers a question.
       const filtered = prev.filter(m => m.type !== 'error');
       questionMsgLenRef.current = filtered.length + 1; // capture length AFTER this bubble
-      return [...filtered, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: bubbleType, content }];
+      return [...filtered, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: bubbleType, kind: isInfo ? infoScreenKind(nextQ?.id) : undefined, content }];
     });
   }, [lang, tr]);
 
@@ -4305,7 +4337,7 @@ export function QuestionnaireTab({
           if (!isMounted.current) return;
           setIsTyping(false);
           if (loopSysMsg) {
-            setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'info', content: loopSysMsg }]);
+            setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'info', kind: 'information', content: loopSysMsg }]);
           }
           const loopText = stripDocLabels(q?.text?.[lang] || q?.text?.en || '');
           const loopHelper = q?.helper?.[lang] || q?.helper?.en || '';
@@ -4315,6 +4347,7 @@ export function QuestionnaireTab({
             id: `m-${++msgIdRef.current}`,
             role: 'assistant',
             type: 'assistant',
+            repeat: true,        // the 2nd, 3rd ... item of a loop: the same guidance, shown closed
             content,
           }]);
         }, TYPING_DELAY_MS);
@@ -4353,7 +4386,7 @@ export function QuestionnaireTab({
         setMessages(prev => [...prev, {
           id: `m-${++msgIdRef.current}`,
           role: 'assistant',
-          type: 'info',
+          type: 'info', kind: 'notification',
           content: tr
             ? `✅ Tebrikler! Tüm sorular tamamlandı.`
             : `✅ Congratulations! All questions completed.`,
@@ -4387,7 +4420,7 @@ export function QuestionnaireTab({
           setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'warning', content: warning }]);
         }
         if (loopSysMsg) {
-          setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'info', content: loopSysMsg }]);
+          setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'info', kind: 'information', content: loopSysMsg }]);
         }
         // Advance past loop, skipping any conditionalShow-hidden questions.
         // Use candidate.next (not getNextQuestionId) for the skip step — getNextQuestionId
@@ -4410,7 +4443,7 @@ export function QuestionnaireTab({
           setMessages(prev => [...prev, {
             id: `m-${++msgIdRef.current}`,
             role: 'assistant',
-            type: 'info',
+            type: 'info', kind: 'instruction',
             content: tr
               ? `Bu bölüm tamamlandı! Yanıtlarınızı aşağıda görebilirsiniz. Düzenlemek istediğiniz varsa **Düzenle** butonunu, devam etmek için **Devam Et** butonunu kullanın.`
               : `This section is complete! Review your answers below. Use **Edit** to change an answer or click **Continue** to proceed.`,
@@ -4471,7 +4504,7 @@ export function QuestionnaireTab({
       setMessages(prev => [...prev, {
         id: `m-${++msgIdRef.current}`,
         role: 'assistant',
-        type: 'info',
+        type: 'info', kind: 'notification',
         content: tr
           ? `✅ Tebrikler! Tüm sorular tamamlandı.`
           : `✅ Congratulations! All questions completed.`,
@@ -4492,7 +4525,6 @@ export function QuestionnaireTab({
     // — lang is resolved at render time for assumptions so language switches show correct text.
     const warning = [
       getQuestionWarning ? getQuestionWarning(q, value, lang) : null,
-      q.id === 'A4' ? sameYearWarning(value) : null,
       employeeCountWarning(q, value, newAnswers, lang),
       exclusionShareWarning(q, value, newAnswers, lang),
       scope3RowWarning(q, value, newAnswers, lang),
@@ -4531,6 +4563,7 @@ export function QuestionnaireTab({
           id: `m-${++msgIdRef.current}`,
           role: 'assistant',
           type: 'info',
+          kind: 'information',
           content: sysMsg,
         }]);
       }
@@ -4579,7 +4612,7 @@ export function QuestionnaireTab({
         setMessages(prev => [...prev, {
           id: `m-${++msgIdRef.current}`,
           role: 'assistant',
-          type: 'info',
+          type: 'info', kind: 'notification',
           content: tr
             ? `Tebrikler! Tüm sorular tamamlandı. Karbon envanteriniz başarıyla oluşturuldu.`
             : `Congratulations! All questions completed. Your carbon inventory has been successfully created.`,
@@ -4601,7 +4634,7 @@ export function QuestionnaireTab({
           setMessages(prev => [...prev, {
             id: `m-${++msgIdRef.current}`,
             role: 'assistant',
-            type: 'info',
+            type: 'info', kind: 'instruction',
             content: tr
               ? `Bu bölüm tamamlandı! Yanıtlarınızı aşağıda görebilirsiniz. Düzenlemek istediğiniz varsa **Düzenle** butonunu, devam etmek için **Devam Et** butonunu kullanın.`
               : `This section is complete! Review your answers below. Use **Edit** to change an answer or click **Continue** to proceed.`,
@@ -4611,7 +4644,7 @@ export function QuestionnaireTab({
         }
       }
     }, TYPING_DELAY_MS);
-  }, [currentId, answerValue, answers, isTyping, loopState, reportId, lang, tr, saveStepToBackend, initLoopOrAdvance, markSubmitting, sameYearWarning, askSoft, previousProfile]);
+  }, [currentId, answerValue, answers, isTyping, loopState, reportId, lang, tr, saveStepToBackend, initLoopOrAdvance, markSubmitting, askSoft, previousProfile]);
 
   // After leaving and coming back, this session's `history` is empty, so the
   // back button had nothing to go to. Fall back to the last answered question
@@ -4881,6 +4914,20 @@ export function QuestionnaireTab({
     );
   }
 
+  // The question being answered and what belongs to it (its explanation, the notices and instructions that follow
+  // it) are shown together in the answer panel: number and ISO reference, title, information, answer, tips. The
+  // conversation above keeps only what is already behind the user.
+  let lastQuestionIdx = -1;
+  messages.forEach((m, i) => { if (m.role !== 'user' && messageKind(m) === 'question') lastQuestionIdx = i; });
+  const currentGroupStart = (pinnedQuestionShown && lastQuestionIdx >= 0 && messages.slice(lastQuestionIdx).every(m => m.role !== 'user'))
+    ? lastQuestionIdx : -1;
+  const currentGroup = currentGroupStart >= 0 ? messages.slice(currentGroupStart) : [];
+  const historyMessages = currentGroupStart >= 0 ? messages.slice(0, currentGroupStart) : messages;
+  const groupBefore = currentGroup.filter(m => messageKind(m) !== 'instruction');
+  const groupAfter = currentGroup.filter(m => messageKind(m) === 'instruction');
+  const threadEmpty = currentGroupStart >= 0 && historyMessages.length === 0 && !isTyping && !completed && !saveSuccess && !saveError
+    && assumptions.length === 0 && !currentQuestion?.showSummaryTable && !blockSummaryState;
+
   return (
     <div ref={flowRootRef} className="flex flex-1 min-h-0 flex-row-reverse overflow-hidden relative">
       {/* Mobile backdrop for progress sidebar */}
@@ -4900,6 +4947,7 @@ export function QuestionnaireTab({
         // A completed inventory reopened to fix a section is still complete:
         // it read "118 / 120 — 98%" next to "this inventory is completed".
         completed={completed || inventoryCompleted}
+        attention={attention}
       />
 
       {/* Main area */}
@@ -4908,9 +4956,29 @@ export function QuestionnaireTab({
           overflow-y-auto below never actually engages: instead of scrolling,
           older messages just get clipped by the parent's overflow-hidden as
           the conversation grows past the visible area. */}
-      <div className="flex flex-1 min-w-0 min-h-0 flex-col">
+      <div className="relative flex flex-1 min-w-0 min-h-0 flex-col">
         {/* Sub-header */}
-        <div className="flex shrink-0 items-center gap-2 border-b border-[#DEFAE1] bg-white/60 px-4 py-2.5">
+        <div className="flex shrink-0 items-center gap-2 border-b border-[#E6EDE7] bg-white px-3 py-2 sm:px-4">
+          {onExitToLibrary && (
+            leaveAsk ? (
+              <div role="alertdialog" aria-label={tr ? 'Envanterlere dön' : 'Back to My Inventories'} data-testid="leave-questionnaire-confirm"
+                className="flex flex-wrap items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-900">
+                <span>{tr ? 'Gönderilmemiş yanıtınız kaydedilmeyecek.' : "Your answer hasn't been submitted and won't be saved."}</span>
+                <button type="button" onClick={leaveToLibrary} data-testid="leave-questionnaire-yes"
+                  className="rounded-full btn-dark px-2.5 py-0.5 text-[11px] font-bold">{tr ? 'Yine de ayrıl' : 'Leave anyway'}</button>
+                <button type="button" onClick={() => setLeaveAsk(false)} data-testid="leave-questionnaire-stay"
+                  className="rounded-full border border-amber-300 bg-white px-2.5 py-0.5 text-[11px] font-bold">{tr ? 'Burada kal' : 'Stay'}</button>
+              </div>
+            ) : (
+              <button type="button" onClick={leaveToLibrary} disabled={submitting} data-testid="back-to-inventories"
+                title={tr ? 'Tüm envanterleriniz: yeni envanter oluşturun ya da başka birini açın. Bu envanterin yanıtları kaydedilir.' : 'All your inventories: create a new one or open another. This inventory keeps its answers and progress.'}
+                aria-label={tr ? 'Envanterlerim sayfasına dön' : 'Back to My Inventories'}
+                className="flex shrink-0 h-8 items-center gap-1.5 rounded-[10px] border border-[#DCE6DE] bg-white px-2.5 text-[12px] font-semibold text-[#175022] transition hover:border-[#BFE3C6] hover:bg-[#F1FCF2] disabled:opacity-50">
+                <ArrowLeft className="h-3.5 w-3.5" />
+                {tr ? 'Envanterlerim' : 'My Inventories'}
+              </button>
+            )
+          )}
           {!sidebarOpen && (
             <button aria-label={tr ? 'İlerleme panelini aç' : 'Open progress panel'}
               onClick={() => setSidebarOpen(true)}
@@ -4919,25 +4987,12 @@ export function QuestionnaireTab({
               <Menu className="h-4 w-4" />
             </button>
           )}
-          <div className="flex-1 min-w-0">
-            {currentQuestion && (
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-[#175022]/40">
-                  {tr ? 'Soru' : 'Q'} {currentQuestion.number}
-                </span>
-                {currentQuestion.isoRef && (
-                  <span className="rounded-full bg-[#8BEA99]/15 px-2 py-0.5 text-[9px] font-bold text-[#175022]">
-                    {currentQuestion.isoRef}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
+          <div className="min-w-0 flex-1" />
           <div className="flex items-center gap-1">
             {inventoryCompleted && !completed && (currentQuestion?.stage ?? 7) < 7 && (
               <button
                 onClick={finishEditing}
-                className="flex h-7 items-center gap-1 rounded-full btn-dark px-2.5 text-[11px] font-bold transition"
+                className="flex h-8 items-center gap-1.5 rounded-[10px] btn-dark px-2.5 text-[12px] font-semibold transition"
               >
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{tr ? 'Düzenlemeyi bitir' : 'Finish editing'}</span>
@@ -4948,10 +5003,10 @@ export function QuestionnaireTab({
               <button
                 onClick={goBack}
                 aria-label={tr ? 'Önceki soruya dön' : 'Go back to previous question'}
-                className="flex h-7 items-center gap-1 rounded-full border border-[#175022]/15 bg-white px-2.5 text-[11px] font-bold text-[#175022]/70 hover:bg-[#175022]/6 hover:text-[#175022] transition"
+                className="flex h-8 items-center gap-1.5 rounded-[10px] border border-[#DCE6DE] bg-white px-2.5 text-[12px] font-semibold text-[#175022] transition hover:border-[#BFE3C6] hover:bg-[#F1FCF2]"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
-                {tr ? 'Önceki soru' : 'Previous question'}
+                <span className="hidden sm:inline">{tr ? 'Önceki soru' : 'Previous question'}</span>
               </button>
             )}
             {resetConfirm ? (
@@ -4984,19 +5039,15 @@ export function QuestionnaireTab({
         </div>
 
         {/* Chat messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+        <div ref={scrollRef} className={threadEmpty ? 'hidden' : 'flex-1 overflow-y-auto px-3 py-4 sm:px-6'}>
           <div
-            className="mx-auto flex w-full max-w-2xl flex-col gap-4"
+            className="mx-auto flex w-full max-w-3xl min-[1700px]:max-w-4xl flex-col gap-3"
             aria-live="polite"
             aria-atomic="false"
             aria-label={tr ? 'Sohbet geçmişi' : 'Conversation history'}
           >
-            {messages.map((msg, i) => (
-              <ChatBubble
-                key={msg.id}
-                msg={msg}
-                compactQuestion={pinnedQuestionShown && i === messages.length - 1}
-              />
+            {historyMessages.map(msg => (
+              <ChatBubble key={msg.id} msg={msg} tr={tr} />
             ))}
             {/* Scope 1 summary table — shown inline when TY-1 (Q63) is current.
                 Rendered as a live component so it always reflects the latest answers
@@ -5082,55 +5133,21 @@ export function QuestionnaireTab({
           )}
         </div>
 
-        {/* Pending questions: left unanswered on purpose ("I don't know — answer later").
-            Each one returns to its original question. */}
-        {!completed && (() => {
-          const pend = visiblePending(pendingIds, answers);
-          if (!pend.length) return null;
-          const c = pendingCopy(tr);
-          const listId = 'pending-questions-list';
-          return (
-            <div data-testid="pending-questions-panel" role="region" aria-label={c.title}
-              className="shrink-0 border-t border-amber-200 bg-amber-50 px-4 py-2 sm:px-6">
-              <div className="mx-auto w-full max-w-2xl">
-                <button type="button" data-testid="pending-questions-toggle"
-                  aria-expanded={pendingOpen} aria-controls={listId}
-                  aria-label={pendingOpen ? c.toggleClose : c.toggleOpen}
-                  onClick={() => setPendingOpen(o => !o)}
-                  className="flex w-full items-center justify-between gap-3 text-left text-xs font-semibold text-amber-800">
-                  <span className="flex items-center gap-2">
-                    <AlertCircle className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} aria-hidden="true" />
-                    <span>{c.banner} <span className="font-bold">{c.title}: {c.count(pend.length)}</span></span>
-                  </span>
-                  <span aria-hidden="true">{pendingOpen ? '−' : '+'}</span>
-                </button>
-                {pendingOpen && (
-                  <ul id={listId} data-testid="pending-questions-list" className="mt-2 flex max-h-48 flex-col gap-1.5 overflow-y-auto">
-                    {pend.map(id => {
-                      const pq = getQuestionById(id);
-                      const text = stripDocLabels(pq?.text?.[lang] || pq?.text?.en || id);
-                      return (
-                        <li key={id} data-testid={`pending-question-${id}`}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white px-3 py-2">
-                          <span className="min-w-0 text-xs text-[#072C0E]">
-                            <span className="font-bold">{c.question} {pq?.number ?? id}</span>
-                            <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">{c.badge}</span>
-                            <span className="mt-0.5 block truncate text-[#175022]/70">{text}</span>
-                          </span>
-                          <button type="button" onClick={() => returnToPending(id)}
-                            aria-label={`${c.returnTo}: ${c.question} ${pq?.number ?? id}`}
-                            className="shrink-0 rounded-lg border border-amber-300 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100">
-                            {c.returnTo}
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            </div>
-          );
-        })()}
+        {/* Questions needing attention: required ones still unanswered, and those left on purpose
+            ("I don't know — answer later"). Each returns to its original question. Read-only. */}
+        {!completed && (
+          <AttentionPanel
+            overview={attention}
+            tr={tr}
+            open={pendingOpen}
+            onToggle={() => setPendingOpen(o => !o)}
+            onGo={returnToPending}
+            labelOf={(id) => {
+              const pq = getQuestionById(id);
+              return { number: pq?.number ?? id, text: stripDocLabels(pq?.text?.[lang] || pq?.text?.en || id) };
+            }}
+          />
+        )}
 
         {/* Input bar — shown if no block summary OR in edit mode (editingQuestionId set) */}
         {/* Scrolls once it outgrows the space left for it. This used to be a
@@ -5147,21 +5164,28 @@ export function QuestionnaireTab({
             down to a line; the current question is also pinned on top of the
             form, so it is in view whatever the scroll position. */}
         {inputPanelShown && (
-          <div className="min-h-0 max-h-[60%] shrink overflow-y-auto border-t border-[#175022]/6 px-4 pb-3 sm:px-6">
-            <div className="mx-auto w-full max-w-2xl">
+          <div data-testid="input-panel" className={`min-h-0 overflow-y-auto overscroll-contain bg-white px-3 pb-2 sm:px-6 sm:pb-3 ${threadEmpty ? 'flex-1' : 'max-h-[65%] shrink border-t border-[#E6EDE7] max-[480px]:max-h-[61%] [@media(max-height:640px)]:max-h-[57%]'}`}>
+            <div className="mx-auto w-full max-w-3xl min-[1700px]:max-w-4xl">
               {pinnedQuestionShown && (
-                <div data-testid="pinned-question" className="sticky top-0 z-10 -mx-1 mb-2 bg-white px-1 pt-3 pb-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-[#175022]/45">
-                    {tr ? 'Soru' : 'Question'} {currentQuestion.number}
-                    {loopState?.questionId === currentId && (loopState.itemLabels?.[loopState.currentIndex] || loopState.items?.[loopState.currentIndex])
-                      ? ` · ${loopState.itemLabels?.[loopState.currentIndex] || loopState.items[loopState.currentIndex]}` : ''}
-                  </p>
-                  <p className="text-[14px] font-semibold leading-snug text-[#072C0E] sm:text-[15px]">
+                <div data-testid="pinned-question" className="sticky top-0 z-10 -mx-1 mb-2 bg-white px-1 pb-1.5 pt-3">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-[#1D9C31]">
+                      {tr ? 'Soru' : 'Question'} {currentQuestion.number}
+                      {loopState?.questionId === currentId && (loopState.itemLabels?.[loopState.currentIndex] || loopState.items?.[loopState.currentIndex])
+                        ? ` · ${loopState.itemLabels?.[loopState.currentIndex] || loopState.items[loopState.currentIndex]}` : ''}
+                    </p>
+                  </div>
+                  <h2 className="mt-1 text-[15px] font-semibold leading-snug text-[#0E2A14] sm:text-[16px]">
                     {stripDocLabels(currentQuestion.text?.[lang] || currentQuestion.text?.en || '')}
-                  </p>
+                  </h2>
                 </div>
               )}
-              <div className="flex flex-col gap-2">
+              {groupBefore.length > 0 && (
+                <div data-testid="current-question-content" className="mb-2.5 flex flex-col gap-2">
+                  {groupBefore.map(msg => <ChatBubble key={msg.id} msg={msg} tr={tr} panelsOnly />)}
+                </div>
+              )}
+              <div className="flex flex-col gap-1.5 sm:gap-2">
                 <AnswerInput
                   question={currentQuestion}
                   value={answerValue}
@@ -5176,21 +5200,13 @@ export function QuestionnaireTab({
                       : undefined
                   }
                 />
+                {groupAfter.length > 0 && (
+                  <div data-testid="current-question-tips" className="mt-1 flex flex-col gap-2">
+                    {groupAfter.map(msg => <ChatBubble key={msg.id} msg={msg} tr={tr} panelsOnly />)}
+                  </div>
+                )}
                 {/* "I don't know — answer later": leaves the question unanswered (nothing is
                     saved, not even a 0) and lists it under Pending questions. */}
-                {canAnswerLater(currentQuestion, {
-                  answered: currentId in answers, locked: inventoryCompleted || completed,
-                  hasReport: Boolean(reportId), editing: Boolean(editingQuestionId),
-                }) && !isTyping && (
-                  <button type="button" data-testid="answer-later-button"
-                    onClick={markAnswerLater}
-                    disabled={laterBusy || submitting || answerForId !== currentId}
-                    title={pendingCopy(tr).buttonHint}
-                    aria-label={`${pendingCopy(tr).button}. ${pendingCopy(tr).buttonHint}`}
-                    className="self-start rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-50 disabled:opacity-50">
-                    {laterBusy ? pendingCopy(tr).saving : pendingCopy(tr).button}
-                  </button>
-                )}
                 {laterNotice && (
                   <p role="status" aria-live="polite" data-testid="answer-later-notice" className="text-xs font-semibold text-amber-800">
                     {laterNotice}
@@ -5273,7 +5289,7 @@ export function QuestionnaireTab({
                   <div className="rounded-xl border border-graphite/25 bg-smoke px-3 py-2 text-xs text-slate">
                     <p className="font-semibold">
                       {tr
-                        ? 'Cevaplarınızdan raporun "Kabuller" bölümüne kendiliğinden eklenecek kabuller:'
+                        ? 'Yanıtlarınızdan raporun "Kabuller" bölümüne kendiliğinden eklenecek kabuller:'
                         : 'Assumptions your answers already add to the report\'s "Assumptions" section:'}
                     </p>
                     <ul className="mt-1 list-disc pl-4 space-y-0.5">
@@ -5299,7 +5315,7 @@ export function QuestionnaireTab({
                   return (
                     <p className="text-xs text-[#175022]/60">
                       {tr
-                        ? `Önceki cevaplarınızda kendi emisyon faktörlerinizi girdiniz: ${own.join('; ')}. Bunlar standart faktör yerine kullanıldıysa "farklı emisyon faktörü" seçeneği uygun olabilir.`
+                        ? `Önceki yanıtlarınızda kendi emisyon faktörlerinizi girdiniz: ${own.join('; ')}. Bunlar standart faktör yerine kullanıldıysa "farklı emisyon faktörü" seçeneği uygun olabilir.`
                         : `Earlier you entered your own emission factors: ${own.join('; ')}. If they replace the standard factors, the "different emission factor" option may apply.`}
                     </p>
                   );
@@ -5396,15 +5412,33 @@ export function QuestionnaireTab({
                 {showValidationError && validationError && currentQuestion && !validateCarbonIQAnswer(currentQuestion, answerValue, answers, lang).ok && (
                   <div ref={validationErrorRef} role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
                     <AlertCircle className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
-                    <span>{validationError}</span>
+                    <span>
+                      {validationError}
+                      {/* A question that cannot be left for later says why, right where the user tried to go on. */}
+                      {deferralReason(currentId, answers, tr) && (
+                        <span data-testid="required-explanation" className="mt-0.5 block font-medium text-red-700/90">
+                          {deferralCopy(tr).mustAnswer}{deferralReason(currentId, answers, tr)}
+                        </span>
+                      )}
+                    </span>
                   </div>
                 )}
-                <div className="flex items-center justify-end sm:justify-between">
-                  <p className="hidden text-[10px] text-[#175022]/45 sm:block">
-                    {tr ? 'Verileriniz güvenli şekilde kaydedilir · ' : 'Your data is saved securely · '}
-                    <span className="font-semibold text-[#175022]/70">
-                      {tr ? 'Her sorunuzu AI\'a sorabilirsiniz →' : 'Ask the AI anything about this question →'}
-                    </span>
+                <div data-testid="input-actions" className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                  {canAnswerLater(currentQuestion, {
+                    answered: currentId in answers, locked: inventoryCompleted || completed,
+                    hasReport: Boolean(reportId), editing: Boolean(editingQuestionId), answers,
+                  }) && !isTyping && (
+                    <button type="button" data-testid="answer-later-button"
+                      onClick={markAnswerLater}
+                      disabled={laterBusy || submitting || answerForId !== currentId}
+                      title={pendingCopy(tr).buttonHint}
+                      aria-label={`${pendingCopy(tr).button}. ${pendingCopy(tr).buttonHint}`}
+                      className="app-btn app-btn-sm shrink-0 border border-amber-300 bg-white text-amber-900 hover:bg-amber-50 disabled:opacity-50">
+                      {laterBusy ? pendingCopy(tr).saving : pendingCopy(tr).button}
+                    </button>
+                  )}
+                  <p className="hidden min-w-0 flex-1 text-[10px] text-[#175022]/45 lg:block">
+                    {tr ? 'Yanıtlarınız güvenli şekilde kaydedilir.' : 'Your answers are saved securely.'}
                   </p>
                   <button
                     onClick={() => {
@@ -5416,9 +5450,9 @@ export function QuestionnaireTab({
                         : '';
                       window.dispatchEvent(new CustomEvent('carbonless:assistant', { detail: { open: true, prefill } }));
                     }}
-                    className="flex items-center gap-1.5 rounded-full border border-[#2ABD41]/40 bg-[#F1FCF2] px-3 py-1.5 text-[11px] font-bold text-[#175022] shadow-sm transition hover:border-[#2ABD41] hover:bg-[#DEFAE1]"
+                    className="app-btn app-btn-sm ml-auto shrink-0 border border-[#2ABD41]/40 bg-[#F1FCF2] text-[#175022] transition hover:border-[#2ABD41] hover:bg-[#DEFAE1]"
                   >
-                    <HelpCircle className="h-3 w-3" />
+                    <HelpCircle />
                     {tr ? 'AI Yardımı' : 'Ask AI Help'}
                   </button>
                 </div>
@@ -5476,11 +5510,6 @@ export function QuestionnaireTab({
               <option key={o.value} value={o.value}>{o.label?.[lang] || o.value}</option>
             ))}
           </select>
-          {sameYearWarning(reuseYear) && (
-            <p role="alert" className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
-              {sameYearWarning(reuseYear)}
-            </p>
-          )}
         </div>
       </ConfirmDialog>
     </div>
@@ -5490,7 +5519,11 @@ export function QuestionnaireTab({
 // ─────────────────────────────────────────────────────────────────────────────
 // Free Chat Tab
 // ─────────────────────────────────────────────────────────────────────────────
-function FreeChatTab({ language, summary, entries, targets, fetchData, compact = false, prefill = null }) {
+function FreeChatTab({ language, summary, entries, targets, fetchData, compact = false, prefill = null, inventoryId = null }) {
+  // The inventory the user is working in: sent with every message so the assistant answers from that
+  // inventory only (a ref, so the send callback always reads the current one).
+  const inventoryIdRef = useRef(inventoryId);
+  inventoryIdRef.current = inventoryId;
   // Local language toggle — EN / TR, initialized from app-level language prop.
   // This component mounts once and stays mounted (chatMounted never flips
   // back to false), so without the effect below this initial value would be
@@ -5816,11 +5849,21 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
       // language) — send it so the backend replies in the language actually
       // selected in this chat, instead of guessing from the message text alone.
       const currentLang = trRef.current ? 'tr' : 'en';
-      const res = await api.sendChatMessage(sessionId, content, currentLang);
+      const res = await api.sendChatMessage(sessionId, content, currentLang, inventoryIdRef.current);
       if (!isMountedRef.current) return;
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        if (isMountedRef.current) {
+        if (isMountedRef.current && typeof d.code === 'string' && d.code.startsWith('inventory_')) {
+          // The inventory this chat was working in is gone (deleted elsewhere) or not valid: nothing was
+          // sent or saved, and nothing is answered from another inventory or the whole year. Ask for a
+          // valid choice, refresh the list, and give the text back so it can be sent again.
+          setMessages(prev => prev.slice(0, -1));
+          setInput(content); inputValueRef.current = content;
+          setError(trRef.current
+            ? 'Seçili envanter artık yok (başka bir yerde silinmiş olabilir). Envanter listesi yenilendi — üstteki seçiciden geçerli bir envanter seçip mesajınızı tekrar gönderin.'
+            : 'The selected inventory no longer exists (it may have been deleted elsewhere). The inventory list was refreshed — choose a valid inventory in the selector at the top and send your message again.');
+          window.dispatchEvent(new CustomEvent('carbonless:emissions-updated', { detail: {} }));
+        } else if (isMountedRef.current) {
           setError(d.error || (trRef.current ? 'Bir hata oluştu.' : 'Something went wrong.'));
           setFailedQuestion(content);
         }
@@ -6784,7 +6827,7 @@ const ASSISTANT_PANEL_STYLES = `
 }
 `;
 
-export function InventoryAssistant({ open, onClose, prefill, language = 'en', summary, entries, targets, fetchData, docked = false, floating = false }) {
+export function InventoryAssistant({ open, onClose, prefill, language = 'en', summary, entries, targets, fetchData, docked = false, floating = false, inventoryId = null }) {
   const tr = language === 'tr';
   const panelRef = useRef(null);
   const openerRef = useRef(null);
@@ -7024,6 +7067,7 @@ export function InventoryAssistant({ open, onClose, prefill, language = 'en', su
             fetchData={fetchData}
             compact
             prefill={prefill}
+            inventoryId={inventoryId}
           />
         </div>
       </div>

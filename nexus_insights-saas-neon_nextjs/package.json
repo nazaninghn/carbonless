@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint src/ --ext .js,.jsx,.ts,.tsx",
-    "test:unit": "node scripts/test-carboniq-validation.mjs && node scripts/test-calc-feedback.mjs && node scripts/test-unit-input.mjs && node scripts/test-pending-questions.mjs",
+    "test:unit": "node scripts/test-carboniq-validation.mjs && node scripts/test-calc-feedback.mjs && node scripts/test-unit-input.mjs && node scripts/test-pending-questions.mjs && node scripts/test-active-inventory.mjs && node scripts/test-deferral.mjs && node scripts/test-attention.mjs && node scripts/test-dashboard-insights.mjs && node scripts/test-session-idle.mjs && node scripts/test-auth-routes.mjs && node scripts/audit-route-graph.mjs && node scripts/generate-deferral-policy.mjs --check && node scripts/generate-deferral-parity.mjs --check",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed"

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Play, Eye, MoreVertical, Trash2, FileText, FileBadge, Package, Loader2, Pencil } from 'lucide-react';
+import { Plus, Play, Eye, Trash2, FileText, FileBadge, Package, Loader2, Pencil, FilePlus2, CalendarDays, Clock, User } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 import { useInventory } from './InventoryWorkflow';
 import { getPermissions } from '@/lib/permissions';
@@ -22,6 +22,9 @@ export default function InventoryLibrary({ tr = false }) {
   // state: an empty "No inventories yet" told users their inventories were
   // gone and invited them to start a duplicate.
   const [loadFailed, setLoadFailed] = useState(false);
+  // Why it failed: 'network' (no answer), 'server' (the server answered with a 5xx), 'auth' (401/403) or
+  // 'other'. Only the kind and the status number are kept; the server's own text is never shown.
+  const [loadError, setLoadError] = useState({ kind: 'network', status: 0 });
   const [showNamingDialog, setShowNamingDialog] = useState(false);
   const [surveyName, setSurveyName] = useState('');
   // Reporting year of the new inventory — asked here so it is not left to a
@@ -72,14 +75,22 @@ export default function InventoryLibrary({ tr = false }) {
     setLoadingReports(true);
     try {
       const res = await api.listReports();
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) {
+        const status = Number(res.status) || 0;
+        setLoadError({ kind: status >= 500 ? 'server' : (status === 401 || status === 403) ? 'auth' : 'other', status });
+        console.warn('Inventory list request failed with HTTP', status);
+        setLoadFailed(true);
+        return;
+      }
       const data = await res.json().catch(() => ({}));
       if (data.reports) {
         setReports(data.reports);
       }
       setLoadFailed(false);
     } catch (e) {
-      console.error('Failed to load inventories:', e);
+      // No answer at all (offline, server down, request blocked)
+      setLoadError({ kind: 'network', status: 0 });
+      console.warn('Inventory list request got no answer:', e?.message || e);
       setLoadFailed(true);
     } finally {
       setLoadingReports(false);
@@ -158,20 +169,18 @@ export default function InventoryLibrary({ tr = false }) {
   };
 
   // What deleting an inventory also removes, shown in the confirm step: the
-  // emission records its questionnaire created — unless another inventory
-  // covers the same year and shares them (the backend applies the same rule).
+  // emission records of THIS inventory only. Other inventories are never touched,
+  // even when they cover the same reporting year.
   const deleteNote = (report) => {
     const year = report.reporting_year;
-    if (!year) return tr ? 'Silinsin mi?' : 'Delete?';
-    const shared = reports.some(r => r.report_id !== report.report_id && String(r.reporting_year) === String(year));
-    if (shared) {
+    if (!year) {
       return tr
-        ? `Silinsin mi? ${year} için başka bir envanter olduğundan emisyon kayıtları silinmez.`
-        : `Delete? Another inventory covers ${year}, so the emission records are kept.`;
+        ? 'Bu envanter ve kayıtları silinir; diğer envanterlere dokunulmaz.'
+        : 'This inventory and its records are deleted; other inventories are not touched.';
     }
     return tr
-      ? `Silinsin mi? Bu anketten oluşan ${year} emisyon kayıtları da silinir (sohbet ve formla girilenler kalır).`
-      : `Delete? The ${year} emission records created by this questionnaire are deleted too (chat and form entries stay).`;
+      ? `Yalnızca bu envanterin ${year} emisyon kayıtları silinir; diğer envanterlere dokunulmaz.`
+      : `Only this inventory's ${year} emission records are deleted; other inventories are not touched.`;
   };
 
   const saveRename = async (reportId) => {
@@ -190,64 +199,6 @@ export default function InventoryLibrary({ tr = false }) {
     } catch {
       setRenameError(tr ? 'Bağlantı hatası' : 'Connection error');
     }
-  };
-
-  // The inventory's name, renamable in place, with what does not add up:
-  // a year in the name that is not its reporting year, and another inventory
-  // of the same reporting year (the two share their emission records).
-  const titleBlock = (report) => {
-    const titleYear = (String(report.title || '').match(/\b(19|20)\d{2}\b/) || [])[0];
-    const yearMismatch = titleYear && report.reporting_year && Number(titleYear) !== Number(report.reporting_year);
-    const sameYear = report.reporting_year
-      && reports.some(r => r.report_id !== report.report_id && String(r.reporting_year) === String(report.reporting_year));
-    return (
-      <>
-        {renamingId === report.report_id ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              value={renameValue}
-              onChange={e => setRenameValue(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') saveRename(report.report_id); if (e.key === 'Escape') setRenamingId(null); }}
-              maxLength={200}
-              autoFocus
-              aria-label={tr ? 'Envanter adı' : 'Inventory name'}
-              className="min-w-0 flex-1 rounded-lg border border-[#175022]/20 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#8BEA99]"
-            />
-            <button onClick={() => saveRename(report.report_id)} className="rounded-full btn-dark px-3 py-1.5 text-xs font-bold transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1">
-              {tr ? 'Kaydet' : 'Save'}
-            </button>
-            <button onClick={() => setRenamingId(null)} className="rounded-full border border-[#175022]/15 px-3 py-1.5 text-xs font-bold text-[#175022]/60 transition-all duration-200 hover:bg-[#175022]/5 hover:text-[#175022] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1">
-              {tr ? 'Vazgeç' : 'Cancel'}
-            </button>
-            {renameError && <span className="w-full text-xs text-red-600">{renameError}</span>}
-          </div>
-        ) : (
-          <div className="flex min-w-0 items-center gap-2">
-            <p className="font-semibold text-[#175022] truncate">{report.title}</p>
-            {canRename && (
-              <button
-                onClick={() => { setRenamingId(report.report_id); setRenameValue(report.title || ''); setRenameError(''); }}
-                className="shrink-0 rounded text-[11px] font-semibold text-[#175022]/50 transition-colors duration-200 hover:text-[#175022] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
-              >
-                {tr ? 'Yeniden adlandır' : 'Rename'}
-              </button>
-            )}
-          </div>
-        )}
-        {yearMismatch && (
-          <p className="mt-1 text-[11px] font-semibold text-amber-700">
-            {tr ? `Adındaki yıl (${titleYear}) raporlama yılıyla (${report.reporting_year}) uyuşmuyor.`
-                : `The year in the name (${titleYear}) differs from the reporting year (${report.reporting_year}).`}
-          </p>
-        )}
-        {sameYear && (
-          <p className="mt-1 text-[11px] font-semibold text-amber-700">
-            {tr ? `${report.reporting_year} için başka bir envanter daha var — ikisi aynı emisyon kayıtlarını paylaşır.`
-                : `Another inventory also covers ${report.reporting_year} — the two share the same emission records.`}
-          </p>
-        )}
-      </>
-    );
   };
 
   // `kind` selects which document: the three-report pack, the full ISO 14064-1
@@ -302,8 +253,6 @@ export default function InventoryLibrary({ tr = false }) {
   const nameYear = (surveyName.match(/\b(19|20)\d{2}\b/) || [])[0];
   const nameYearMismatch = nameYear && surveyYear && nameYear !== surveyYear;
   const completed = reports.filter(r => r.status === 'completed');
-  // An inventory already started or finished for the year picked in the new-inventory dialog.
-  const sameYearReport = reports.find(r => String(r.reporting_year) === String(surveyYear)) || null;
 
   if (loadingReports) {
     return (
@@ -321,9 +270,20 @@ export default function InventoryLibrary({ tr = false }) {
             {tr ? 'Envanterleriniz yüklenemedi' : "Your inventories couldn't be loaded"}
           </p>
           <p className="mt-1 text-xs text-red-700/80">
-            {tr
-              ? 'İnternet bağlantınızı kontrol edip tekrar deneyin. Kayıtlı envanterleriniz silinmedi.'
-              : 'Check your internet connection and try again. Your saved inventories are not deleted.'}
+            {{
+              network: tr
+                ? 'Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin. Kayıtlı envanterleriniz silinmedi.'
+                : 'The server could not be reached. Check your internet connection and try again. Your saved inventories are not deleted.',
+              server: tr
+                ? `Sunucu envanter listesini yüklerken bir hata verdi (HTTP ${loadError.status}). Bu sizin bağlantınızdan kaynaklanmıyor. Biraz sonra tekrar deneyin; sürerse destek ekibine bildirin. Kayıtlı envanterleriniz silinmedi.`
+                : `The server hit an error while loading the inventory list (HTTP ${loadError.status}). This is not caused by your connection. Try again in a moment; if it keeps happening, tell support. Your saved inventories are not deleted.`,
+              auth: tr
+                ? 'Oturumunuzun süresi dolmuş olabilir veya bu envanterlere erişim izniniz yok. Yeniden giriş yapıp tekrar deneyin.'
+                : 'Your session may have expired, or you may not have access to these inventories. Sign in again and retry.',
+              other: tr
+                ? `Envanter listesi yüklenemedi (HTTP ${loadError.status}). Tekrar deneyin. Kayıtlı envanterleriniz silinmedi.`
+                : `The inventory list could not be loaded (HTTP ${loadError.status}). Try again. Your saved inventories are not deleted.`,
+            }[loadError.kind] || ''}
           </p>
           <button
             type="button"
@@ -337,316 +297,402 @@ export default function InventoryLibrary({ tr = false }) {
     );
   }
 
-  return (
-    <div className="w-full h-full min-h-0 overflow-y-auto">
-    <div className="w-full max-w-4xl mx-auto p-4 sm:p-5 space-y-5 sm:space-y-6">
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {error}
-        </div>
-      )}
+  // ── view helpers (plain functions, not components: the rename input must keep focus while typing) ──────────────
+  const fmtDate = (value) => (value ? new Date(value).toLocaleDateString(tr ? 'tr-TR' : 'en-GB') : '—');
 
-      {deleteError && (
-        <div role="alert" className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {deleteError}
-        </div>
-      )}
+  const statusOf = (report) => {
+    if (report.status === 'completed') {
+      return { label: tr ? 'Tamamlandı' : 'Completed', cls: 'bg-[#2ABD41]/12 text-[#175022] ring-[#2ABD41]/30', dot: 'bg-[#2ABD41]' };
+    }
+    if (report.status === 'in_progress') {
+      return { label: tr ? 'Devam ediyor' : 'In progress', cls: 'bg-amber-50 text-amber-800 ring-amber-200', dot: 'bg-amber-500' };
+    }
+    return { label: tr ? 'Taslak' : 'Draft', cls: 'bg-[#F1F5F2] text-[#4B5B50] ring-[#DCE6DE]', dot: 'bg-[#8A988E]' };
+  };
 
-      {!canEdit && (
-        <div role="status" className="p-4 bg-[#8BEA99]/10 border border-[#8BEA99]/40 rounded-lg text-[#175022] text-sm">
-          {tr
-            ? 'Denetçi rolünüz salt okunur: envanterleri görüntüleyebilir ve raporlarını indirebilirsiniz, ancak yeni envanter başlatamaz, düzenleyemez veya silemezsiniz.'
-            : 'Your auditor role is read-only: you can view inventories and download their reports, but not start, edit or delete one.'}
-        </div>
-      )}
+  const ICON_BTN = 'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1 disabled:opacity-60 lg:h-8 lg:w-8';
+  const ICON_BTN_NEUTRAL = `${ICON_BTN} border-[#DCE6DE] bg-white text-[#175022] hover:border-[#BFE3C6] hover:bg-[#F1FCF2]`;
+  const ICON_BTN_DANGER = `${ICON_BTN} border-red-100 bg-white text-red-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600`;
+  const ACT_BTN = 'h-10 flex-1 lg:h-[var(--app-control-h-sm)] lg:flex-none transition-colors duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1';
 
-      {/* Start New */}
-      {canEdit && (
-      <div className="p-4 bg-gradient-to-br from-[#8BEA99]/10 to-[#8BEA99]/5 rounded-xl border border-[#8BEA99]/40">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-[#175022] mb-1">
-              {tr ? 'Yeni Envanter' : 'New Inventory'}
-            </h2>
-            <p className="text-xs text-[#175022]/70">
-              {tr ? 'Yeni bir karbon envanteri oluşturun' : 'Create a new carbon inventory'}
-            </p>
+  const progressBlock = (report) => {
+    const percent = Math.max(0, Math.min(100, Number(report.progress?.percent) || 0));
+    const total = report.progress?.total;
+    return (
+      <div className="min-w-0">
+        <div className="mb-1 flex items-baseline justify-between gap-2">
+          <span className="text-[11px] font-semibold text-[#6B7A70]">{tr ? 'İlerleme' : 'Progress'}</span>
+          <span className="text-[13px] font-bold tabular-nums text-[#0E2A14]">{percent}%</span>
+        </div>
+        <div
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={percent}
+          aria-label={tr ? 'Tamamlanma yüzdesi' : 'Completion percentage'}
+          className="h-1.5 w-full overflow-hidden rounded-full bg-[#E6EDE7]"
+        >
+          <div className="h-full rounded-full bg-gradient-to-r from-[#1D9C31] to-[#2ABD41]" style={{ width: `${percent}%` }} />
+        </div>
+        {/* No total before the first answer: the survey works it out from the answers (it used to read "0 / 120"). */}
+        <p className="mt-1 text-[11px] text-[#6B7A70]">
+          {total
+            ? `${report.progress?.completed || 0} / ${total} ${tr ? 'soru yanıtlandı' : 'questions answered'}`
+            : (tr ? 'Henüz başlanmadı' : 'Not started yet')}
+        </p>
+      </div>
+    );
+  };
+
+  const metaChip = (Icon, text, strong = false) => (
+    <span className={`inline-flex items-center gap-1 text-[11.5px] ${strong ? 'font-semibold text-[#175022]' : 'text-[#6B7A70]'}`}>
+      <Icon className="h-3 w-3 shrink-0 text-[#2ABD41]" aria-hidden="true" />
+      {text}
+    </span>
+  );
+
+  const inventoryCard = (report) => {
+    const done = report.status === 'completed';
+    const st = statusOf(report);
+    return (
+      <div
+        key={report.report_id}
+        className={`grid gap-x-5 gap-y-3 rounded-[14px] border bg-white p-3 shadow-[0_1px_2px_rgba(16,40,20,0.04)] transition-colors duration-150 hover:border-[#BFE3C6] lg:grid-cols-[minmax(0,1.35fr)_minmax(190px,1fr)_auto] lg:items-center ${done ? 'border-[#CFE9D4]' : 'border-[#E6EDE7]'}`}
+      >
+        {/* identity */}
+        <div className="min-w-0">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            {renamingId === report.report_id ? null : titleHeading(report)}
+            <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ring-1 ring-inset ${st.cls}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${st.dot}`} aria-hidden="true" />
+              {st.label}
+            </span>
           </div>
-          <button
-            onClick={openNewDialog}
-            disabled={loading}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 text-sm btn-dark font-semibold rounded-full transition-all duration-200 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2 disabled:hover:translate-y-0 disabled:hover:shadow-sm shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            {tr ? 'Başla' : 'Start'}
-          </button>
+          {titleEditor(report)}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {report.reporting_year && metaChip(CalendarDays, `${tr ? 'Raporlama yılı' : 'Reporting year'}: ${report.reporting_year}`, true)}
+            {metaChip(Clock, `${done ? (tr ? 'Tamamlandı' : 'Completed') : (tr ? 'Güncelleme' : 'Updated')}: ${fmtDate(done ? (report.signed_at || report.updated_at) : report.updated_at)}`)}
+            {report.created_by && metaChip(User, `${tr ? 'Oluşturan' : 'Created by'}: ${report.created_by}`)}
+          </div>
+          {done && (report.advisor_pending > 0 || report.advisor_rejected > 0) && (
+            <p className="mt-1.5 text-[11.5px] font-semibold text-amber-800">
+              {[
+                report.advisor_pending > 0 && (tr ? `${report.advisor_pending} danışman onayı bekliyor` : `${report.advisor_pending} advisor approval${report.advisor_pending > 1 ? 's' : ''} waiting`),
+                report.advisor_rejected > 0 && (tr ? `${report.advisor_rejected} danışman maddesi reddedildi — cevabı düzeltin` : `${report.advisor_rejected} advisor item${report.advisor_rejected > 1 ? 's' : ''} rejected — correct the answer`),
+              ].filter(Boolean).join(' · ')}
+            </p>
+          )}
+          {/* An answer fixed after the sign-off is already in the numbers; the card must not move its date to that day. */}
+          {done && report.edited_after_signing_at && (
+            <div role="status" className="mt-1.5 flex flex-wrap items-center gap-2 text-[11.5px] font-semibold text-amber-800">
+              <span>
+                {tr
+                  ? `${new Date(report.edited_after_signing_at).toLocaleDateString('tr-TR')} tarihinde düzenlendi — imza yenilenmedi.`
+                  : `Edited on ${new Date(report.edited_after_signing_at).toLocaleDateString('en-GB')} — not signed again.`}
+              </span>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => continueInventory(report.report_id, '7C-2')}
+                  className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 transition hover:bg-amber-100"
+                >
+                  {tr ? 'Yeniden imzala' : 'Sign again'}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* progress (completed inventories show the full bar too: the number comes from the same data) */}
+        {progressBlock(report)}
+
+        {/* actions */}
+        <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:justify-end">
+          {done ? (
+            <>
+              {[
+                ['pack', Package, tr ? 'Tam rapor paketi indir (3 rapor)' : 'Download full report pack (3 reports)'],
+                ['iso', FileBadge, tr ? 'ISO 14064-1 Envanter Raporu İndir' : 'Download ISO 14064-1 inventory report'],
+                ['profile', FileText, tr ? 'Envanter profili (özet) indir' : 'Download inventory profile (summary)'],
+              ].map(([kind, Icon, label]) => (
+                <button
+                  key={kind}
+                  onClick={() => handleDownloadPdf(report.report_id, kind)}
+                  disabled={!!pdfDownloadingId}
+                  aria-busy={pdfDownloadingId === `${report.report_id}:${kind}` ? 'true' : undefined}
+                  aria-label={label}
+                  title={label}
+                  className={ICON_BTN_NEUTRAL}
+                >
+                  {pdfDownloadingId === `${report.report_id}:${kind}`
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <Icon className="h-3.5 w-3.5" />}
+                </button>
+              ))}
+              {canEdit && (
+                <button
+                  onClick={() => handleEditCompleted(report.report_id)}
+                  title={tr ? 'Bir bölümü düzelt' : 'Fix a section'}
+                  className={`app-btn app-btn-sm border border-[#175022]/25 bg-white text-[#175022] hover:border-[#175022]/45 hover:bg-[#F1FCF2] ${ACT_BTN}`}
+                >
+                  <Pencil />
+                  {tr ? 'Düzenle' : 'Edit'}
+                </button>
+              )}
+              <button
+                onClick={() => handleViewReport(report.report_id, report.reporting_year)}
+                className={`app-btn app-btn-sm btn-dark ${ACT_BTN}`}
+              >
+                <Eye />
+                {tr ? 'Görüntüle' : 'View'}
+              </button>
+              {/* A completed inventory carries approved figures and a signed report: only an owner/admin deletes it. */}
+              {canEdit && canManage && deleteTrigger(report)}
+            </>
+          ) : (
+            canEdit && (
+              <>
+                <button
+                  onClick={() => handleContinue(report.report_id)}
+                  className={`app-btn app-btn-sm btn-dark ${ACT_BTN}`}
+                >
+                  <Play />
+                  {tr ? 'Devam Et' : 'Continue'}
+                </button>
+                {(!report.created_by || canManage) && deleteTrigger(report)}
+              </>
+            )
+          )}
         </div>
       </div>
-      )}
+    );
+  };
 
-      {/* Drafts */}
-      {drafts.length > 0 && (
-        <div>
-          <h3 className="text-sm font-bold text-[#175022] mb-2 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#175022]"></span>
-            {tr ? 'Taslaklar' : 'Draft Inventories'}
-            <span className="ml-2 text-xs text-[#175022]/50">({drafts.length})</span>
-          </h3>
-          <div className="space-y-2">
-            {drafts.map(report => (
-              <div
-                key={report.report_id}
-                className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 border border-[#175022]/20 rounded-lg bg-white hover:bg-[#175022]/5 transition"
-              >
-                <div className="flex-1 min-w-0">
-                  {titleBlock(report)}
-                  {report.created_by && (
-                    <p className="text-xs text-[#175022]/50 mt-0.5 truncate">
-                      {tr ? 'Oluşturan' : 'Created by'}: {report.created_by}
-                    </p>
-                  )}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#175022]/60 mt-2">
-                    {report.reporting_year && (
-                      <span className="font-semibold text-[#175022]/80">{tr ? 'Raporlama yılı' : 'Reporting year'}: {report.reporting_year}</span>
-                    )}
-                    <span>{report.progress?.percent || 0}% {tr ? 'tamamlandı' : 'complete'}</span>
-                    {/* No total before the first answer: the survey works it
-                        out from the answers (it used to read "0 / 120"). */}
-                    <span>{report.progress?.total
-                      ? `${report.progress?.completed || 0} / ${report.progress.total} ${tr ? 'soru' : 'questions'}`
-                      : (tr ? 'Henüz başlanmadı' : 'Not started yet')}</span>
-                    <span>{tr ? 'Güncelleme' : 'Updated'}: {new Date(report.updated_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB')}</span>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-                  {confirmDeleteId === report.report_id ? (
-                    <>
-                      <span className="max-w-xs text-xs font-bold text-red-500">
-                        {deleteNote(report)}
-                      </span>
-                      <button
-                        onClick={() => handleDelete(report.report_id)}
-                        disabled={deletingId === report.report_id}
-                        className="px-3 py-2 btn-danger text-xs font-bold rounded-full transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-1"
-                      >
-                        {tr ? 'Evet' : 'Yes'}
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteId(null)}
-                        className="px-3 py-2 border border-[#175022]/15 text-xs font-bold text-[#175022]/60 rounded-full transition-all duration-200 hover:bg-[#175022]/5 hover:text-[#175022] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
-                      >
-                        {tr ? 'Hayır' : 'No'}
-                      </button>
-                    </>
-                  ) : (
-                    canEdit && <>
-                      <button
-                        onClick={() => handleContinue(report.report_id)}
-                        className="flex items-center justify-center gap-2 px-4 py-2 btn-dark text-sm font-semibold rounded-full transition-all duration-200 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
-                      >
-                        <Play className="w-4 h-4" />
-                        {tr ? 'Devam Et' : 'Continue'}
-                      </button>
-                      {(!report.created_by || canManage) && (
-                      <button
-                        onClick={() => setConfirmDeleteId(report.report_id)}
-                        title={tr ? 'Sil' : 'Delete'}
-                        className="btn-icon btn-icon-danger btn-sm shrink-0 active:scale-95"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+  const deleteTrigger = (report) => {
+    const label = tr ? 'Sil' : 'Delete';
+    return (
+      <button
+        onClick={() => setConfirmDeleteId(report.report_id)}
+        title={label}
+        aria-label={label}
+        className={ICON_BTN_DANGER}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    );
+  };
 
-      {/* Completed */}
-      {completed.length > 0 && (
-        <div>
-          <h3 className="text-sm font-bold text-[#175022] mb-2 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#8BEA99]"></span>
-            {tr ? 'Tamamlanan Envanterler' : 'Completed Inventories'}
-            <span className="ml-2 text-xs text-[#175022]/50">({completed.length})</span>
-          </h3>
-          <div className="space-y-2">
-            {completed.map(report => (
-              <div
-                key={report.report_id}
-                className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 border border-[#8BEA99]/40 rounded-lg bg-[#8BEA99]/5 hover:bg-[#8BEA99]/10 transition"
-              >
-                <div className="flex-1 min-w-0">
-                  {titleBlock(report)}
-                  {report.created_by && (
-                    <p className="text-xs text-[#175022]/50 mt-0.5 truncate">
-                      {tr ? 'Oluşturan' : 'Created by'}: {report.created_by}
-                    </p>
-                  )}
-                  <p className="text-xs text-[#175022]/60 mt-1">
-                    {report.reporting_year} • {tr ? 'Tamamlandı' : 'Completed'} {new Date(report.signed_at || report.updated_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB')}
-                  </p>
-                  {/* Danışman Onayı items still open, or rejected and not yet
-                      corrected — a signed inventory said nothing of them. */}
-                  {(report.advisor_pending > 0 || report.advisor_rejected > 0) && (
-                    <p className="mt-1 text-xs font-semibold text-amber-800">
-                      {[
-                        report.advisor_pending > 0 && (tr ? `${report.advisor_pending} danışman onayı bekliyor` : `${report.advisor_pending} advisor approval${report.advisor_pending > 1 ? 's' : ''} waiting`),
-                        report.advisor_rejected > 0 && (tr ? `${report.advisor_rejected} danışman maddesi reddedildi — cevabı düzeltin` : `${report.advisor_rejected} advisor item${report.advisor_rejected > 1 ? 's' : ''} rejected — correct the answer`),
-                      ].filter(Boolean).join(' · ')}
-                    </p>
-                  )}
-                  {/* An answer fixed after the sign-off is already in the
-                      numbers; the card used to move its date to that day as
-                      if it had been signed again. */}
-                  {report.edited_after_signing_at && (
-                    <div role="status" className="mt-1.5 flex flex-wrap items-center gap-2 text-xs font-semibold text-amber-800">
-                      <span>
-                        {tr
-                          ? `${new Date(report.edited_after_signing_at).toLocaleDateString('tr-TR')} tarihinde düzenlendi — imza yenilenmedi.`
-                          : `Edited on ${new Date(report.edited_after_signing_at).toLocaleDateString('en-GB')} — not signed again.`}
-                      </span>
-                      {canEdit && (
-                        <button
-                          type="button"
-                          onClick={() => continueInventory(report.report_id, '7C-2')}
-                          className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-800 transition hover:bg-amber-100"
-                        >
-                          {tr ? 'Yeniden imzala' : 'Sign again'}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-                  {confirmDeleteId === report.report_id ? (
-                    <>
-                      <span className="max-w-xs text-xs font-bold text-red-500">
-                        {deleteNote(report)}
-                      </span>
-                      <button
-                        onClick={() => handleDelete(report.report_id)}
-                        disabled={deletingId === report.report_id}
-                        className="px-3 py-2 btn-danger text-xs font-bold rounded-full transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-1"
-                      >
-                        {tr ? 'Evet' : 'Yes'}
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteId(null)}
-                        className="px-3 py-2 border border-[#175022]/15 text-xs font-bold text-[#175022]/60 rounded-full transition-all duration-200 hover:bg-[#175022]/5 hover:text-[#175022] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
-                      >
-                        {tr ? 'Hayır' : 'No'}
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => handleDownloadPdf(report.report_id, 'pack')}
-                        disabled={!!pdfDownloadingId}
-                        aria-busy={pdfDownloadingId === `${report.report_id}:pack` ? 'true' : undefined}
-                        aria-label={tr ? 'Tam rapor paketi indir (3 rapor)' : 'Download full report pack (3 reports)'}
-                        title={tr ? 'Tam rapor paketi indir (3 rapor)'
-                                  : 'Download full report pack (3 reports)'}
-                        className="btn-icon btn-sm shrink-0 rounded-full"
-                      >
-                        {pdfDownloadingId === `${report.report_id}:pack`
-                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          : <Package className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        onClick={() => handleDownloadPdf(report.report_id, 'iso')}
-                        disabled={!!pdfDownloadingId}
-                        aria-busy={pdfDownloadingId === `${report.report_id}:iso` ? 'true' : undefined}
-                        aria-label={tr ? 'ISO 14064-1 Envanter Raporu İndir' : 'Download ISO 14064-1 inventory report'}
-                        title={tr ? 'ISO 14064-1 Envanter Raporu İndir'
-                                  : 'Download ISO 14064-1 inventory report'}
-                        className="btn-icon btn-sm shrink-0 rounded-full"
-                      >
-                        {pdfDownloadingId === `${report.report_id}:iso`
-                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          : <FileBadge className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        onClick={() => handleDownloadPdf(report.report_id, 'profile')}
-                        disabled={!!pdfDownloadingId}
-                        aria-busy={pdfDownloadingId === `${report.report_id}:profile` ? 'true' : undefined}
-                        aria-label={tr ? 'Envanter profili (özet) indir' : 'Download inventory profile (summary)'}
-                        title={tr ? 'Envanter profili (özet) indir'
-                                  : 'Download inventory profile (summary)'}
-                        className="btn-icon btn-sm shrink-0 rounded-full"
-                      >
-                        {pdfDownloadingId === `${report.report_id}:profile`
-                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          : <FileText className="w-3.5 h-3.5" />}
-                      </button>
-                      {canEdit && (
-                      <button
-                        onClick={() => handleEditCompleted(report.report_id)}
-                        title={tr ? 'Bir bölümü düzelt' : 'Fix a section'}
-                        className="flex items-center justify-center gap-2 px-4 py-2 border border-[#175022]/30 text-[#175022] text-sm font-semibold rounded-full transition-all duration-200 hover:bg-[#1A7B2A]/10 hover:border-[#175022]/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
-                      >
-                        <Pencil className="w-4 h-4" />
-                        {tr ? 'Düzenle' : 'Edit'}
-                      </button>
-                      )}
-                      <button
-                        onClick={() => handleViewReport(report.report_id, report.reporting_year)}
-                        className="flex items-center justify-center gap-2 px-4 py-2 btn-dark text-sm font-semibold rounded-full transition-all duration-200 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
-                      >
-                        <Eye className="w-4 h-4" />
-                        {tr ? 'Görüntüle' : 'View'}
-                      </button>
-                      {/* A completed inventory carries approved figures and a signed
-                          report: only an owner/admin deletes it, not its creator. */}
-                      {canEdit && canManage && (
-                      <button
-                        onClick={() => setConfirmDeleteId(report.report_id)}
-                        title={tr ? 'Sil' : 'Delete'}
-                        className="btn-icon btn-icon-danger btn-sm shrink-0 active:scale-95"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+  // The name; renaming happens in place (titleEditor) and the plain name hides meanwhile.
+  const titleHeading = (report) => (
+    <div className="flex min-w-0 items-center gap-1.5">
+      <p className="min-w-0 truncate text-[15px] font-bold leading-tight text-[#0E2A14]" title={report.title}>{report.title}</p>
+      {canRename && (
+        <button
+          onClick={() => { setRenamingId(report.report_id); setRenameValue(report.title || ''); setRenameError(''); }}
+          className="inline-flex min-h-[26px] shrink-0 items-center gap-1 rounded-md border border-transparent px-1.5 text-[11px] font-semibold text-[#175022]/70 transition-colors hover:border-[#DCE6DE] hover:bg-[#F1FCF2] hover:text-[#175022] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
+        >
+          <Pencil className="h-3 w-3" aria-hidden="true" />
+          {tr ? 'Yeniden adlandır' : 'Rename'}
+        </button>
       )}
+    </div>
+  );
 
-      {/* Empty State */}
-      {drafts.length === 0 && completed.length === 0 && !loading && (
-        <div className="text-center py-8">
-          <p className="text-sm text-[#175022]/60 mb-4">
-            {tr ? 'Henüz envanter yok' : 'No inventories yet'}
-          </p>
-          {/* An auditor can't start one (the notice above says so). */}
-          {canEdit && (
-            <button
-              onClick={openNewDialog}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm btn-dark font-semibold rounded-full transition-all duration-200 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
-            >
-              <Plus className="w-4 h-4" />
-              {tr ? 'İlk envanterinizi oluşturun' : 'Create your first inventory'}
+  const titleEditor = (report) => {
+    const titleYear = (String(report.title || '').match(/\b(19|20)\d{2}\b/) || [])[0];
+    const yearMismatch = titleYear && report.reporting_year && Number(titleYear) !== Number(report.reporting_year);
+    return (
+      <>
+        {renamingId === report.report_id && (
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              value={renameValue}
+              onChange={e => setRenameValue(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') saveRename(report.report_id); if (e.key === 'Escape') setRenamingId(null); }}
+              maxLength={200}
+              autoFocus
+              aria-label={tr ? 'Envanter adı' : 'Inventory name'}
+              className="app-input min-w-0 flex-1"
+            />
+            <button onClick={() => saveRename(report.report_id)} className="app-btn app-btn-sm btn-dark">
+              {tr ? 'Kaydet' : 'Save'}
             </button>
+            <button onClick={() => setRenamingId(null)} className="app-btn app-btn-sm border border-[#DCE6DE] bg-white text-[#175022]/70 hover:bg-[#F1FCF2]">
+              {tr ? 'Vazgeç' : 'Cancel'}
+            </button>
+            {renameError && <span className="w-full text-xs text-red-600">{renameError}</span>}
+          </div>
+        )}
+        {yearMismatch && (
+          <p className="mt-1 text-[11px] font-semibold text-amber-700">
+            {tr ? `Adındaki yıl (${titleYear}) raporlama yılıyla (${report.reporting_year}) uyuşmuyor.`
+                : `The year in the name (${titleYear}) differs from the reporting year (${report.reporting_year}).`}
+          </p>
+        )}
+      </>
+    );
+  };
+
+  const sectionHeading = (dot, text, count) => (
+    <h3 className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-[#0E2A14]">
+      <span className={`h-2 w-2 rounded-full ${dot}`} aria-hidden="true" />
+      {text}
+      <span className="rounded-full bg-[#EEF4EF] px-1.5 py-px text-[10.5px] font-bold tabular-nums text-[#4B5B50]">{count}</span>
+    </h3>
+  );
+
+  const deleting = confirmDeleteId != null ? reports.find(r => r.report_id === confirmDeleteId) : null;
+
+  return (
+    <div className="w-full">
+      <div className="grid w-full gap-3 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
+        {/* ── New inventory: a compact action card; on wide screens it sits in the right rail ── */}
+        {canEdit && (
+          <div className="rounded-[14px] border border-[#CFE9D4] bg-gradient-to-br from-[#F1FCF2] to-white p-3 shadow-[0_1px_2px_rgba(16,40,20,0.04)] xl:order-2 xl:sticky xl:top-0">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between xl:flex-col xl:items-stretch">
+              <div className="flex min-w-0 items-center gap-3 xl:items-start">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#2ABD41]/14 text-[#1D9C31] ring-1 ring-[#2ABD41]/25">
+                  <FilePlus2 className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="text-[14px] font-bold leading-tight text-[#0E2A14]">{tr ? 'Yeni Envanter' : 'New Inventory'}</h2>
+                  <p className="mt-0.5 text-[12px] leading-snug text-[#6B7A70]">
+                    {tr
+                      ? 'Bağımsız yeni bir karbon envanteri oluşturun. Aynı raporlama yılında birden fazla envanter olabilir.'
+                      : 'Create another independent carbon inventory. Several inventories can share a reporting year.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={openNewDialog}
+                disabled={loading}
+                className="app-btn btn-dark h-10 w-full shrink-0 shadow-sm transition-colors duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2 sm:h-[var(--app-control-h)] sm:w-auto xl:w-full"
+              >
+                <Plus />
+                {tr ? 'Başla' : 'Start'}
+              </button>
+            </div>
+            {reports.length > 0 && (
+              <dl className="mt-3 hidden grid-cols-3 gap-2 border-t border-[#DCE9DE] pt-3 text-center xl:grid">
+                {[
+                  [reports.length, tr ? 'Toplam' : 'Total'],
+                  [drafts.length, tr ? 'Devam eden' : 'Open'],
+                  [completed.length, tr ? 'Tamamlanan' : 'Completed'],
+                ].map(([n, label]) => (
+                  <div key={label}>
+                    <dd className="text-[18px] font-bold leading-none tabular-nums text-[#0E2A14]">{n}</dd>
+                    <dt className="mt-1 text-[10.5px] font-semibold text-[#6B7A70]">{label}</dt>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </div>
+        )}
+
+        {/* ── Lists ── */}
+        <div className="min-w-0 space-y-4 xl:order-1">
+          {error && (
+            <div className="rounded-[10px] border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
           )}
+          {deleteError && (
+            <div role="alert" className="rounded-[10px] border border-red-200 bg-red-50 p-3 text-sm text-red-700">{deleteError}</div>
+          )}
+          {!canEdit && (
+            <div role="status" className="rounded-[10px] border border-[#8BEA99]/40 bg-[#8BEA99]/10 p-3 text-sm text-[#175022]">
+              {tr
+                ? 'Denetçi rolünüz salt okunur: envanterleri görüntüleyebilir ve raporlarını indirebilirsiniz, ancak yeni envanter başlatamaz, düzenleyemez veya silemezsiniz.'
+                : 'Your auditor role is read-only: you can view inventories and download their reports, but not start, edit or delete one.'}
+            </div>
+          )}
+
+          {drafts.length > 0 && (
+            <section aria-label={tr ? 'Taslaklar' : 'Draft Inventories'}>
+              {sectionHeading('bg-[#175022]', tr ? 'Taslaklar' : 'Draft Inventories', drafts.length)}
+              <div className="space-y-2">{drafts.map(inventoryCard)}</div>
+            </section>
+          )}
+
+          {completed.length > 0 && (
+            <section aria-label={tr ? 'Tamamlanan Envanterler' : 'Completed Inventories'}>
+              {sectionHeading('bg-[#2ABD41]', tr ? 'Tamamlanan Envanterler' : 'Completed Inventories', completed.length)}
+              <div className="space-y-2">{completed.map(inventoryCard)}</div>
+            </section>
+          )}
+
+          {/* Empty State */}
+          {drafts.length === 0 && completed.length === 0 && !loading && (
+            <div className="rounded-[14px] border border-dashed border-[#CFE9D4] bg-white px-4 py-8 text-center">
+              <p className="text-sm font-semibold text-[#0E2A14]">{tr ? 'Henüz envanter yok' : 'No inventories yet'}</p>
+              {/* An auditor can't start one (the notice above says so). */}
+              {canEdit && (
+                <button
+                  onClick={openNewDialog}
+                  className="app-btn btn-dark mt-3 transition-colors duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
+                >
+                  <Plus />
+                  {tr ? 'İlk envanterinizi oluşturun' : 'Create your first inventory'}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Delete confirmation: nothing is deleted before this is answered. */}
+      {deleting && (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4"
+          onMouseDown={(e) => { if (e.target === e.currentTarget && !deletingId) setConfirmDeleteId(null); }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-inventory-title"
+            aria-describedby="delete-inventory-note"
+            className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl"
+            onKeyDown={(e) => { if (e.key === 'Escape' && !deletingId) { e.stopPropagation(); setConfirmDeleteId(null); } }}
+          >
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500 ring-1 ring-red-100">
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <h2 id="delete-inventory-title" className="text-[15px] font-bold text-[#0E2A14]">
+                  {tr ? 'Bu envanter silinsin mi?' : 'Delete this inventory?'}
+                </h2>
+                <p className="mt-0.5 truncate text-[12.5px] font-semibold text-[#175022]" title={deleting.title}>{deleting.title}</p>
+                <p id="delete-inventory-note" className="mt-2 text-[12.5px] leading-snug text-[#4B5B50]">{deleteNote(deleting)}</p>
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                autoFocus
+                onClick={() => setConfirmDeleteId(null)}
+                disabled={!!deletingId}
+                className="app-btn border border-[#DCE6DE] bg-white text-[#175022] hover:bg-[#F1FCF2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
+              >
+                {tr ? 'Vazgeç' : 'Cancel'}
+              </button>
+              <button
+                onClick={() => handleDelete(deleting.report_id)}
+                disabled={deletingId === deleting.report_id}
+                className="app-btn btn-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-1"
+              >
+                {deletingId === deleting.report_id ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                {tr ? 'Evet, sil' : 'Yes, delete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Naming Dialog */}
       {showNamingDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          {/* A real dialog: DialogFocus keeps Tab inside it (it walked out to
-              the page behind) and Escape closes it from any of its controls. */}
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-4 shadow-2xl"
             role="dialog" aria-modal="true" aria-labelledby="new-inventory-title"
             onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setShowNamingDialog(false); } }}>
-            <h2 id="new-inventory-title" className="text-lg font-bold text-[#175022] mb-4">
+            <h2 id="new-inventory-title" className="mb-3 text-[15px] font-bold text-[#0E2A14]">
               {tr ? 'Envanter Adı' : 'Inventory Name'}
             </h2>
 
@@ -655,89 +701,66 @@ export default function InventoryLibrary({ tr = false }) {
               value={surveyName}
               onChange={(e) => setSurveyName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !sameYearReport) handleStartNew();
+                if (e.key === 'Enter') handleStartNew();
                 if (e.key === 'Escape') setShowNamingDialog(false);
               }}
               placeholder={tr ? 'Örnek: 2024 Emisyon Denetimi' : 'e.g., 2024 Emissions Audit'}
               aria-labelledby="new-inventory-title"
               autoFocus
-              className="w-full px-4 py-2.5 border border-[#175022]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BEA99] mb-2"
+              className="app-input"
             />
-            <p className="mb-4 text-xs text-[#175022]/60">
+            <p className="mb-3 mt-1.5 text-xs text-[#6B7A70]">
               {tr
                 ? `İsteğe bağlı. Boş bırakırsanız bugünün tarihi kullanılır (${new Date().toLocaleDateString('tr-TR')}).`
                 : `Optional. If left empty, today's date is used (${new Date().toLocaleDateString('en-GB')}).`}
             </p>
 
-            <label htmlFor="new-inventory-year" className="block text-sm font-bold text-[#175022] mb-1">
+            <label htmlFor="new-inventory-year" className="app-label mb-1 block">
               {tr ? 'Raporlama yılı' : 'Reporting year'}
             </label>
             <select
               id="new-inventory-year"
               value={surveyYear}
               onChange={(e) => setSurveyYear(e.target.value)}
-              className="w-full px-4 py-2.5 border border-[#175022]/20 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#8BEA99] mb-2"
+              className="app-input"
             >
               {yearOptions.map(o => (
                 <option key={o.value} value={o.value}>{o.label?.[tr ? 'tr' : 'en'] || o.value}</option>
               ))}
             </select>
-            {sameYearReport ? (
-              // The year already has an inventory: a company has one inventory per year
-              // (the server refuses a second one) — open that one instead.
-              <p role="alert" className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                {tr
-                  ? `${surveyYear} yılı için zaten bir envanteriniz var: “${sameYearReport.title || surveyYear}” (${sameYearReport.status === 'completed' ? 'tamamlandı' : 'devam ediyor'}). Bir şirket için her yıla en fazla bir envanter olabilir (emisyon kayıtları şirkete ve yıla bağlıdır). Değişiklik için mevcut envanteri açın.`
-                  : `There is already an inventory for ${surveyYear}: “${sameYearReport.title || surveyYear}” (${sameYearReport.status === 'completed' ? 'completed' : 'in progress'}). A company can have one inventory per year (emission entries belong to the company and year). To change something, open the existing one.`}
-              </p>
-            ) : nameYearMismatch ? (
-              <p role="alert" className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            {nameYearMismatch ? (
+              <p role="alert" className="mb-3 mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 {tr
                   ? `Adda ${nameYear} yazıyor ama raporlama yılı ${surveyYear} seçili. Doğru yılı seçtiğinizden emin olun.`
                   : `The name says ${nameYear} but the reporting year is ${surveyYear}. Make sure the right year is selected.`}
               </p>
             ) : (
-              <p className="mb-4 text-xs text-[#175022]/60">
+              <p className="mb-3 mt-1.5 text-xs text-[#6B7A70]">
                 {tr ? 'Bu envanterdeki tüm veriler bu yıla ait olacak.' : 'All data in this inventory will be for this year.'}
               </p>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex justify-end gap-2">
               <button
                 onClick={() => {
                   setShowNamingDialog(false);
                   setSurveyName('');
                 }}
-                className="flex-1 px-4 py-2.5 border border-[#175022]/20 rounded-lg font-semibold text-[#175022] transition-all duration-200 hover:bg-[#175022]/5 hover:border-[#175022]/40 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
+                className="app-btn border border-[#DCE6DE] bg-white text-[#175022] hover:bg-[#F1FCF2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
               >
                 {tr ? 'İptal' : 'Cancel'}
               </button>
-              {sameYearReport ? (
-                <button
-                  onClick={() => {
-                    setShowNamingDialog(false);
-                    setSurveyName('');
-                    if (sameYearReport.status === 'completed') handleEditCompleted(sameYearReport.report_id);
-                    else handleContinue(sameYearReport.report_id);
-                  }}
-                  className="flex-1 px-4 py-2.5 btn-dark rounded-lg font-semibold transition-all duration-200 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
-                >
-                  {tr ? 'Mevcut envanteri aç' : 'Open the existing one'}
-                </button>
-              ) : (
-                <button
-                  onClick={handleStartNew}
-                  disabled={loading}
-                  className="flex-1 px-4 py-2.5 btn-dark rounded-lg font-semibold transition-all duration-200 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
-                >
-                  {loading ? (tr ? 'Başlatılıyor...' : 'Starting...') : (tr ? 'Başla' : 'Start')}
-                </button>
-              )}
+              <button
+                onClick={handleStartNew}
+                disabled={loading}
+                className="app-btn btn-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
+              >
+                {loading ? (tr ? 'Başlatılıyor...' : 'Starting...') : (tr ? 'Başla' : 'Start')}
+              </button>
             </div>
           </div>
         </div>
       )}
-    </div>
     </div>
   );
 }

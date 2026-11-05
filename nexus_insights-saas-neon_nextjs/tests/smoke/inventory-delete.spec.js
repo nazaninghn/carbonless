@@ -57,7 +57,7 @@ test('deleting an inventory dispatches emissions-updated with source "inventory-
   });
 
   await page.getByRole('button', { name: /^(Delete|Sil)$/ }).first().click();
-  await page.getByRole('button', { name: /^(Yes|Evet)$/ }).click();
+  await page.getByRole('button', { name: /^(Yes, delete|Evet, sil)$/ }).click();
 
   await expect.poll(() => page.evaluate(() => window.__updatedEvents)).toEqual([{ source: 'inventory-deleted' }]);
 });
@@ -72,7 +72,7 @@ test('the dashboard reloads after a delete, on the same year, without a page rel
   const yearBefore = seen.summaryYears.at(-1);
 
   await page.getByRole('button', { name: /^(Delete|Sil)$/ }).first().click();
-  await page.getByRole('button', { name: /^(Yes|Evet)$/ }).click();
+  await page.getByRole('button', { name: /^(Yes, delete|Evet, sil)$/ }).click();
 
   // The hook waits 600 ms to fold a run of events into one reload.
   await expect.poll(() => seen.summaryYears.length, { timeout: 8_000 }).toBe(before + 1);

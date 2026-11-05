@@ -61,45 +61,67 @@ function QuestionnaireContent({ language }) {
   );
 }
 
+// The page title. While a questionnaire is open the inventory needs the whole height, so the title shrinks to
+// a visually hidden heading (the questionnaire's own bar already names the inventory and holds "My Inventories");
+// the library and the review keep the full header.
+function PageHeader({ tr }) {
+  const { mode } = useInventory();
+  const title = tr ? 'Karbon Envanteri' : 'Carbon Inventory';
+  if (mode !== 'library' && mode !== 'review') {
+    return <h1 className="sr-only" data-testid="page-title">{title}</h1>;
+  }
+  // One line on a phone, so the inventory keeps the screen.
+  return (
+    <div className="mb-3 flex flex-row items-center justify-between gap-3" data-testid="page-title">
+      <div className="flex min-w-0 items-center gap-2.5">
+        <div className="hidden h-9 w-9 items-center justify-center rounded-[10px] bg-[#2ABD41]/12 ring-1 ring-[#2ABD41]/20 sm:flex">
+          <ClipboardList className="h-[18px] w-[18px] text-[#1D9C31]" />
+        </div>
+        <div className="leading-tight">
+          <h1 className="app-title truncate">{title}</h1>
+          <p className="app-subtitle hidden sm:block">
+            {tr
+              ? 'Şirketinizin karbon ayak izini adım adım hesaplayın'
+              : "Calculate your company's carbon footprint step by step"}
+          </p>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <div className="hidden h-7 items-center gap-1.5 rounded-full border border-[#CFE9D4] bg-white px-2.5 sm:flex">
+          <HelpCircle className="h-3.5 w-3.5 text-[#2ABD41]" />
+          <span className="text-[11px] font-semibold text-[#175022]/70">
+            {tr ? 'ISO 14064-1 uyumlu' : 'ISO 14064-1 compliant'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// The library is a page of cards that sits straight on the page background (and scrolls with it); the questionnaire
+// and the review keep their framed, height-bound surface.
+function ContentFrame({ children }) {
+  const { mode } = useInventory();
+  if (mode === 'library') return <div className="w-full">{children}</div>;
+  return (
+    <div className="flex flex-1 min-h-0 flex-col rounded-3xl border border-white/80 bg-white/75 overflow-hidden shadow-[0_18px_50px_-24px_rgba(7,44,14,0.25)] backdrop-blur-xl">
+      {children}
+    </div>
+  );
+}
+
 export default function QuestionnairePageTab({ language }) {
   const tr = language === 'tr';
 
   return (
     <div className="flex flex-1 flex-col min-h-0">
-      {/* Header */}
-      {/* One line on a phone, so the inventory keeps the screen. */}
-      <div className="mb-1.5 flex flex-row items-center justify-between gap-3 sm:mb-2.5">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <div className="hidden h-10 w-10 items-center justify-center rounded-xl bg-[#DEFAE1]/70 sm:flex">
-            <ClipboardList className="h-5 w-5 text-primary" />
-          </div>
-          <div className="leading-tight">
-            <h1 className="truncate text-[17px] sm:text-[20px] font-bold text-[#072C0E] tracking-tight">
-              {tr ? 'Karbon Envanteri' : 'Carbon Inventory'}
-            </h1>
-            <p className="hidden text-[12px] text-[#072C0E]/55 sm:block">
-              {tr
-                ? 'Şirketinizin karbon ayak izini adım adım hesaplayın'
-                : 'Calculate your company\'s carbon footprint step by step'}
-            </p>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <div className="hidden items-center gap-1.5 rounded-full bg-white/70 border sm:flex border-[#DEFAE1] px-3.5 py-2 shadow-sm">
-            <HelpCircle className="h-3.5 w-3.5 text-[#2ABD41]" />
-            <span className="text-[11px] font-medium text-[#175022]/60">
-              {tr ? 'ISO 14064-1 uyumlu' : 'ISO 14064-1 compliant'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main content area */}
-      <div className="flex flex-1 min-h-0 flex-col rounded-3xl border border-white/80 bg-white/75 overflow-hidden shadow-[0_18px_50px_-24px_rgba(7,44,14,0.25)] backdrop-blur-xl">
-        <InventoryProvider>
+      <InventoryProvider>
+        <PageHeader tr={tr} />
+        {/* Main content area */}
+        <ContentFrame>
           <QuestionnaireContent language={language} />
-        </InventoryProvider>
-      </div>
+        </ContentFrame>
+      </InventoryProvider>
     </div>
   );
 }
