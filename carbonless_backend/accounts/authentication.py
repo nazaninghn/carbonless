@@ -1,6 +1,8 @@
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
+from .session import is_idle_expired, session_expired_error
+
 SAFE_METHODS = ('GET', 'HEAD', 'OPTIONS')
 
 
@@ -23,6 +25,14 @@ class CookieJWTAuthentication(JWTAuthentication):
     the header for unsafe methods closes that gap while every real request
     from this app's own frontend already sends it (see api.js's `request()`).
     """
+
+    def get_validated_token(self, raw_token):
+        """A valid token is not enough: the session must also not have been idle for longer than the limit
+        (accounts/session.py). This is the one place every authenticated request passes through."""
+        token = super().get_validated_token(raw_token)
+        if is_idle_expired(token.payload):
+            raise session_expired_error()
+        return token
 
     def authenticate(self, request):
         # Try header first (API clients, tests, and our own frontend — every

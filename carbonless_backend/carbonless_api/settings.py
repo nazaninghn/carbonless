@@ -254,6 +254,25 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
+    # Inactivity timeout: tokens carry the time of the user's last meaningful activity and the server refuses
+    # them once it is older than SESSION_IDLE_TIMEOUT_SECONDS (see accounts/session.py). The refresh token's 7 days is
+    # only the outer bound of one stretch of continuous refreshing, not a session lifetime a user is held to.
+    'TOKEN_OBTAIN_SERIALIZER': 'accounts.session.ActivityTokenObtainPairSerializer',
+    'TOKEN_REFRESH_SERIALIZER': 'accounts.session.ActivityTokenRefreshSerializer',
+}
+SESSION_IDLE_TIMEOUT_SECONDS = int(os.environ.get('SESSION_IDLE_TIMEOUT_SECONDS', 30 * 60))
+
+# A repeat of a refresh whose answer was lost is remembered for 60 s (accounts/session.py). Only hashes and token ids
+# are stored, nothing secret. A file cache is shared by the gunicorn workers of one machine (the default per-process
+# cache is not); the location can be moved with SESSION_REPLAY_CACHE_DIR.
+import tempfile as _tempfile
+CACHES = {
+    'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'},
+    'session_replay': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': os.environ.get('SESSION_REPLAY_CACHE_DIR', os.path.join(_tempfile.gettempdir(), 'carbonless_session_replay')),
+        'TIMEOUT': 60,
+    },
 }
 
 # ============================================

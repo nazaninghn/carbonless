@@ -99,6 +99,16 @@ function LoginContent() {
   const tr = language === 'tr';
 
   const sessionExpired = searchParams.get('reason') === 'session_expired';
+  // set by the session layer when an answer was typed but never submitted before the session ended
+  const [unsavedNote, setUnsavedNote] = useState(false);
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('carbonless_expired_unsaved') === '1') {
+        setUnsavedNote(true);
+        sessionStorage.removeItem('carbonless_expired_unsaved');
+      }
+    } catch { /* storage unavailable */ }
+  }, []);
 
   const completeLogin = useCallback(() => {
     markSessionActive();
@@ -313,7 +323,16 @@ function LoginContent() {
 
               {sessionExpired && (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3.5 text-[12px] font-medium text-amber-700">
-                  {tr ? 'Oturumunuz sona erdi.' : 'Your session has expired.'}
+                  {tr
+                    ? 'Oturumunuz, 30 dakika işlem yapılmadığı için sona erdi. Kaydedilmiş verileriniz korunuyor; giriş yaparak kaldığınız yerden devam edebilirsiniz.'
+                    : 'Your session ended after 30 minutes of inactivity. Your saved data is safe: sign in to continue where you left off.'}
+                  {unsavedNote && (
+                    <span data-testid="session-unsaved-note" className="mt-1 block font-semibold text-red-700">
+                      {tr
+                        ? 'Göndermediğiniz bir yanıt kaydedilemedi; lütfen tekrar girin.'
+                        : 'An answer you had typed but not submitted was not saved. Please enter it again.'}
+                    </span>
+                  )}
                 </div>
               )}
               {error && (

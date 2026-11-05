@@ -32,6 +32,17 @@ jobs:
         run: |
           python manage.py test questionnaire.test_stage3_lifecycle --tag=filedb_only --settings=carbonless_api.settings_test_filedb 2>&1 | tee filedb_only.log
           grep -E '^Ran 1 test in ' filedb_only.log
+      # Several same-year inventories started at once: also needs real file locking (same reason).
+      - name: Concurrent inventory starts (file-backed SQLite)
+        run: |
+          python manage.py test questionnaire.test_inventory_year_integrity --tag=filedb_only --settings=carbonless_api.settings_test_filedb 2>&1 | tee filedb_starts.log
+          grep -E '^Ran 1 test in ' filedb_starts.log
+      # Simultaneous refreshes of one refresh token: exactly one may succeed (real file locking, threads, own connections).
+      - name: Simultaneous refresh tokens (file-backed SQLite)
+        run: |
+          python manage.py test accounts.test_refresh_concurrency --tag=filedb_only --settings=carbonless_api.settings_test_filedb 2>&1 | tee filedb_refresh.log
+          grep -E '^Ran 5 tests in ' filedb_refresh.log
+          grep -E '^OK$' filedb_refresh.log
 
   frontend:
     runs-on: ubuntu-latest

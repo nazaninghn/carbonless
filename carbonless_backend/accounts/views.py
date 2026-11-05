@@ -354,7 +354,7 @@ class GoogleLoginView(generics.GenericAPIView):
         from rest_framework_simplejwt.tokens import RefreshToken
         from .models import ActivityLog
 
-        refresh = RefreshToken.for_user(user)
+        refresh = issue_refresh_for_user(user)
         access = str(refresh.access_token)
 
         ActivityLog.objects.create(
@@ -575,6 +575,8 @@ def logout_view(request):
 
 
 from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.exceptions import InvalidToken
+from .session import issue_refresh_for_user
 
 
 class CookieTokenRefreshView(TokenRefreshView):
@@ -597,7 +599,16 @@ class CookieTokenRefreshView(TokenRefreshView):
         except AttributeError:
             pass
 
-        response = super().post(request, *args, **kwargs)
+        try:
+            response = super().post(request, *args, **kwargs)
+        except InvalidToken as exc:
+            # An idle session: say so, and clear the cookies. Nothing else is touched (data stays as saved).
+            if isinstance(exc.detail, dict) and exc.detail.get('code') == 'session_expired':
+                response = Response({'detail': 'Session expired due to inactivity.', 'code': 'session_expired'}, status=401)
+                response.delete_cookie('access_token', path='/')
+                response.delete_cookie('refresh_token', path='/')
+                return response
+            raise
 
         if response.status_code == 200:
             from django.conf import settings as django_settings
@@ -927,7 +938,7 @@ def verify_email_code(request):
     from rest_framework_simplejwt.tokens import RefreshToken
     from .models import ActivityLog
     user = token_obj.user
-    refresh = RefreshToken.for_user(user)
+    refresh = issue_refresh_for_user(user)
     ActivityLog.objects.create(
         user=user, action='login', detail='Signed in after verifying email',
         ip_address=request.META.get('REMOTE_ADDR'),

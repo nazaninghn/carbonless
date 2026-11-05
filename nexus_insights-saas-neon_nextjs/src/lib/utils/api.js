@@ -2,6 +2,9 @@
 // Incremental TypeScript adoption: JSDoc types enable full IDE intellisense and
 // tsc --checkJs validation without requiring a full .ts rewrite.
 
+import { hasUnsaved } from '@/lib/session/unsaved';
+import { KEY_ACTIVITY, KEY_ENDED, KEY_UNSAVED_NOTE } from '@/lib/session/idle';
+
 /** @type {string} */
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
@@ -20,7 +23,7 @@ export function clearSessionCookie() {
 // Access token (memory + localStorage)
 /** @type {string | null} */
 let _token = null;
-/** @type {Promise<{ok: boolean, access: string | null}> | null} */
+/** @type {Promise<{ok: boolean, access: string | null, transient?: boolean}> | null} */
 let _refreshPromise = null;
 
 /** @returns {string | null} */
@@ -147,7 +150,7 @@ async function sendRequest(endpoint, options = {}) {
   if (res.status !== 401) return res;
 
   const refreshResult = await doRefresh();
-  if (!refreshResult?.ok) return new Response(null, { status: 401 });
+  if (!refreshResult?.ok) return new Response(null, { status: refreshResult?.transient ? 503 : 401 });
 
   const { access } = refreshResult;
   // Token already written inside doRefresh; setToken here keeps the path symmetric.
@@ -165,34 +168,129 @@ async function sendRequest(endpoint, options = {}) {
 // _refreshPromise is cleared INSIDE .then() — after the token is written —
 // so concurrent callers that arrive in the tiny gap wait for the token,
 // not start a second refresh.
+// One token refresh at a time across ALL tabs of this browser (Web Locks): two tabs refreshing together would present
+// the same rotating refresh token twice, and the second would be refused and sign the user out.
+async function withRefreshLock(fn) {
+  if (typeof navigator !== 'undefined' && navigator.locks && typeof navigator.locks.request === 'function') {
+    return navigator.locks.request('carbonless-token-refresh', fn);
+  }
+  return fn();
+}
+
+// One refresh round trip. If it gets no answer (a dropped connection, a timeout, a 5xx from the proxy) the SAME attempt,
+// with the same attempt id, is repeated a couple of times: the server may already have rotated the token, and the repeat
+// is how it gives the user a working one instead of leaving them with a dead cookie (accounts/session.py). `keepalive`
+// lets the request finish, and its Set-Cookie be stored, even when the page navigates away meanwhile.
+const REFRESH_RETRY_DELAYS_MS = [1000, 3000];
+const newAttemptId = () => (typeof crypto !== 'undefined' && crypto.randomUUID
+  ? crypto.randomUUID()
+  : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`);
+
+async function refreshRequest(extraHeaders = {}) {
+  const attempt = newAttemptId();
+  for (let i = 0; ; i++) {
+    let res = null;
+    try {
+      res = await fetchWithTimeout('/api/auth/refresh', {
+        method: 'POST', credentials: 'include', keepalive: true,
+        headers: { 'x-refresh-attempt': attempt, ...extraHeaders },
+      });
+    } catch { res = null; }
+    if (res && res.status < 500) return { response: res };         // an answer: success or a definite refusal
+    if (i >= REFRESH_RETRY_DELAYS_MS.length) return { transient: true };
+    await new Promise((resolve) => setTimeout(resolve, REFRESH_RETRY_DELAYS_MS[i]));
+  }
+}
+
+// The automatic refresh (after an expired access token): it never reports user activity, so it can never extend an
+// inactive session. The server decides whether the session is still alive.
+let _refreshPausedUntil = 0;   // after a refresh got no answer, other requests do not start more of them for a while
+const REFRESH_PAUSE_MS = 10_000;
+
 async function doRefresh() {
+  if (!_refreshPromise && Date.now() < _refreshPausedUntil) return { ok: false, access: null, transient: true };
   if (!_refreshPromise) {
-    _refreshPromise = fetchWithTimeout('/api/auth/refresh', { method: 'POST', credentials: 'include' })
-      .then(async rr => {
-        if (!rr.ok) {
-          _refreshPromise = null;
-          return { ok: false, access: null };
-        }
-        try {
-          const data = await rr.json();
-          const access = data.access || null;
-          if (access) setToken(access);
-          _refreshPromise = null;
-          return { ok: !!access, access };
-        } catch {
-          _refreshPromise = null;
-          return { ok: false, access: null };
-        }
-      })
-      .catch(() => { _refreshPromise = null; return { ok: false, access: null }; });
+    const tokenWhenAsked = typeof window !== 'undefined' ? localStorage.getItem('_ca') : null;
+    _refreshPromise = withRefreshLock(async () => {
+      // another tab may have refreshed while this one waited for the lock: use its token
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('_ca') : null;
+      if (stored && stored !== tokenWhenAsked) { _token = stored; return { ok: true, access: stored }; }
+      const { response: rr, transient } = await refreshRequest();
+      if (transient) return { ok: false, access: null, transient: true };   // no answer: not a reason to sign anyone out
+      if (!rr.ok) return { ok: false, access: null };                       // the server refused: the session is over
+      const data = await rr.json();
+      const access = data.access || null;
+      if (access) setToken(access);
+      return { ok: !!access, access };
+    })
+      .catch(() => ({ ok: false, access: null, transient: true }))
+      .finally(() => { _refreshPromise = null; });
   }
   const result = await _refreshPromise;
-  if (!result?.ok) {
-    setToken(null);
-    clearSessionCookie();
-    if (typeof window !== 'undefined') window.location.href = '/login?reason=session_expired';
-  }
+  if (result?.transient) _refreshPausedUntil = Date.now() + REFRESH_PAUSE_MS;
+  if (!result?.ok && !result?.transient) endSession();
   return result;
+}
+
+/**
+ * End the session in this browser: forget the credentials and go to the login page with the "session expired" notice.
+ * Nothing is deleted anywhere: saved answers, inventories, reports and every other record stay as they are.
+ * An answer typed but never submitted cannot be kept (it was never saved), so the login page says so.
+ */
+function endSession() {
+  if (typeof window === 'undefined') return;
+  try { if (hasUnsaved()) sessionStorage.setItem(KEY_UNSAVED_NOTE, '1'); } catch { /* storage unavailable */ }
+  setToken(null);
+  clearSessionCookie();
+  try {
+    localStorage.removeItem(KEY_ACTIVITY);
+    localStorage.setItem(KEY_ENDED, String(Date.now()));   // the other tabs see this and follow
+  } catch { /* storage unavailable */ }
+  window.location.href = '/login?reason=session_expired';
+}
+
+/**
+ * The inactivity limit was reached in the browser: clear the refresh cookie on the server side of the app, then end
+ * the session. (The backend already refuses the tokens by themselves: this only tidies up.)
+ */
+export async function expireSession() {
+  try {
+    await fetchWithTimeout('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  } catch { /* the cookie is cleared by the redirect's own checks; the server refuses the tokens anyway */ }
+  endSession();
+}
+
+/**
+ * Tell the server the user has been active, which extends the session. `ageSeconds` is called INSIDE the cross-tab
+ * lock (after any other tab's extension is visible) and returns the seconds since the user's last activity, or null
+ * to skip. Resolves { ok } when extended, { expired: true } when the server says the session is over, and { ok: false }
+ * for anything else (offline, server error): those never sign the user out, the next check tries again.
+ * @param {() => number | null} ageSeconds
+ */
+export async function extendSession(ageSeconds) {
+  if (_refreshPromise) return { ok: false };           // an automatic refresh is under way; try again at the next check
+  return withRefreshLock(async () => {
+    const age = ageSeconds();
+    if (age == null) return { ok: false, skipped: true };
+    try {
+      const { response: rr } = await refreshRequest({ 'x-user-activity': String(Math.max(0, Math.floor(age))) });
+      if (!rr) return { ok: false };                       // no answer after the retries: try again at the next check
+      if (rr.status === 401) {
+        // Only the server's own "ended for inactivity" ends the session here. Any other refusal (no refresh cookie, a
+        // token problem) is left to the normal path: the next API call that gets a 401 refreshes and handles it.
+        const body = await rr.json().catch(() => null);
+        return body?.code === 'session_expired' ? { ok: false, expired: true } : { ok: false };
+      }
+      if (!rr.ok) return { ok: false };
+      const data = await rr.json().catch(() => null);
+      if (!data?.access) return { ok: false };
+      setToken(data.access);
+      markSessionActive();                              // the routing cookie follows the activity: no fixed 24 h cut-off
+      return { ok: true };
+    } catch {
+      return { ok: false };
+    }
+  });
 }
 
 export const api = {
@@ -303,7 +401,7 @@ export const api = {
     });
     if (res.status !== 401) return res;
     const refreshResult = await doRefresh();
-    if (!refreshResult?.ok) return new Response(null, { status: 401 });
+    if (!refreshResult?.ok) return new Response(null, { status: refreshResult?.transient ? 503 : 401 });
     return fetchWithTimeout(`${API_BASE}/emissions/entries/`, {
       method: 'POST',
       credentials: 'include',
@@ -328,13 +426,15 @@ export const api = {
     const res = await send(getToken());
     if (res.status !== 401) return res;
     const refreshResult = await doRefresh();
-    if (!refreshResult?.ok) return new Response(null, { status: 401 });
+    if (!refreshResult?.ok) return new Response(null, { status: refreshResult?.transient ? 503 : 401 });
     return send(refreshResult.access);
   },
   removeProof: (id) => request(`/emissions/entries/${id}/proof/`, { method: 'DELETE' }),
   deleteEntry: (id) => request(`/emissions/entries/${id}/`, { method: 'DELETE' }),
   cancelDeleteRequest: (id) => request(`/emissions/entries/${id}/cancel-delete/`, { method: 'POST' }),
-  getSummary: (year = new Date().getFullYear()) => request(`/emissions/summary/?year=${year}`),
+  // inventoryId names ONE inventory (several can share a year); the server checks it is the caller's.
+  getSummary: (year = new Date().getFullYear(), inventoryId = null) =>
+    request(`/emissions/summary/?year=${year}${inventoryId ? `&inventory_id=${inventoryId}` : ''}`),
 
   getTargets: () => request('/emissions/targets/'),
   createTarget: (data) => request('/emissions/targets/', { method: 'POST', body: JSON.stringify(data) }),
@@ -345,13 +445,17 @@ export const api = {
   createCustomRequest: (data) => request('/emissions/custom-requests/', { method: 'POST', body: JSON.stringify(data) }),
   deleteCustomRequest: (id) => request(`/emissions/custom-requests/${id}/`, { method: 'DELETE' }),
 
-  downloadReport: (year, lang) => request(`/emissions/report/?year=${year}&lang=${lang}`),
-  downloadCsv: (year, lang = 'en') => request(`/emissions/export-csv/?year=${year}&lang=${lang}`),
-  downloadExcel: (year, lang = 'en') => request(`/emissions/export-excel/?year=${year}&lang=${lang}`),
+  downloadReport: (year, lang, inventoryId = null) =>
+    request(`/emissions/report/?year=${year}&lang=${lang}${inventoryId ? `&inventory_id=${inventoryId}` : ''}`),
+  downloadCsv: (year, lang = 'en', inventoryId = null) =>
+    request(`/emissions/export-csv/?year=${year}&lang=${lang}${inventoryId ? `&inventory_id=${inventoryId}` : ''}`),
+  downloadExcel: (year, lang = 'en', inventoryId = null) =>
+    request(`/emissions/export-excel/?year=${year}&lang=${lang}${inventoryId ? `&inventory_id=${inventoryId}` : ''}`),
 
   approveEntry: (id, action, reason) => request(`/emissions/entries/${id}/approve/`, { method: 'POST', body: JSON.stringify({ action, reason }) }),
   downloadProofDocument: (entryId) => request(`/emissions/entries/${entryId}/proof/`),
-  getByFacility: (year) => request(`/emissions/by-facility/?year=${year}`),
+  getByFacility: (year, inventoryId = null) =>
+    request(`/emissions/by-facility/?year=${year}${inventoryId ? `&inventory_id=${inventoryId}` : ''}`),
   // lang names the questions in the reviewer's language ("Question 24" / "Soru 24").
   getPendingEntries: (lang) => request(`/emissions/pending/${lang ? `?lang=${lang}` : ''}`),
 
@@ -423,7 +527,9 @@ export const api = {
   createChatSession: (title = 'New Chat') => request('/chat/sessions/new/', { method: 'POST', body: JSON.stringify({ title }) }),
   getChatSession: (id) => request(`/chat/sessions/${id}/`),
   deleteChatSession: (id) => request(`/chat/sessions/${id}/`, { method: 'DELETE' }),
-  sendChatMessage: (sessionId, content, language) => request(`/chat/sessions/${sessionId}/message/`, { method: 'POST', body: JSON.stringify({ content, language }) }),
+  // inventoryId: the inventory the user is working in; the assistant then reads only that inventory's records.
+  sendChatMessage: (sessionId, content, language, inventoryId = null) => request(`/chat/sessions/${sessionId}/message/`, {
+    method: 'POST', body: JSON.stringify(inventoryId ? { content, language, inventory_id: Number(inventoryId) } : { content, language }) }),
   sendChatMessageWithFile: (sessionId, formData) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('_ca') : null;
     /** @type {Record<string, string>} */

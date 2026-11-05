@@ -2,6 +2,7 @@ import '@/styles/globals.css';
 import { Inter } from 'next/font/google';
 import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 import PageTitle from '@/components/PageTitle';
+import SessionIdleGuard from '@/components/SessionIdleGuard';
 
 const inter = Inter({
   // latin-ext is required for Turkish: ğ Ğ ş Ş ı İ live in Latin Extended-A
@@ -54,6 +55,7 @@ export default function RootLayout({ children }) {
       <body className="font-inter antialiased min-h-screen overflow-x-clip">
         <LanguageProvider>
           <PageTitle />
+          <SessionIdleGuard />
           {children}
         </LanguageProvider>
       </body>
