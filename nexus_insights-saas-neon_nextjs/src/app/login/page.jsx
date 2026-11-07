@@ -262,7 +262,7 @@ function LoginContent() {
           <button
             key={l}
             onClick={() => changeLanguage(l)}
-            className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase transition ${
+            className={`min-h-11 min-w-11 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase transition ${
               language === l ? 'btn-primary' : 'text-[#072C0E]/40 hover:text-[#072C0E]'
             }`}
           >
@@ -278,7 +278,7 @@ function LoginContent() {
       <div className="flex w-full lg:w-[44%] flex-col px-6 py-6 sm:px-12">
         {/* Top row: logo */}
         <div className="flex items-center">
-          <NextLink href="/" className="flex items-center gap-2.5">
+          <NextLink href="/" className="flex min-h-11 items-center gap-2.5">
             <Image src="/carbonless.png" alt="Carbonless" width={36} height={36} className="h-9 w-9" />
             <span className="text-[17px] font-extrabold text-[#072C0E] tracking-tight">Carbonless</span>
           </NextLink>
@@ -313,12 +313,12 @@ function LoginContent() {
                 <label htmlFor="login-password" className="col-start-1 row-start-1 block text-[12px] font-bold uppercase tracking-wide text-[#072C0E]/55">{t.login.password}</label>
                 <div className="col-span-2 row-start-2 flex items-center gap-3 rounded-2xl border border-[#DEFAE1] bg-white px-4 py-3.5 shadow-sm transition focus-within:border-[#2ABD41] focus-within:ring-4 focus-within:ring-[#2ABD41]/10">
                   <LockKeyhole className="h-[18px] w-[18px] text-[#2ABD41]" strokeWidth={1.8} />
-                  <input id="login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-transparent text-[14px] font-medium text-[#072C0E] outline-none placeholder:text-[#072C0E]/30" placeholder="********" required />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-pressed={showPassword} aria-label={tr ? (showPassword ? 'Şifreyi gizle' : 'Şifreyi göster') : (showPassword ? 'Hide password' : 'Show password')} className="text-[#072C0E]/35 hover:text-[#072C0E]">
+                  <input id="login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="min-w-0 w-full bg-transparent text-[14px] font-medium text-[#072C0E] outline-none placeholder:text-[#072C0E]/30" placeholder="********" required />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-pressed={showPassword} aria-label={tr ? (showPassword ? 'Şifreyi gizle' : 'Şifreyi göster') : (showPassword ? 'Hide password' : 'Show password')} className="-m-3 shrink-0 rounded-full p-3 text-[#072C0E]/35 hover:text-[#072C0E]">
                     {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
                   </button>
                 </div>
-                <NextLink href="/forgot-password" className="col-start-2 row-start-1 text-[12px] font-semibold text-[#2ABD41] hover:underline">{t.login.forgotPassword}</NextLink>
+                <NextLink href="/forgot-password" className="col-start-2 row-start-1 -my-3.5 py-3.5 text-[12px] font-semibold text-[#2ABD41] hover:underline">{t.login.forgotPassword}</NextLink>
               </div>
 
               {sessionExpired && (

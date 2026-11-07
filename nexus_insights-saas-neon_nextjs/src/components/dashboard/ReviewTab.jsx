@@ -660,10 +660,10 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
 
       {/* Reject Dialog — shared by both lists */}
       {rejectTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex overflow-y-auto bg-black/10 p-4 backdrop-blur-md">
           <div
             role="dialog" aria-modal="true" aria-labelledby="reject-dialog-title"
-            className="w-full max-w-sm rounded-[14px] border border-[#072C0E]/10 bg-white/95 p-4 shadow-[0_20px_60px_rgba(7,44,14,0.15)] backdrop-blur-2xl"
+            className="m-auto w-full max-w-sm rounded-[14px] border border-[#072C0E]/10 bg-white/95 p-4 shadow-[0_20px_60px_rgba(7,44,14,0.15)] backdrop-blur-2xl"
           >
             <h3 id="reject-dialog-title" className="text-sm font-bold text-[#072C0E]">{tr ? 'Reddetme Nedeni' : 'Rejection Reason'}</h3>
             <textarea

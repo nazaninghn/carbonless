@@ -19,7 +19,7 @@ module.exports = defineConfig({
   fullyParallel: true,
   forbidOnly:    !!process.env.CI,   // fail CI if test.only is committed
   retries:       process.env.CI ? 2 : 0,
-  workers:       process.env.CI ? 1 : undefined,
+  workers:       process.env.CI ? 1 : 2,   // CI keeps 1; locally at most 2 against `next dev` (4 saturate the machine, see CLAUDE.md); `--workers=N` overrides
 
   reporter: process.env.CI
     ? [['github'], ['html', { open: 'never', outputFolder: 'playwright-report' }]]

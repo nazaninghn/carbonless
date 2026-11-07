@@ -137,8 +137,16 @@ These are non-negotiable rules established across the inventory/calculation work
 
 ## Verify before claiming done
 
-- **Backend:** run `python manage.py test questionnaire emissions` and `python manage.py check` (set `ALLOW_DEV_SECRET=true` locally). The suite must be green, including new tests.
+- **Backend:** run `python manage.py check` and the suite below (set `ALLOW_DEV_SECRET=true` locally; leave `INVENTORY_OWNERSHIP_CUTOVER` UNSET for the general run (CI no longer sets it either): with a `2000-01-01…` cutover exported, five `LegacyDuplicateGroupTests`/`WorkspaceWritePathTests` tests in `test_inventory_year_integrity` fail on the default settings; `settings_test_filedb` sets its own value). The suite must be green, including new tests:
+  ```
+  python manage.py test emissions accounts questionnaire companies chat --exclude-tag=filedb_only      # the same command as .github/workflows/ci.yml
+  python manage.py test questionnaire.test_stage3_lifecycle --tag=filedb_only --settings=carbonless_api.settings_test_filedb
+  python manage.py test questionnaire.test_inventory_year_integrity --tag=filedb_only --settings=carbonless_api.settings_test_filedb
+  python manage.py test accounts.test_refresh_concurrency --tag=filedb_only --settings=carbonless_api.settings_test_filedb
+  ```
+  **Tests tagged `filedb_only` are multi-threaded concurrency tests. They MUST NOT run in the general suite**: Django's in-memory SQLite test database uses shared-cache table locks that raise `database table is locked` at once instead of waiting, so they fail there without any application fault. Always exclude the tag from the general run and run them separately on the file-backed `settings_test_filedb` (set `TEST_SQLITE_FILE` to a scratch path to keep it out of the system temp directory). Never "fix" such a failure by changing the test or the application.
 - **Frontend:** run the build. For UI/animation work, verify in a real browser across **desktop, mobile, and reduced-motion** — reading the code is not verification.
+- **Playwright worker policy:** against the dev server (`npm.cmd run dev`) use at most **2 workers** (`npx.cmd playwright test --workers=2`). With 4 workers on an 8-core machine the dev server and four Chromium instances saturate the CPU (about 91% mean vs 40% solo; dev-server requests about 5.6× slower) and `leave-workspace.spec.js` (Log Out) fails on its fixed time budgets, with a normal result at 1 and 2 workers. 4 workers may be used only against a production server (`npm.cmd run build` then `npm.cmd start`), and never run `next build` while a dev server is using the same `.next` directory. Use `--reporter=list,json` for unattended runs (the default HTML reporter opens a browser on failure).
 - **Regression guards that must always hold:** natural gas 10,000 m³ = **20,200 kg CO₂e**; electricity 50,000 kWh ≈ **20,995 kg CO₂e**.
 - Clean up any temporary files you create for verification.
 

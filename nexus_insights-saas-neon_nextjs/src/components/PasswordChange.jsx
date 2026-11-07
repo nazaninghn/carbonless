@@ -66,16 +66,16 @@ export default function PasswordChange({ language }) {
     <form onSubmit={handleSubmit} className="space-y-3 max-w-md">
       <div>
         <label className="block text-xs text-[#072C0E]/55 mb-1">{tr ? 'Mevcut Şifre' : 'Current Password'}</label>
-        <input type="password" value={oldPw} onChange={e => setOldPw(e.target.value)} className="w-full px-3 py-2 border border-[#072C0E]/10 rounded-xl text-sm outline-none focus:border-[#2ABD41] focus:ring-2 focus:ring-[#2ABD41]/20" required />
+        <input type="password" value={oldPw} onChange={e => setOldPw(e.target.value)} className="w-full px-3 py-2 max-lg:min-h-11 border border-[#072C0E]/10 rounded-xl text-sm outline-none focus:border-[#2ABD41] focus:ring-2 focus:ring-[#2ABD41]/20" required />
       </div>
       <div>
         <label className="block text-xs text-[#072C0E]/55 mb-1">{tr ? 'Yeni Şifre' : 'New Password'}</label>
-        <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} className="w-full px-3 py-2 border border-[#072C0E]/10 rounded-xl text-sm outline-none focus:border-[#2ABD41] focus:ring-2 focus:ring-[#2ABD41]/20" required />
+        <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} className="w-full px-3 py-2 max-lg:min-h-11 border border-[#072C0E]/10 rounded-xl text-sm outline-none focus:border-[#2ABD41] focus:ring-2 focus:ring-[#2ABD41]/20" required />
         <PasswordStrengthIndicator password={newPw} language={language} />
       </div>
       <div>
         <label className="block text-xs text-[#072C0E]/55 mb-1">{tr ? 'Yeni Şifre (Tekrar)' : 'Confirm New Password'}</label>
-        <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} className="w-full px-3 py-2 border border-[#072C0E]/10 rounded-xl text-sm outline-none focus:border-[#2ABD41] focus:ring-2 focus:ring-[#2ABD41]/20" required />
+        <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} className="w-full px-3 py-2 max-lg:min-h-11 border border-[#072C0E]/10 rounded-xl text-sm outline-none focus:border-[#2ABD41] focus:ring-2 focus:ring-[#2ABD41]/20" required />
       </div>
       {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>}
       {msg && <p className="text-sm text-green-600 bg-green-50 p-2 rounded">{msg}</p>}

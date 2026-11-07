@@ -184,7 +184,7 @@ export default function DashboardHeader({
         <div className="flex min-w-0 items-center gap-2.5">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="btn-icon shrink-0 lg:hidden"
+            className="btn-icon min-h-11 min-w-11 shrink-0 lg:hidden"
             aria-label={tr ? 'Kenar çubuğunu aç' : 'Open sidebar'}
           >
             <Menu className="h-4 w-4" />
@@ -212,7 +212,7 @@ export default function DashboardHeader({
             // AI mode: the Carbon Inventory with the AI assistant beside it,
             // full screen.
             onClick={() => setActiveTab('ai_carbon')}
-            className={`flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[12px] font-semibold transition-all duration-200 ${
+            className={`flex items-center gap-1 sm:gap-1.5 max-lg:min-h-11 rounded-full px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[12px] font-semibold transition-all duration-200 ${
               activeTab === 'ai_carbon'
                 ? 'btn-primary'
                 : 'text-[#072C0E]/50 hover:text-[#072C0E] hover:bg-white/70'
@@ -224,7 +224,7 @@ export default function DashboardHeader({
           </button>
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[12px] font-semibold transition-all duration-200 ${
+            className={`flex items-center gap-1 sm:gap-1.5 max-lg:min-h-11 rounded-full px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[12px] font-semibold transition-all duration-200 ${
               activeTab !== 'ai_carbon'
                 ? 'bg-[#51D766] text-[#072C0E] shadow-sm'
                 : 'text-[#072C0E]/50 hover:text-[#072C0E] hover:bg-white/70'
@@ -253,7 +253,7 @@ export default function DashboardHeader({
                 <button
                   key={l}
                   onClick={() => onLanguageChange(l)}
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide transition ${
+                  className={`px-2.5 py-1 max-lg:min-h-11 max-lg:min-w-11 rounded-full text-[10px] font-bold uppercase tracking-wide transition ${
                     language === l ? 'bg-white text-[#072C0E] shadow-sm' : 'text-[#072C0E]/40 hover:text-[#072C0E]'
                   }`}
                 >
@@ -268,7 +268,7 @@ export default function DashboardHeader({
             aria-label={tr ? 'Raporlama yılı' : 'Reporting year'}
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="hidden sm:block h-8 rounded-lg border border-[#DEFAE1] bg-white px-2 text-[11px] font-semibold text-[#072C0E]/70 outline-none"
+            className="hidden sm:block h-8 max-lg:h-11 rounded-lg border border-[#DEFAE1] bg-white px-2 text-[11px] font-semibold text-[#072C0E]/70 outline-none"
           >
             {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
@@ -279,7 +279,7 @@ export default function DashboardHeader({
               aria-label={tr ? 'Envanter' : 'Inventory'}
               value={selectedInventoryId ?? ''}
               onChange={(e) => onInventoryChange?.(Number(e.target.value))}
-              className="hidden sm:block h-8 max-w-[11rem] truncate rounded-lg border border-[#DEFAE1] bg-white px-2 text-[11px] font-semibold text-[#072C0E]/70 outline-none"
+              className="hidden sm:block h-8 max-lg:h-11 max-w-[11rem] truncate rounded-lg border border-[#DEFAE1] bg-white px-2 text-[11px] font-semibold text-[#072C0E]/70 outline-none"
             >
               {yearInventories.map(r => (
                 <option key={r.report_id} value={r.report_id}>{r.title || `#${r.report_id}`}</option>
@@ -294,7 +294,7 @@ export default function DashboardHeader({
               aria-label={tr ? 'Bildirimler' : 'Notifications'}
               aria-expanded={showNotifications}
               aria-haspopup="dialog"
-              className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-[#DEFAE1] text-[#072C0E]/50 hover:text-[#072C0E] transition"
+              className="relative flex h-8 w-8 max-lg:h-11 max-lg:w-11 items-center justify-center rounded-lg border border-[#DEFAE1] text-[#072C0E]/50 hover:text-[#072C0E] transition"
             >
               <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
@@ -363,7 +363,7 @@ export default function DashboardHeader({
           {user && (
             <button type="button" onClick={() => setActiveTab('settings')} data-testid="header-profile"
               aria-label={tr ? 'Profil ve ayarlar' : 'Profile and settings'} title={user.username || user.email || ''}
-              className="hidden shrink-0 items-center gap-2 rounded-lg py-0.5 pl-0.5 pr-1 text-left transition hover:bg-[#F6FAF7] sm:flex">
+              className="hidden shrink-0 items-center gap-2 max-lg:min-h-11 max-lg:min-w-11 rounded-lg py-0.5 pl-0.5 pr-1 text-left transition hover:bg-[#F6FAF7] sm:flex">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0E2A14] text-[12px] font-bold text-white">
                 {(user.username || user.email || 'U')[0].toUpperCase()}
               </span>

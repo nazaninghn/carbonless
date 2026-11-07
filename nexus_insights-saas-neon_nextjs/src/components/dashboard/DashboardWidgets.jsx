@@ -52,7 +52,7 @@ export function MiniSelect({ value, onChange, options, label }) {
   return (
     <span className="relative inline-flex items-center">
       <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}
-        className="h-6 appearance-none rounded-md border border-[#E1E9E3] bg-white py-0 pl-2 pr-5 text-[11px] font-medium text-[#0E2A14]/80 outline-none transition hover:border-[#C9DACD] focus-visible:ring-2 focus-visible:ring-[#2ABD41]/40">
+        className="h-6 max-lg:h-11 appearance-none rounded-md border border-[#E1E9E3] bg-white py-0 pl-2 pr-5 text-[11px] font-medium text-[#0E2A14]/80 outline-none transition hover:border-[#C9DACD] focus-visible:ring-2 focus-visible:ring-[#2ABD41]/40">
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
       <ChevronDown className="pointer-events-none absolute right-1.5 h-3 w-3 text-[#0E2A14]/50" aria-hidden="true" />
@@ -383,7 +383,7 @@ export function ReductionCard({ targets, totalTonne, tr, canApprove, selectedYea
   const tonne = (t) => Number(t || 0).toLocaleString(tr ? 'tr-TR' : 'en-GB', { maximumFractionDigits: Math.abs(t) < 10 ? 2 : 0 });
   return (
     <Card testid="reduction-card" title={tr ? 'Azaltım ilerlemesi' : 'Reduction progress'}
-      action={<button type="button" onClick={onAll} className="text-[10.5px] font-semibold text-[#1D9C31] hover:underline">{tr ? 'Tümü' : 'All targets'}</button>}>
+      action={<button type="button" onClick={onAll} className="relative max-lg:before:absolute max-lg:before:-inset-y-3.5 max-lg:before:inset-x-0 max-lg:before:content-[''] text-[10.5px] font-semibold text-[#1D9C31] hover:underline">{tr ? 'Tümü' : 'All targets'}</button>}>
       {(!targets || targets.length === 0) ? (
         <div>
           <div className={`h-2 rounded-full ${GHOST}`} aria-hidden="true" />
@@ -484,7 +484,7 @@ export function InsightsPanel({ insights, tr, onAction, hasInventory, wide = fal
         </ul>
       )}
       {(hidden > 0 || all) && (
-        <button type="button" onClick={() => setAll(v => !v)} className="mt-1.5 text-[10.5px] font-bold text-[#1D9C31] hover:underline">
+        <button type="button" onClick={() => setAll(v => !v)} className="relative max-lg:before:absolute max-lg:before:-inset-y-3.5 max-lg:before:inset-x-0 max-lg:before:content-[''] mt-1.5 text-[10.5px] font-bold text-[#1D9C31] hover:underline">
           {all ? (tr ? 'Daha az göster' : 'Show less') : (tr ? `Tümünü göster (${sorted.length})` : `Show all (${sorted.length})`)}
         </button>
       )}
@@ -499,7 +499,7 @@ export function InsightsPanel({ insights, tr, onAction, hasInventory, wide = fal
             <p className="mt-0.5 text-[10.5px] leading-[1.4] text-white/70">{ai.text}</p>
           </div>
           <button type="button" onClick={() => onAction(ai.action)}
-            className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-[#51D766] px-2.5 py-1 text-[10.5px] font-bold text-[#0E2A14] hover:bg-[#6BE07D]">
+            className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-[#51D766] px-2.5 py-1 max-lg:min-h-11 text-[10.5px] font-bold text-[#0E2A14] hover:bg-[#6BE07D]">
             {ai.action.label}<ChevronRight className="h-3 w-3" />
           </button>
         </div>
@@ -545,7 +545,7 @@ export function InventoryStatusCard({ inventory, status, tr, canEdit, yearInvent
   );
   const updated = inventory.updated_at ? new Date(inventory.updated_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
   const open = (status.requiredUnanswered ?? 0) + (status.pending ?? 0) > 0;
-  const btn = 'inline-flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition';
+  const btn = 'inline-flex items-center justify-center gap-1 rounded-md px-2 py-1.5 max-lg:min-h-11 text-[11px] font-semibold transition';
   return (
     <Card testid="inventory-status" title={tr ? 'Envanter durumu' : 'Inventory status'}
       subtitle={yearInventoryCount > 1 ? `1/${yearInventoryCount}` : undefined}

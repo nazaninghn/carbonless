@@ -63,7 +63,7 @@ function ResetContent() {
       <main className="min-h-screen bg-[#F1FCF2] flex flex-col items-center justify-center px-4">
         <div className="w-full max-w-md text-center">
           <div className="flex justify-center mb-8">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="flex min-h-11 items-center gap-2">
               <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-10 w-10" />
               <span className="text-[18px] font-bold text-[#072C0E]">Carbonless</span>
             </Link>
@@ -92,7 +92,7 @@ function ResetContent() {
       <main className="min-h-screen bg-[#F1FCF2] flex flex-col items-center justify-center px-4">
         <div className="w-full max-w-md text-center">
           <div className="flex justify-center mb-8">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="flex min-h-11 items-center gap-2">
               <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-10 w-10" />
               <span className="text-[18px] font-bold text-[#072C0E]">Carbonless</span>
             </Link>
@@ -115,7 +115,7 @@ function ResetContent() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex min-h-11 items-center gap-2">
             <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-10 w-10" />
             <span className="text-[18px] font-bold text-[#072C0E]">Carbonless</span>
           </Link>
@@ -163,9 +163,9 @@ function ResetContent() {
                       placeholder="••••••••"
                       required
                       minLength={8}
-                      className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#072C0E]/30"
+                      className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#072C0E]/30"
                     />
-                    <button type="button" onClick={() => setShowPassword(v => !v)} aria-pressed={showPassword} aria-label={tr ? (showPassword ? 'Şifreyi gizle' : 'Şifreyi göster') : (showPassword ? 'Hide password' : 'Show password')} className="text-[#072C0E]/40 hover:text-[#072C0E]">
+                    <button type="button" onClick={() => setShowPassword(v => !v)} aria-pressed={showPassword} aria-label={tr ? (showPassword ? 'Şifreyi gizle' : 'Şifreyi göster') : (showPassword ? 'Hide password' : 'Show password')} className="-m-3 shrink-0 rounded-full p-3 text-[#072C0E]/40 hover:text-[#072C0E]">
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
@@ -182,7 +182,7 @@ function ResetContent() {
                       placeholder="••••••••"
                       required
                       minLength={8}
-                      className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#072C0E]/30"
+                      className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#072C0E]/30"
                     />
                   </div>
                 </div>

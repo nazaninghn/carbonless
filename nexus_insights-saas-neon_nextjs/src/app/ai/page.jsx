@@ -6,6 +6,7 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import EcoVisual from '@/components/EcoVisual';
+import Reveal from '@/components/Reveal';
 
 export default function AiPage() {
   const { language } = useLanguage();
@@ -16,15 +17,17 @@ export default function AiPage() {
       <Header wide />
       <main>
         {/* Hero — two columns: text left, image right */}
-        <section className="py-12 sm:py-16 lg:py-28">
+        <section className="py-10 sm:py-14 lg:py-20">
           <div className="max-w-6xl mx-auto px-4 sm:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
               {/* Left: Text */}
               <div>
-                <h1 className="lp-display">
-                  Carbonless <span className="text-[#2ABD41]">AI</span>
-                </h1>
-                <div className="mt-6 sm:mt-8 space-y-4 lp-text-block max-w-lg">
+                <Reveal>
+                  <h1 className="lp-display">
+                    Carbonless <span className="text-[#2ABD41]">AI</span>
+                  </h1>
+                </Reveal>
+                <Reveal delay={80} className="mt-5 sm:mt-6 space-y-4 lp-text-block max-w-lg">
                   <p>
                     {tr
                       ? 'Carbonless AI, karbon hesaplama sürecini tamamen dönüştürür. Verilerinizi doğal dilde anlatın — AI emisyonlarınızı sınıflandırır, hesaplar ve raporlar.'
@@ -40,10 +43,10 @@ export default function AiPage() {
                       ? 'Tablo yok, bekleme yok. Sadece konuşun, sonucu alın.'
                       : 'No spreadsheets, no waiting. Just talk, get results.'}
                   </p>
-                </div>
+                </Reveal>
 
                 {/* Features list */}
-                <div className="mt-8 space-y-3">
+                <Reveal delay={160} className="mt-7 space-y-3">
                   {(tr
                     ? ['Doğal dil ile veri girişi', 'Anlık emisyon hesaplama', 'ISO 14064-1 PDF raporu', 'Azaltma önerileri']
                     : ['Natural language data entry', 'Instant emission calculation', 'ISO 14064-1 PDF report', 'Reduction recommendations']
@@ -57,22 +60,22 @@ export default function AiPage() {
                       <span className="lp-body font-medium">{item}</span>
                     </div>
                   ))}
-                </div>
+                </Reveal>
 
                 {/* CTA */}
-                <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
+                <Reveal delay={240} className="mt-8 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
                   <NextLink href="/register" className="btn btn-lg bg-[#072C0E] text-white hover:bg-[#175022] transition-all hover:-translate-y-0.5 shadow-lg">
                     {tr ? 'Ücretsiz Dene' : 'Try Free'}
                     <ArrowRight size={16} />
                   </NextLink>
-                </div>
+                </Reveal>
               </div>
 
               {/* Right: public/eco.png (replaces the earlier head picture, ai-img.png, which stays in the project): it faces the text,
                   fades in and rises once when it first scrolls into view, then floats gently (see EcoVisual) */}
               <div className="flex items-center justify-center">
                 <EcoVisual
-                  className="max-w-[560px] lg:max-w-none"
+                  className="max-w-[280px] sm:max-w-[440px] lg:max-w-[400px]"
                   alt={tr ? 'Yapraklardan, ağaçlardan ve devre hatlarından oluşan bir insan profili' : 'A human profile made of leaves, trees and circuit lines'}
                 />
               </div>
@@ -80,17 +83,17 @@ export default function AiPage() {
           </div>
         </section>
         {/* How it Works */}
-        <section className="py-12 sm:py-16 lg:py-24 bg-green-50">
+        <section className="py-12 sm:py-16 lg:py-20 bg-green-50">
           <div className="max-w-6xl mx-auto px-4 sm:px-8">
-            <div className="text-center mb-8 sm:mb-14">
+            <Reveal className="text-center mb-8 sm:mb-12">
               <h2 className="lp-h2">
                 {tr ? 'Nasıl çalışır?' : 'How it works'}
               </h2>
               <p className="lp-lead mx-auto">
                 {tr ? 'Dört adımda, dakikalar içinde denetime hazır raporunuz.' : 'Four steps to an audit-ready report, in minutes.'}
               </p>
-            </div>
-            <div className="rounded-2xl border border-[#DEFAE1] bg-white p-5 sm:p-8">
+            </Reveal>
+            <Reveal delay={100} className="rounded-2xl border border-[#DEFAE1] bg-white p-5 sm:p-8">
               <div className="relative grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-6">
                 <div aria-hidden className="hidden lg:block absolute left-[12.5%] right-[12.5%] top-6 h-px bg-[#DEFAE1]" />
                 {[
@@ -116,7 +119,7 @@ export default function AiPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Reveal>
           </div>
         </section>
       </main>

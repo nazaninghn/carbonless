@@ -288,6 +288,59 @@ def _required_unanswered_ids(report):
     return deferral.required_unanswered(deferral.saved_answers(report))
 
 
+def _completion_refusal(report, step, lang, missing):
+    """Why this inventory cannot be finished yet, as the body of a 400, or None when it can. The one definition of
+    "finished", for the signature (which closes the inventory) and for 7B-INFO. `first_question` is where the user
+    is sent to resolve it. `missing`: the required questions the caller's point in the route still lacks."""
+    # A question left for later is unresolved: the inventory cannot be finished around it.
+    pending = _applicable_pending(report)
+    if pending:
+        msg_en = (f'This inventory cannot be marked complete yet — {len(pending)} question'
+                  f'{"s are" if len(pending) != 1 else " is"} still marked "I don\'t know — answer later".')
+        msg_tr = (f'Bu envanter henüz tamamlanamaz — {len(pending)} soru hâlâ "Bilmiyorum — sonra yanıtla" '
+                  f'olarak işaretli.')
+        msg = msg_tr if lang == 'tr' else msg_en
+        return {'success': False, 'step': step, 'next_step': step, 'code': 'pending_questions',
+                'error': msg, 'error_en': msg_en, 'error_tr': msg_tr, 'first_question': pending[0],
+                'pending_questions': pending, 'bot_messages': [f'❌ {msg}']}
+    # A question the questionnaire requires on this inventory's route cannot be skipped around by
+    # calling the API out of order: every required question that applies must have its answer.
+    if missing:
+        msg_en = (f'This inventory cannot be marked complete yet — {len(missing)} required question'
+                  f'{"s are" if len(missing) != 1 else " is"} unanswered: {", ".join(missing[:8])}'
+                  f'{"…" if len(missing) > 8 else ""}.')
+        msg_tr = (f'Bu envanter henüz tamamlanamaz — {len(missing)} zorunlu soru yanıtsız: '
+                  f'{", ".join(missing[:8])}{"…" if len(missing) > 8 else ""}.')
+        msg = msg_tr if lang == 'tr' else msg_en
+        return {'success': False, 'step': step, 'next_step': step, 'code': 'required_unanswered',
+                'error': msg, 'error_en': msg_en, 'error_tr': msg_tr, 'first_question': missing[0],
+                'required_unanswered': missing, 'bot_messages': [f'❌ {msg}']}
+    # Completion used to be gated purely on "was 7B-INFO answered
+    # 'done'", with no check that anything came before it. Verified
+    # live: PATCHing a brand-new report (nothing saved but the
+    # auto-created A1) straight to 7B-INFO/'done' instantly marked it
+    # COMPLETED and both PDF exports generated successfully for an
+    # essentially empty report. Exact per-user question counts can't
+    # be replicated here (only the frontend's getApplicableQuestions
+    # knows which of the ~130 Phase-2 questions apply after
+    # conditional branches — see _progress()'s docstring above), so
+    # this is a floor, not an exact check: Phase 1 must have actually
+    # finished (handle_D4 flips status to IN_PROGRESS) and a
+    # meaningful number of Phase-2 answers must exist.
+    PHASE1_STEP_IDS = {
+        'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a', 'A7b',
+        'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
+        'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
+    }
+    MIN_PHASE2_STEPS = 15
+    phase2_count = report.steps.exclude(step_id__in=PHASE1_STEP_IDS).count()
+    if report.status == CarbonReport.Status.DRAFT or phase2_count < MIN_PHASE2_STEPS:
+        return {'success': False, 'step': step, 'next_step': step,
+                'error': 'This inventory cannot be marked complete yet — required questions have not been answered.',
+                'bot_messages': ['❌ This inventory cannot be marked complete yet — required questions have not been answered.']}
+    return None
+
+
 def _clear_pending(report, step_id):
     """A saved answer resolves the question: drop it from the pending list. A plain UPDATE, so
     nothing else of the report (status, updated_at, other fields) is touched."""
@@ -830,6 +883,15 @@ class SubmitStepView(APIView):
         # exactly what it did before this block existed; an exception rolls everything back.) ──
         with transaction.atomic():
             begin_write()
+            # The signature closes the inventory, so it is what has to be earned: checked here, under the lock and
+            # before anything is saved. A completed but unsigned inventory already passed the completion check of
+            # its day and is locked against the edits that could satisfy this one, so its first signing stays open.
+            completes = step == SIGN_OFF_STEP and report.status != CarbonReport.Status.COMPLETED
+            if completes:
+                from . import deferral
+                refusal = _completion_refusal(report, step, lang, deferral.required_before_signature(deferral.saved_answers(report)))
+                if refusal:
+                    return Response(refusal, status=400)
             before = _saved_answer(report, step)
             _save_report_step(report, step, data if data else {})
             if facility_count_update is not None:
@@ -845,6 +907,37 @@ class SubmitStepView(APIView):
             # approval already notifies the approvers with what it changes.
             answer_edited = before != _saved_answer(report, step)
 
+            # The signature is the last write this inventory takes: 7A-INFO and 7B-INFO behind it are never saved
+            # (the gate refuses them), so finishing here is the only place it can happen. A plain UPDATE: a signed
+            # row accepts no .save(). All or nothing with the signature above.
+            if step == SIGN_OFF_STEP:
+                CarbonReport.objects.filter(pk=report.pk).update(
+                    status=CarbonReport.Status.COMPLETED, current_step='DONE',
+                    client_progress=report.client_progress, updated_at=timezone.now())
+                report.status, report.current_step = CarbonReport.Status.COMPLETED, 'DONE'
+                if completes:
+                    logger.info(f"✅ COMPLETED: Report {report.id} by user {request.user.id}")
+                    from emissions.audit import log_company_activity
+                    log_company_activity(
+                        request.user, report.company_id, 'inventory_completed',
+                        f'{report.title or report.reporting_year} · {report.reporting_year} envanteri tamamlandı',
+                        f'{report.title or report.reporting_year} · {report.reporting_year} inventory completed',
+                        target_type='CarbonReport', target_id=report.id, request=request)
+                elif answer_edited:
+                    from .notifications import notify_completed_inventory_edited
+                    notify_completed_inventory_edited(report, request.user, step)
+                return Response({
+                    'success': True,
+                    'step': step,
+                    'next_step': None,  # ✅ CRITICAL: NULL means done
+                    'completed': True,
+                    'status': 'COMPLETED',
+                    'report_id': report.id,
+                    'reporting_year': report.reporting_year,
+                    'signed_at': report.signed_at.isoformat() if report.signed_at else None,
+                    'message': 'Inventory signed and completed',
+                })
+
             # ✅ CRITICAL: Mark report as COMPLETED when final question is submitted
             is_final_step = (
                 step == '7B-INFO' and
@@ -853,65 +946,10 @@ class SubmitStepView(APIView):
             )
 
             if is_final_step:
-                # A question left for later is unresolved: the inventory cannot be finished around it.
-                pending = _applicable_pending(report)
-                if pending:
-                    msg_en = (f'This inventory cannot be marked complete yet — {len(pending)} question'
-                              f'{"s are" if len(pending) != 1 else " is"} still marked "I don\'t know — answer later".')
-                    msg_tr = (f'Bu envanter henüz tamamlanamaz — {len(pending)} soru hâlâ "Bilmiyorum — sonra yanıtla" '
-                              f'olarak işaretli.')
-                    msg = msg_tr if lang == 'tr' else msg_en
-                    return Response({
-                        'success': False, 'step': step, 'next_step': step, 'code': 'pending_questions',
-                        'error': msg, 'error_en': msg_en, 'error_tr': msg_tr,
-                        'pending_questions': pending, 'bot_messages': [f'❌ {msg}'],
-                    }, status=400)
-                # A question the questionnaire requires on this inventory's route cannot be skipped around by
-                # calling the API out of order: every required question that applies must have its answer.
                 from . import deferral
-                missing = deferral.required_unanswered(deferral.saved_answers(report))
-                if missing:
-                    msg_en = (f'This inventory cannot be marked complete yet — {len(missing)} required question'
-                              f'{"s are" if len(missing) != 1 else " is"} unanswered: {", ".join(missing[:8])}'
-                              f'{"…" if len(missing) > 8 else ""}.')
-                    msg_tr = (f'Bu envanter henüz tamamlanamaz — {len(missing)} zorunlu soru yanıtsız: '
-                              f'{", ".join(missing[:8])}{"…" if len(missing) > 8 else ""}.')
-                    msg = msg_tr if lang == 'tr' else msg_en
-                    return Response({
-                        'success': False, 'step': step, 'next_step': step, 'code': 'required_unanswered',
-                        'error': msg, 'error_en': msg_en, 'error_tr': msg_tr,
-                        'required_unanswered': missing, 'bot_messages': [f'❌ {msg}'],
-                    }, status=400)
-                # Completion used to be gated purely on "was 7B-INFO answered
-                # 'done'", with no check that anything came before it. Verified
-                # live: PATCHing a brand-new report (nothing saved but the
-                # auto-created A1) straight to 7B-INFO/'done' instantly marked it
-                # COMPLETED and both PDF exports generated successfully for an
-                # essentially empty report. Exact per-user question counts can't
-                # be replicated here (only the frontend's getApplicableQuestions
-                # knows which of the ~130 Phase-2 questions apply after
-                # conditional branches — see _progress()'s docstring above), so
-                # this is a floor, not an exact check: Phase 1 must have actually
-                # finished (handle_D4 flips status to IN_PROGRESS) and a
-                # meaningful number of Phase-2 answers must exist.
-                PHASE1_STEP_IDS = {
-                    'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a', 'A7b',
-                    'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
-                    'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
-                }
-                MIN_PHASE2_STEPS = 15
-                phase2_count = report.steps.exclude(step_id__in=PHASE1_STEP_IDS).count()
-                if report.status == CarbonReport.Status.DRAFT or phase2_count < MIN_PHASE2_STEPS:
-                    return Response({
-                        'success': False,
-                        'step': step,
-                        'next_step': step,
-                        'error': 'This inventory cannot be marked complete yet — required questions have not been answered.',
-                        'bot_messages': [
-                            '❌ This inventory cannot be marked complete yet — required questions have not been answered.'
-                        ],
-                    }, status=400)
-
+                refusal = _completion_refusal(report, step, lang, deferral.required_unanswered(deferral.saved_answers(report)))
+                if refusal:
+                    return Response(refusal, status=400)
                 if answer_edited:
                     from .notifications import notify_completed_inventory_edited
                     notify_completed_inventory_edited(report, request.user, step)
@@ -939,13 +977,7 @@ class SubmitStepView(APIView):
 
             # Not final step - update and continue
             report.current_step = step
-            if report.signed_at:
-                # Signed by this very save (the first signing): a signed row accepts no .save(), so the
-                # bookkeeping goes through a plain UPDATE of the same three fields.
-                CarbonReport.objects.filter(pk=report.pk).update(
-                    current_step=step, client_progress=report.client_progress, updated_at=timezone.now())
-            else:
-                report.save(update_fields=['current_step', 'updated_at', 'client_progress'])
+            report.save(update_fields=['current_step', 'updated_at', 'client_progress'])
 
             # ── Phase 2: questions that ask for an activity amount (fuel, electricity,
             # freight, waste) become EmissionEntry rows; see step_entries.py ──
@@ -1075,6 +1107,7 @@ class ReportStatusView(APIView):
                 'title': report.title or f'Report {report.id}',
                 'current_step': report.current_step or 'A1',
                 'status': report.status,
+                'signed_at': report.signed_at.isoformat() if report.signed_at else None,
                 'answers': answers,  # ✅ Include all answers
                 'company': company_data,
                 'reporting_year': report.reporting_year,
@@ -1664,6 +1697,8 @@ class RestartReportView(APIView):
             report = _company_reports(request.user).get(id=report_id)
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Report not found'}, status=404)
+        from .immutability import assert_not_signed
+        assert_not_signed(report)        # a signed inventory accepts no write, whatever its status says
         if report.status == CarbonReport.Status.COMPLETED:
             return Response({'error': 'A completed inventory cannot be restarted.'}, status=400)
 

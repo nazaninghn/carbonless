@@ -611,7 +611,7 @@ export default function ReductionTargetsTab({
     return { onTrack, succeeded, offTrack, totalReductionPct };
   }, [targets, currentKg]);
 
-  const FIELD = 'h-9 w-full rounded-[10px] border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-3 text-[13px] font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15';
+  const FIELD = 'h-9 max-lg:h-11 w-full rounded-[10px] border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-3 text-[13px] font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15';
   const LABEL = 'mb-1.5 block text-xs font-bold text-[#072C0E]/60';
 
   return (
@@ -888,13 +888,13 @@ export default function ReductionTargetsTab({
               <button
                 type="button"
                 onClick={() => setEditTarget(null)}
-                className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-smoke"
+                className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 max-lg:min-h-11 text-xs font-bold transition hover:bg-smoke"
               >
                 {tr ? 'İptal' : 'Cancel'}
               </button>
               <button
                 type="submit" form="edit-target-form" disabled={editSaving}
-                className="rounded-full btn-dark px-6 py-2.5 text-xs font-bold transition-colors"
+                className="rounded-full btn-dark px-6 py-2.5 max-lg:min-h-11 text-xs font-bold transition-colors"
               >
                 {editSaving ? '…' : (tr ? 'Kaydet' : 'Save Changes')}
               </button>
@@ -1043,13 +1043,13 @@ export default function ReductionTargetsTab({
               <button
                 type="button"
                 onClick={() => { setShowForm(false); resetForm(); }}
-                className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-smoke"
+                className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 max-lg:min-h-11 text-xs font-bold transition hover:bg-smoke"
               >
                 {tr ? 'İptal' : 'Cancel'}
               </button>
               <button
                 type="submit" form="target-form" disabled={saving}
-                className="rounded-full btn-dark px-6 py-2.5 text-xs font-bold transition-colors"
+                className="rounded-full btn-dark px-6 py-2.5 max-lg:min-h-11 text-xs font-bold transition-colors"
               >
                 {saving ? '…' : (tr ? 'Hedefi Kaydet' : 'Save Target')}
               </button>

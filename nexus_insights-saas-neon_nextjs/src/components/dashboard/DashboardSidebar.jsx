@@ -144,7 +144,7 @@ export default function DashboardSidebar({
           <div className="flex h-14 items-center justify-between border-b border-[#E6EDE7] px-4">
             <button
               onClick={() => navigate('dashboard')}
-              className="flex min-w-0 items-center gap-2.5"
+              className="flex min-w-0 items-center gap-2.5 max-lg:min-h-11"
             >
               <Image src="/carbonless.png" alt="Carbonless" width={36} height={36} className="h-9 w-9 object-contain" />
               <span className="min-w-0 text-left leading-tight">
@@ -203,7 +203,7 @@ export default function DashboardSidebar({
               {tr ? 'Envanterinizi açıklatın, azaltım fikirleri isteyin.' : 'Get your inventory explained and ask for reduction ideas.'}
             </p>
             <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('carbonless:assistant', { detail: { open: true } }))}
-              className="mt-2 w-full rounded-md bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0E2A14] transition hover:bg-[#F1FCF2]">
+              className="mt-2 w-full rounded-md bg-white px-2.5 py-1 max-lg:min-h-11 text-[11px] font-semibold text-[#0E2A14] transition hover:bg-[#F1FCF2]">
               {tr ? 'AI asistanı aç' : 'Open AI assistant'}
             </button>
           </div>
@@ -269,7 +269,7 @@ export default function DashboardSidebar({
 
             <button
               onClick={() => setShowLogoutConfirm(true)}
-              className="flex h-7 w-full items-center justify-center gap-1.5 rounded-md px-2 text-[11px] font-semibold text-red-500/80 transition hover:bg-red-50 hover:text-red-600"
+              className="flex h-7 max-lg:h-11 w-full items-center justify-center gap-1.5 rounded-md px-2 text-[11px] font-semibold text-red-500/80 transition hover:bg-red-50 hover:text-red-600"
             >
               <LogOut className="h-3 w-3" />
               {tr ? 'Çıkış' : 'Logout'}
@@ -292,7 +292,7 @@ export default function DashboardSidebar({
       <nav
         aria-label={tr ? 'Mobil gezinme' : 'Mobile navigation'}
         className="
-          fixed bottom-0 left-0 right-0 z-40
+          fixed bottom-0 left-0 right-0 z-40 [@media(max-height:480px)]:hidden
           border-t border-[#DEFAE1]
           bg-white/95 backdrop-blur-sm
           lg:hidden

@@ -80,7 +80,7 @@ test.describe('phone slideshow (About)', () => {
     await open(page);
     await expect(page.getByTestId('phone-slideshow')).toHaveAttribute('data-playing', 'true');
 
-    await page.evaluate(() => window.scrollTo(0, 0));                                  // phone out of view
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));   // phone out of view (the Hero is short now, so the top of the page shows it)
     await expect(page.getByTestId('phone-slideshow')).toHaveAttribute('data-playing', 'false');
     await page.waitForTimeout(600);                                                    // let a running fade finish
     const held = await activeIndex(page);

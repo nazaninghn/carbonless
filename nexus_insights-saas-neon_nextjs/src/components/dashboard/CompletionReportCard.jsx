@@ -233,6 +233,13 @@ export default function CompletionReportCard({
         </div>
       )}
 
+      {report?.signed_at && (
+        <p data-testid="inventory-signed-note" className="flex items-start gap-2 rounded-xl border border-[#2ABD41]/25 bg-[#F1FCF2] px-3 py-2 text-xs font-semibold text-[#175022]">
+          <CheckCircle2 className="mt-px h-3.5 w-3.5 shrink-0 text-[#2ABD41]" aria-hidden="true" />
+          {tr ? 'Bu envanter imzalandı ve tamamlandı. Artık değiştirilemez.' : 'This inventory is signed and complete. It can no longer be changed.'}
+        </p>
+      )}
+
       {/* Assumptions */}
       {assumptions.length > 0 && (
         <div className="mb-6 p-5 bg-smoke rounded-xl border border-graphite/25">

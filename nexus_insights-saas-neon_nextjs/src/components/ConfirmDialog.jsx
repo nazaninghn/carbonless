@@ -72,9 +72,9 @@ export default function ConfirmDialog({ open, onConfirm, onCancel, title, messag
       aria-describedby="confirm-dialog-message"
       aria-busy={busy || undefined}
       data-testid={testId}
-      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/15 p-4 backdrop-blur-md ${solidOnSmall ? 'max-lg:bg-[#072C0E]/35' : ''}`}
+      className={`fixed inset-0 z-[9999] flex overflow-y-auto bg-black/15 p-4 backdrop-blur-md ${solidOnSmall ? 'max-lg:bg-[#072C0E]/35' : ''}`}
     >
-      <div className={`w-full max-w-sm animate-in rounded-[1.5rem] border border-[#072C0E]/10 bg-white/92 p-6 shadow-[0_20px_60px_rgba(7, 44, 14,0.15)] backdrop-blur-2xl ${solidOnSmall ? 'max-lg:bg-white' : ''}`}>
+      <div className={`m-auto w-full max-w-sm animate-in rounded-[1.5rem] border border-[#072C0E]/10 bg-white/92 p-6 shadow-[0_20px_60px_rgba(7, 44, 14,0.15)] backdrop-blur-2xl ${solidOnSmall ? 'max-lg:bg-white' : ''}`}>
         {/* Icon */}
         <div className="mb-4 flex justify-center">
           <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${type === 'danger' ? 'bg-red-50 text-red-500' : 'bg-[#DEFAE1] text-[#072C0E]'}`}>

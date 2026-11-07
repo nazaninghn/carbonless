@@ -304,7 +304,7 @@ export default function TeamManagement({ language }) {
                       value={m.role}
                       onChange={e => handleRoleChange(m.id, e.target.value)}
                       disabled={updating === m.id}
-                      className={`px-2.5 py-1 rounded-xl text-xs font-medium border cursor-pointer disabled:opacity-50 ${roleInfo.color}`}
+                      className={`px-2.5 py-1 max-lg:min-h-11 rounded-xl text-xs font-medium border cursor-pointer disabled:opacity-50 ${roleInfo.color}`}
                     >
                       {ROLES.filter(r => r.value !== 'owner').map(r => (
                         <option key={r.value} value={r.value}>
@@ -317,7 +317,7 @@ export default function TeamManagement({ language }) {
                   {amOwner && m.role === 'admin' && m.is_active && (
                     <button
                       onClick={() => setTransferTo(m)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-medium border border-amber-200 text-amber-700 hover:bg-amber-50 transition-colors"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 max-lg:min-h-11 rounded-xl text-xs font-medium border border-amber-200 text-amber-700 hover:bg-amber-50 transition-colors"
                     >
                       <Crown className="w-3 h-3" />
                       {tr ? 'Sahipliği devret' : 'Make owner'}
@@ -329,7 +329,7 @@ export default function TeamManagement({ language }) {
                     <button
                       onClick={() => (m.is_active ? setConfirmDeactivate(m) : handleToggleActive(m))}
                       disabled={updating === m.id}
-                      className={`px-2.5 py-1 rounded-xl text-xs font-medium border transition-colors disabled:opacity-50 ${
+                      className={`px-2.5 py-1 max-lg:min-h-11 rounded-xl text-xs font-medium border transition-colors disabled:opacity-50 ${
                         m.is_active
                           ? 'border-red-200 text-red-600 hover:bg-red-50'
                           : 'border-green-200 text-green-600 hover:bg-green-50'
@@ -455,8 +455,8 @@ export default function TeamManagement({ language }) {
       />
 
       {transferTo && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-md rounded-[14px] bg-white p-4 shadow-xl">
+        <div className="fixed inset-0 z-[90] flex overflow-y-auto bg-black/40 p-4" role="dialog" aria-modal="true">
+          <div className="m-auto w-full max-w-md rounded-[14px] bg-white p-4 shadow-xl">
             <h3 className="flex items-center gap-2 text-base font-bold text-[#072C0E]">
               <Crown className="h-4 w-4 text-amber-500" />
               {tr ? 'Şirket sahipliği devredilsin mi?' : 'Transfer company ownership?'}

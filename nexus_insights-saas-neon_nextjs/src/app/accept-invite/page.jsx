@@ -66,7 +66,7 @@ function AcceptInviteContent() {
     <main className="min-h-screen bg-[#F1FCF2] flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex min-h-11 items-center gap-2">
             <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-10 w-10" />
             <span className="text-[18px] font-bold text-[#072C0E]">Carbonless</span>
           </Link>

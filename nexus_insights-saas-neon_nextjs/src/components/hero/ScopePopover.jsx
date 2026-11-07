@@ -36,13 +36,13 @@ export default function ScopePopover({ scope, lang, copy, mode, visualRef, onClo
       const W = el.offsetWidth, H = el.offsetHeight;
       const slot = k => { const b = vis.querySelector(`[data-testid="hero-scope-${k}"]`).getBoundingClientRect(); return { x: b.left - vr.left, y: b.top - vr.top, w: b.width, h: b.height }; };
       // the headline block below the stage is an obstacle too: the popover never covers the headline or the buttons
-      const copyEl = vis.parentElement.querySelector('.hero-copy');
+      const copyEl = vis.querySelector('.hero-report');   // the report preview beside the globe is an obstacle too
       const cb = copyEl ? copyEl.getBoundingClientRect() : null;
       const R = slot(scope);
       const others = SCOPES.map(s => s.key).filter(k => k !== scope).map(slot);
       const obstacles = cb ? [...others, { x: cb.left - vr.left, y: cb.top - vr.top + 8, w: cb.width, h: cb.height }] : others;
-      const isLeft = scope !== 's2';
-      const copyTop = cb ? cb.top - vr.top + 8 : Infinity;
+      const isLeft = true;   // all three cards stand on the left of the globe
+      const copyTop = Infinity;
       const minY = HEADER - vr.top, maxView = vh - MARGIN - vr.top - H, maxCopy = Math.min(maxView, copyTop - 6 - H);
       const minX = MARGIN - vr.left, maxX = vw - MARGIN - vr.left - W;
       const clamp = (v, lo, hi) => (lo > hi ? lo : Math.min(Math.max(v, lo), hi));
@@ -62,7 +62,7 @@ export default function ScopePopover({ scope, lang, copy, mode, visualRef, onClo
       };
       const fits = (p, maxY) => p.x >= minX - 0.5 && p.x <= maxX + 0.5 && p.y >= minY - 0.5 && p.y <= maxY + 0.5;
       const clearOf = (list, p) => list.every(o => p.x + W + 4 <= o.x || p.x >= o.x + o.w + 4 || p.y + H + 6 <= o.y || p.y >= o.y + o.h + 6);
-      const order = isLeft ? ['left', 'below', 'right', 'above'] : ['right', 'below', 'left', 'above'];
+      const order = ['right', 'below', 'above', 'left'];   // over the globe's side first: the left is the copy column
       // first choice: a place clear of the other cards AND the headline block; if the window is too short for that,
       // one clear of the other cards (the popover may then cover part of the headline while it is open)
       const tier1 = order.map(side => make(side, maxCopy));

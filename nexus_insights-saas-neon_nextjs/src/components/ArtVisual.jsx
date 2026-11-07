@@ -7,12 +7,14 @@ import './eco.css';
 /* -- A transparent picture that fades in once and then floats gently (used by EcoVisual: eco.png, and the Our Mission picture) --
    The picture is drawn in a box that starts cropLeft px into the canvas (an empty margin is cropped away: nothing visible is
    lost); the box has a fixed aspect ratio, so nothing shifts while it loads. A soft CSS mask fades the edges where the art is cut
-   off by its canvas (maskClass). Motion (eco.css, .eco-*): when it first scrolls into view it fades in and rises ~22px, once per
+   off by its canvas (maskClass). Motion (eco.css, .eco-*): when it first scrolls into view it fades in and slides in ~24px from the right, once per
    page load; afterwards it floats a few pixels with a barely-there scale, and a soft green glow behind it breathes. The ambient
    motion pauses while the section is out of view or the tab is hidden, and with prefers-reduced-motion the picture is simply
-   shown in its final place. */
+   shown in its final place.
+   Opt-in options (the Our Mission picture uses both): `plain` drops the green glow behind the picture, so the page stays pure
+   white; `lift` makes the picture rise ~6px and grow ~3% when hovered (eco.css, .eco--lift). */
 
-export default function ArtVisual({ src, natW, natH, cropLeft = 0, alt, testId = 'eco', maskClass = '', sizes = '(min-width: 1024px) 620px, 92vw', className = '' }) {
+export default function ArtVisual({ src, natW, natH, cropLeft = 0, alt, testId = 'eco', maskClass = '', sizes = '(min-width: 1024px) 620px, 92vw', className = '', plain = false, lift = false }) {
   const BOX_W = natW - cropLeft;
   const BOX_H = natH;
   const ref = useRef(null);
@@ -60,7 +62,7 @@ export default function ArtVisual({ src, natW, natH, cropLeft = 0, alt, testId =
       data-testid={testId}
       data-shown={shown ? 'true' : 'false'}
       data-ambient={ambient ? 'running' : 'paused'}
-      className={`eco ${className}`}
+      className={`eco ${plain ? 'eco--plain' : ''} ${lift ? 'eco--lift' : ''} ${className}`}
       style={{ aspectRatio: `${BOX_W} / ${BOX_H}` }}
     >
       <div aria-hidden="true" className="eco-glow" />

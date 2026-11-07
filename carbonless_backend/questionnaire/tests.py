@@ -5,6 +5,22 @@ from django.contrib.auth.models import User
 from django.test import TestCase as _DjangoTestCase
 
 
+def signing_without_the_completion_gate(cls):
+    """For tests about what a signature records (snapshots, frozen connections, the lock), whose small fixtures are not
+    whole inventories: they sign without the "is it finished?" check. That check is proved on complete routes of the
+    questionnaire in test_signoff_lifecycle.py."""
+    from unittest import mock
+    original = cls.setUp
+
+    def setUp(self):
+        patcher = mock.patch('questionnaire.views._completion_refusal', return_value=None)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        original(self)
+    cls.setUp = setUp
+    return cls
+
+
 class TestCase(_DjangoTestCase):
     """Every test starts with an empty cache. The step endpoint's per-user
     rate limit (60/min) lives in the cache and is keyed on user ids, which
@@ -2578,6 +2594,7 @@ class FactorNameDedupeTests(StepEntriesTests):
         self.assertAlmostEqual(saved['co2e_kg'], sum(float(e.calculated_co2e_kg) for e in entries), places=3)
 
 
+@signing_without_the_completion_gate
 class EditedAfterSigningTests(_StepPatchTestCase):
     """The sign-off records when it was signed; changing an answer of the
     signed, completed inventory afterwards is flagged until it is signed
@@ -3246,6 +3263,7 @@ class FacilityAttributionTests(StepEntriesTests):
         self.assertAlmostEqual(float(entries[0].calculated_co2e_kg), 400.0, places=3)
 
 
+@signing_without_the_completion_gate
 class LockedInventoryGridConnectionTests(TestCase):
     """A facility's grid connection is changed in Settings: a draft inventory
     follows (as before), a signed / completed one is history — it keeps its
@@ -3546,6 +3564,7 @@ class ISOReportDeclaredButUncalculatedCategoryTests(TestCase):
         self.assertEqual(declared_zero_categories(self.report, {CAT_VI: 3.0}), set())   # quantified elsewhere
 
 
+@signing_without_the_completion_gate
 class LockedInventoryProposalAndLegacyTests(TestCase):
     """The two edge cases of a signed / completed inventory:
     1. a data-entry member's grid-connection proposal (nobody has accepted it)
@@ -3803,6 +3822,7 @@ class LockedInventoryProposalAndLegacyTests(TestCase):
         self.assertEqual(self._history('inventory_facility_renamed'), [])
 
 
+@signing_without_the_completion_gate
 class LockedInventoryRecalculationFromAFactorTests(TestCase):
     """An approved facility factor (Özel Talep) recalculates the year's
     inventory; for a signed one that is a change after signing."""
@@ -3896,6 +3916,7 @@ class RecyclingCreditDisclosureTests(TestCase):
         self.assertEqual(self._texts('tr'), [])
 
 
+@signing_without_the_completion_gate
 class FacilityConnectionEnforcementTests(TestCase):
     """Every way of changing Facility.grid_connection must leave signed /
     completed inventories on the connection they were applied with: save()

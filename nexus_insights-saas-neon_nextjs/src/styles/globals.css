@@ -469,3 +469,21 @@
   .app-btn-sm { height: var(--app-control-h-sm); padding: 0 0.625rem; font-size: 0.75rem; border-radius: 8px; }
   .app-btn svg { width: 0.9375rem; height: 0.9375rem; flex-shrink: 0; }
 }
+
+/* ===========================================================================================================
+   TOUCH SIZING (all pages): on screens narrower than 1024px and on touch devices the compact controls become comfortable
+   44px tap targets (WCAG 2.5.5 / Apple HIG); on a desktop with a mouse the compact app shell is unchanged.
+     - the app-shell tokens (nav item, control, small control) and the shared small button / icon button
+   =========================================================================================================== */
+@layer components {
+  @media (max-width: 1023px), (pointer: coarse) {
+    :root {
+      --app-nav-item-h: 2.75rem;
+      --app-control-h: 2.75rem;
+      --app-control-h-sm: 2.75rem;
+    }
+    .btn-sm { min-height: 2.75rem; }
+    .btn-icon { width: 2.75rem; height: 2.75rem; }
+    .btn-icon.btn-sm { width: 2.75rem; height: 2.75rem; }
+  }
+}

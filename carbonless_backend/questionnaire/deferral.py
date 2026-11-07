@@ -52,6 +52,11 @@ MESSAGES = {
 }
 
 
+SIGN_OFF_STEP = '7C-2'
+SIGN_OFF_CHECK_STEP = '7C-1'
+SIGN_OFF_CHECK_READY = 'all_complete'
+
+
 def policy():
     global _POLICY
     if _POLICY is None:
@@ -298,6 +303,24 @@ def required_unanswered(answers):
     Q = policy()
     return [qid for qid in route_ids(answers)
             if must_answer(Q.get(qid), answers) and qid not in (answers or {})]
+
+
+def required_before_signature(answers):
+    """What stands between this inventory and its signature: the required questions the route reaches BEFORE the
+    sign-off (7C-2). The signature closes the inventory, so what the route lists after it (7B-INFO and the
+    assumptions review behind it) can never be answered and is not asked for. An inventory the user declared
+    unfinished (7C-1 answered "something is missing") reports 7C-1: the route walk steps over that question's section
+    picker, so its answer is read here, or a direct call could sign what the user said was not ready."""
+    Q = policy()
+    missing = []
+    for qid in route_ids(answers):
+        if qid == SIGN_OFF_STEP:
+            break
+        if must_answer(Q.get(qid), answers) and qid not in (answers or {}):
+            missing.append(qid)
+    if SIGN_OFF_CHECK_STEP in (answers or {}) and read_value(answers, SIGN_OFF_CHECK_STEP) != SIGN_OFF_CHECK_READY:
+        missing.append(SIGN_OFF_CHECK_STEP)
+    return missing
 
 
 # ── the saved answers, in the shape the route walk expects ──────────────────

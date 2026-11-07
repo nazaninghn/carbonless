@@ -6,7 +6,7 @@
  *  - the landing page keeps the laptop illustration in its AI section (its own spec: about-laptop.spec.js)
  *  - About stays pure white; the AI section is a very pale brand green that melts in from the white above and out into the
  *    white below: no visible line between them (checked on real screenshot pixels)
- *  - the picture fades in and rises once when it first scrolls into view, then floats gently; the ambient motion pauses
+ *  - the picture fades in and slides in from the right once when it first scrolls into view, then floats gently; the ambient motion pauses
  *    off screen / in a hidden tab; reduced motion shows it at once, still; no layout shift while it loads
  */
 import { test, expect } from '@playwright/test';
@@ -68,10 +68,10 @@ test.describe('eco.png', () => {
     const text = await page.evaluate(sel => { const b = document.querySelector(sel).getBoundingClientRect(); return { x: b.x, y: b.y, r: b.right, b: b.bottom }; }, TEXT);
     expect(eco.x).toBeGreaterThan(text.r - 4);
     expect(Math.abs((eco.y + eco.b) / 2 - (text.y + text.b) / 2)).toBeLessThan(60);
-    expect(eco.w).toBeGreaterThan(420); expect(eco.w).toBeLessThan(600);
+    expect(eco.w).toBeGreaterThan(360); expect(eco.w).toBeLessThan(600);      // 400 px: a restrained size
   });
 
-  test('enters once: fades in and rises a few pixels as the section first shows, then floats gently; plays only once per page load', async ({ page }) => {
+  test('enters once: fades in and slides in a few pixels from the right as the section first shows, then floats gently; plays only once per page load', async ({ page }) => {
     test.setTimeout(40_000);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     // the picture is part of the first screen of /ai, so its entrance runs as the page opens: record it from the first frame
@@ -79,7 +79,7 @@ test.describe('eco.png', () => {
       window.__eco = [];
       const tick = () => {
         const e = document.querySelector('.eco-in');
-        if (e) { const cs = getComputedStyle(e); window.__eco.push([Number(cs.opacity), new DOMMatrix(cs.transform).m42, performance.now()]); }
+        if (e) { const cs = getComputedStyle(e); window.__eco.push([Number(cs.opacity), new DOMMatrix(cs.transform).m41, performance.now()]); }
         requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
@@ -90,12 +90,12 @@ test.describe('eco.png', () => {
     const samples = await page.evaluate(() => window.__eco);
     expect(samples.length).toBeGreaterThan(20);
     expect(samples[0][0]).toBeLessThan(0.2);                                                   // it starts hidden...
-    expect(samples[0][1]).toBeGreaterThan(8);                                                  // ...a little lower
+    expect(samples[0][1]).toBeGreaterThan(8);                                                  // ...a little to the right
     const mid = samples.find(s => s[0] > 0.1 && s[0] < 0.9);
     expect(mid).toBeTruthy();                                                                  // a real fade, not a cut
     const last = samples[samples.length - 1];
     expect(last[0]).toBe(1); expect(Math.abs(last[1])).toBeLessThan(0.5);                      // settled in its final place
-    for (let i = 1; i < samples.length; i++) { expect(samples[i][0]).toBeGreaterThanOrEqual(samples[i - 1][0] - 0.001); expect(samples[i][1]).toBeLessThanOrEqual(samples[i - 1][1] + 0.5); }   // only forward: in and up
+    for (let i = 1; i < samples.length; i++) { expect(samples[i][0]).toBeGreaterThanOrEqual(samples[i - 1][0] - 0.001); expect(samples[i][1]).toBeLessThanOrEqual(samples[i - 1][1] + 0.5); }   // only forward: in and leftwards into place
     expect(Math.max(...samples.map(s => s[1]))).toBeLessThanOrEqual(24);                       // "a few pixels"
 
     // ambient: floats a few pixels, slowly
@@ -162,13 +162,13 @@ test.describe('eco.png', () => {
   });
 });
 
-test.describe('landing: About white -> AI soft green (with the laptop), and no eco.png anywhere on it', () => {
+test.describe('landing: About and AI plain white (with the laptop), and no eco.png anywhere on it', () => {
   test.beforeEach(async ({ page }) => { await page.emulateMedia({ reducedMotion: 'reduce' }); });
   const sizes = [{ width: 360, height: 740 }, { width: 390, height: 844 }, { width: 430, height: 932 }, { width: 768, height: 1024 }, { width: 820, height: 1180 },
     { width: 1024, height: 768 }, { width: 1280, height: 720 }, { width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1920, height: 1080 }];
   for (const lang of ['en', 'tr']) {
     for (const s of sizes) {
-      test(`${lang} ${s.width}: Hero, About and the AI laptop are as before; About white, AI softly green, no line between them`, async ({ page }) => {
+      test(`${lang} ${s.width}: Hero, About and the AI laptop are as before; About and AI both plain white, no line between them`, async ({ page }) => {
         const requested = [];
         page.on('request', r => requested.push(decodeURIComponent(new URL(r.url()).pathname)));
         await page.setViewportSize(s);
@@ -178,7 +178,7 @@ test.describe('landing: About white -> AI soft green (with the laptop), and no e
         const bg = await page.evaluate(() => {
           const cs = id => getComputedStyle(document.getElementById(id));
           const ai = document.getElementById('ai'), about = document.getElementById('about'), pricing = document.getElementById('pricing');
-          return { about: cs('about').backgroundColor, aboutImg: cs('about').backgroundImage, pricing: cs('pricing').backgroundColor, aiImg: cs('ai').backgroundImage,
+          return { about: cs('about').backgroundColor, aboutImg: cs('about').backgroundImage, pricing: cs('pricing').backgroundColor, aiImg: cs('ai').backgroundImage, aiBg: cs('ai').backgroundColor,
                    aiBorder: [cs('ai').borderTopWidth, cs('ai').borderBottomWidth], aboutBorder: cs('about').borderBottomWidth,
                    aiTop: ai.getBoundingClientRect().top + scrollY, aiBottom: ai.getBoundingClientRect().bottom + scrollY, aiH: ai.offsetHeight, aboutBottom: about.getBoundingClientRect().bottom + scrollY, pricingTop: pricing.getBoundingClientRect().top + scrollY,
                    eco: document.querySelectorAll('[data-testid="eco"], img[src*="eco"]').length, laptopInAi: !!document.querySelector('#ai [data-testid="laptop"]'), laptopInHero: !!document.querySelector('.hero-root [data-testid="laptop"]'),
@@ -186,21 +186,21 @@ test.describe('landing: About white -> AI soft green (with the laptop), and no e
                    heroImgs: [...document.querySelectorAll('.hero-root img')].map(i => decodeURIComponent(i.currentSrc || i.src)),
                    phone: document.querySelectorAll('#about [data-testid="phone-slide"]').length, earth: !!document.querySelector('.hero-root [data-testid="hero-earth"]') };
         });
-        // placement: eco.png appears nowhere on the landing page; the laptop is in the AI section (not in the Hero); the Hero keeps only its Earth
+        // placement: eco.png appears nowhere on the landing page; the laptop is in the AI section (not in the Hero); the Hero keeps its Earth (and the report's logo)
         expect(bg.eco).toBe(0);
         expect(requested.filter(u => /eco\.png/.test(u))).toEqual([]);
         expect(bg.laptopInAi).toBe(true); expect(bg.laptopInHero).toBe(false);
         expect(bg.laptopSrc.length).toBe(2); for (const src of bg.laptopSrc) expect(src).toContain('ai-laptop.png');
-        expect(bg.heroImgs.length).toBe(1); expect(bg.heroImgs[0]).toContain('globalnew-hero.webp'); expect(bg.earth).toBe(true);
+        expect(bg.heroImgs.length).toBe(2); expect(bg.heroImgs[0]).toContain('globalnew-hero.webp'); expect(bg.heroImgs[1]).toContain('carbonless.png'); expect(bg.earth).toBe(true);   // the Earth, and the Carbonless logo on the sample report
         expect(bg.phone).toBe(4);                                                          // the About slideshow is untouched
 
         // backgrounds
         expect(bg.about).toBe('rgb(255, 255, 255)'); expect(bg.aboutImg).toBe('none');
         expect(bg.pricing).toBe('rgb(255, 255, 255)');
-        expect(bg.aiImg).toContain('linear-gradient'); expect(bg.aiImg).toContain('rgb(241, 252, 242)');   // #F1FCF2
+        expect(bg.aiImg).toBe('none'); expect(bg.aiBg).toBe('rgb(255, 255, 255)');   // plain white: no gradient, no tint
         expect(bg.aiBorder).toEqual(['0px', '0px']); expect(bg.aboutBorder).toBe('0px');
         expect(Math.abs(bg.aboutBottom - bg.aiTop)).toBeLessThan(1); expect(Math.abs(bg.aiBottom - bg.pricingTop)).toBeLessThan(1);
-        // real pixels, down a narrow strip at the left margin: no step anywhere (no line), white at both seams, pale green in the middle
+        // real pixels, down a narrow strip at the left margin: no step anywhere (no line), white at both seams, plain white in the middle
         const strip = async (docY0, docY1) => {
           await page.evaluate(y => window.scrollTo({ top: y, behavior: 'instant' }), Math.max(0, docY0));
           await page.waitForTimeout(120);
@@ -217,7 +217,7 @@ test.describe('landing: About white -> AI soft green (with the laptop), and no e
         for (const v of seamBottom[seamBottom.length - 1]) expect(v).toBeGreaterThanOrEqual(244);
         const middle = await strip(bg.aiTop + bg.aiH / 2 - 30, bg.aiTop + bg.aiH / 2 + 30);
         const mid = middle[Math.floor(middle.length / 2)];
-        [241, 252, 242].forEach((v, i) => expect(Math.abs(mid[i] - v)).toBeLessThanOrEqual(12));   // the pale brand green (the laptop's own glow may add a hint)
+        [255, 255, 255].forEach((v, i) => expect(Math.abs(mid[i] - v)).toBeLessThanOrEqual(6));   // still plain white in the middle
         expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
         // the AI text and button are as they were
         const texts = await page.evaluate(() => document.querySelector('#ai .lp-split > div:first-child').innerText);
@@ -244,7 +244,7 @@ test.describe('/ai page: eco.png at every size, in both languages', () => {
         expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
         expect(eco.x).toBeGreaterThanOrEqual(0); expect(eco.r).toBeLessThanOrEqual(s.width);
         expect(Math.abs(eco.w / eco.h - 1256 / 1024)).toBeLessThan(0.02);
-        expect(eco.w).toBeGreaterThan(Math.min(300, s.width * 0.7));
+        expect(eco.w).toBeGreaterThan(Math.min(260, s.width * 0.7));   // a restrained size: 280 px on phones
         expect(overlaps(eco, text, 0)).toBe(false);
         if (s.width >= 1024) expect(eco.x).toBeGreaterThan(text.r - 4); else expect(eco.y).toBeGreaterThan(text.b - 4);       // beside the text, or below it
         expect(await page.getByTestId('eco-img').getAttribute('alt')).toBe(lang === 'tr' ? 'Yapraklardan, ağaçlardan ve devre hatlarından oluşan bir insan profili' : 'A human profile made of leaves, trees and circuit lines');

@@ -1356,7 +1356,7 @@ function Chip({ label, selected, onClick, multi, disabled }) {
       aria-checked={selected}
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-full border px-3 py-2 text-[12.5px] font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed sm:py-1.5 ${
+      className={`max-lg:min-h-11 rounded-full border px-3 py-2 text-[12.5px] font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed sm:py-1.5 ${
         selected
           ? 'btn-primary'
           : 'border-[#175022]/12 bg-white text-[#175022]/70 hover:border-[#8BEA99]/50 hover:bg-[#8BEA99]/8 hover:text-[#175022]'
@@ -2150,7 +2150,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         </div>
         {/* Stays at the bottom of the scrolling answer panel, so a long list
             of chips on a phone never hides it. */}
-        <div className="sticky bottom-0 z-10 -mx-1 border-t border-[#EEF3EF] bg-white px-1 pt-2 pb-1">
+        <div className="sticky bottom-0 z-10 -mx-1 border-t border-[#EEF3EF] bg-white px-1 pt-2 pb-1 [@media(max-height:480px)]:static">
           <button
             onClick={() => onSubmit()}
             disabled={disabled || vals.length === 0}
@@ -2329,7 +2329,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
           lang={lang}
           disabled={disabled}
         />
-        <div className="sticky bottom-0 z-10 -mx-1 border-t border-[#EEF3EF] bg-white px-1 pt-2 pb-1">
+        <div className="sticky bottom-0 z-10 -mx-1 border-t border-[#EEF3EF] bg-white px-1 pt-2 pb-1 [@media(max-height:480px)]:static">
           <button
             onClick={() => onSubmit()}
             disabled={disabled || !allRequiredFilled}
@@ -2406,7 +2406,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     <div className={`flex w-full flex-col gap-2 ${(subtype === 'numeric' || type === 'numeric' || unitList.length > 0) ? 'max-w-sm' : 'max-w-xl'}`}>
       <div className="flex items-center gap-2">
         <input
-          className="h-9 min-w-0 flex-1 rounded-[10px] border border-[#DCE6DE] bg-white px-3 text-[13px] text-[#0E2A14] outline-none placeholder:text-[#175022]/35 focus:border-[#2ABD41] focus:ring-2 focus:ring-[#2ABD41]/20 disabled:opacity-60"
+          className="h-9 max-lg:h-11 min-w-0 flex-1 rounded-[10px] border border-[#DCE6DE] bg-white px-3 text-[13px] text-[#0E2A14] outline-none placeholder:text-[#175022]/35 focus:border-[#2ABD41] focus:ring-2 focus:ring-[#2ABD41]/20 disabled:opacity-60"
           type="text"
           inputMode={
             subtype === 'numeric' || type === 'numeric' ||
@@ -2434,7 +2434,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <button aria-label={tr ? 'Gönder' : 'Send'}
           onClick={() => onSubmit(buildSubmitValue())}
           disabled={disabled || (isRequired && isEmpty)}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] btn-dark transition"
+          className="flex h-9 w-9 max-lg:h-11 max-lg:w-11 shrink-0 items-center justify-center rounded-[10px] btn-dark transition"
         >
           <Send className="h-3.5 w-3.5" />
         </button>
@@ -2455,7 +2455,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
                 // Keep parent value in sync immediately when unit changes
                 if (amountStr) onChange(`${amountStr} ${u}`);
               }}
-              className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+              className={`max-lg:min-h-11 rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
                 selectedUnit === u
                   ? 'border-[#2ABD41]/50 bg-[#2ABD41]/12 text-[#175022]'
                   : 'border-[#175022]/10 bg-white text-[#175022]/55 hover:border-[#175022]/20 hover:bg-[#F1FCF2]'
@@ -3018,6 +3018,8 @@ export function QuestionnaireTab({
   const [assumptions, setAssumptions] = useState([]);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState('');
+  // A signature the server refused: the first question still unresolved, offered next to the error.
+  const [unresolvedId, setUnresolvedId] = useState(null);
   // validationError: the message from the last failed submit attempt.
   // showValidationError: true after the first failed Confirm click; reset when question changes.
   // Together they show the error only after submit AND only while the answer is still invalid.
@@ -3104,6 +3106,8 @@ export function QuestionnaireTab({
         if (cancelled || !d) return;
         setAdvisorInfo({ rejected: d.advisor_rejected || [], pending: d.advisor_pending || 0 });
         setPendingIds(Array.isArray(d.pending_questions) ? d.pending_questions : []);
+        // Signed: closed for good. It opens on its completion card; nothing here can be answered any more.
+        if (d.signed_at) { setCompleted(true); setCompletedReport(d); }
       })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -3970,12 +3974,16 @@ export function QuestionnaireTab({
         const msg = res.status === 403
           ? (respData?.code ? (respData.error || noPermissionMessage(lang === 'tr')) : noPermissionMessage(lang === 'tr'))
           : (respData?.error || respData?.detail || fieldErrors || botMsg || (lang === 'tr' ? 'Kayıt hatası oluştu. Lütfen tekrar deneyin.' : 'Save failed. Please try again.'));
-        if (isMounted.current) setSaveError(msg);
+        if (isMounted.current) {
+          setSaveError(msg);
+          setUnresolvedId(questionId === '7C-2' && typeof respData?.first_question === 'string' ? respData.first_question : null);
+        }
         return { success: false, data: {} };
       }
 
       // ✅ Save succeeded - clear error
       setSaveError('');
+      setUnresolvedId(null);
       setSaveSuccess(true);
       // BUG-B: only reload the dashboard when the step actually touched the
       // emission data, using the backend's own authoritative signals. A data
@@ -4734,6 +4742,20 @@ export function QuestionnaireTab({
     }
   }, [history, answers, lang, tr, blockSummaryState, markSubmitting, resumePrevId]);
 
+  // A refused signature: on to the first unresolved question, along the normal route, which comes back to the sign-off.
+  const goToUnresolved = useCallback(() => {
+    const id = unresolvedId;
+    if (!id || !getQuestionById(id)) return;
+    setUnresolvedId(null);
+    setSaveError('');
+    setHistory(prev => [...prev, { id: currentId, msgLen: questionMsgLenRef.current }]);
+    setEditingQuestionId(null);
+    setValidationError('');
+    setShowValidationError(false);
+    initLoopOrAdvance(id, answers);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unresolvedId, currentId, answers]);
+
   // ── jumpToQuestion ─────────────────────────────────────────────────────────
   // Called when the user clicks "Edit" in a BlockSummaryTable row.
   // Enter edit mode WITHOUT hiding the block summary — user stays in review UI.
@@ -4967,13 +4989,13 @@ export function QuestionnaireTab({
                 <button type="button" onClick={leaveToLibrary} data-testid="leave-questionnaire-yes"
                   className="rounded-full btn-dark px-2.5 py-0.5 text-[11px] font-bold">{tr ? 'Yine de ayrıl' : 'Leave anyway'}</button>
                 <button type="button" onClick={() => setLeaveAsk(false)} data-testid="leave-questionnaire-stay"
-                  className="rounded-full border border-amber-300 bg-white px-2.5 py-0.5 text-[11px] font-bold">{tr ? 'Burada kal' : 'Stay'}</button>
+                  className="rounded-full border border-amber-300 bg-white px-2.5 py-0.5 max-lg:min-h-11 text-[11px] font-bold">{tr ? 'Burada kal' : 'Stay'}</button>
               </div>
             ) : (
               <button type="button" onClick={leaveToLibrary} disabled={submitting} data-testid="back-to-inventories"
                 title={tr ? 'Tüm envanterleriniz: yeni envanter oluşturun ya da başka birini açın. Bu envanterin yanıtları kaydedilir.' : 'All your inventories: create a new one or open another. This inventory keeps its answers and progress.'}
                 aria-label={tr ? 'Envanterlerim sayfasına dön' : 'Back to My Inventories'}
-                className="flex shrink-0 h-8 items-center gap-1.5 rounded-[10px] border border-[#DCE6DE] bg-white px-2.5 text-[12px] font-semibold text-[#175022] transition hover:border-[#BFE3C6] hover:bg-[#F1FCF2] disabled:opacity-50">
+                className="flex shrink-0 h-8 max-lg:h-11 items-center gap-1.5 rounded-[10px] border border-[#DCE6DE] bg-white px-2.5 text-[12px] font-semibold text-[#175022] transition hover:border-[#BFE3C6] hover:bg-[#F1FCF2] disabled:opacity-50">
                 <ArrowLeft className="h-3.5 w-3.5" />
                 {tr ? 'Envanterlerim' : 'My Inventories'}
               </button>
@@ -4992,7 +5014,7 @@ export function QuestionnaireTab({
             {inventoryCompleted && !completed && (currentQuestion?.stage ?? 7) < 7 && (
               <button
                 onClick={finishEditing}
-                className="flex h-8 items-center gap-1.5 rounded-[10px] btn-dark px-2.5 text-[12px] font-semibold transition"
+                className="flex h-8 max-lg:h-11 items-center gap-1.5 rounded-[10px] btn-dark px-2.5 text-[12px] font-semibold transition"
               >
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{tr ? 'Düzenlemeyi bitir' : 'Finish editing'}</span>
@@ -5003,7 +5025,7 @@ export function QuestionnaireTab({
               <button
                 onClick={goBack}
                 aria-label={tr ? 'Önceki soruya dön' : 'Go back to previous question'}
-                className="flex h-8 items-center gap-1.5 rounded-[10px] border border-[#DCE6DE] bg-white px-2.5 text-[12px] font-semibold text-[#175022] transition hover:border-[#BFE3C6] hover:bg-[#F1FCF2]"
+                className="flex h-8 max-lg:h-11 items-center gap-1.5 rounded-[10px] border border-[#DCE6DE] bg-white px-2.5 text-[12px] font-semibold text-[#175022] transition hover:border-[#BFE3C6] hover:bg-[#F1FCF2]"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{tr ? 'Önceki soru' : 'Previous question'}</span>
@@ -5014,13 +5036,13 @@ export function QuestionnaireTab({
                 <span className="text-[10px] font-bold text-red-500">{tr ? 'Emin misiniz?' : 'Sure?'}</span>
                 <button
                   onClick={() => { setResetConfirm(false); resetFlow(); }}
-                  className="rounded-full btn-danger px-2 py-1 text-[10px] font-bold transition"
+                  className="rounded-full btn-danger px-2 py-1 max-lg:min-h-11 max-lg:px-3 text-[10px] font-bold transition"
                 >
                   {tr ? 'Evet' : 'Yes'}
                 </button>
                 <button
                   onClick={() => setResetConfirm(false)}
-                  className="rounded-full border border-[#175022]/15 px-2 py-1 text-[10px] font-bold text-[#175022]/50 transition hover:bg-[#175022]/5"
+                  className="rounded-full border border-[#175022]/15 px-2 py-1 max-lg:min-h-11 max-lg:px-3 text-[10px] font-bold text-[#175022]/50 transition hover:bg-[#175022]/5"
                 >
                   {tr ? 'Hayır' : 'No'}
                 </button>
@@ -5039,7 +5061,7 @@ export function QuestionnaireTab({
         </div>
 
         {/* Chat messages */}
-        <div ref={scrollRef} className={threadEmpty ? 'hidden' : 'flex-1 overflow-y-auto px-3 py-4 sm:px-6'}>
+        <div ref={scrollRef} className={threadEmpty ? 'hidden' : `flex-1 overflow-y-auto px-3 py-4 sm:px-6 ${inputPanelShown ? '[@media(max-height:480px)]:hidden' : ''}`}>
           <div
             className="mx-auto flex w-full max-w-3xl min-[1700px]:max-w-4xl flex-col gap-3"
             aria-live="polite"
@@ -5111,6 +5133,12 @@ export function QuestionnaireTab({
               <div role="alert" aria-live="assertive" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-700 flex items-center gap-2">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
                 <span>{saveError}</span>
+                {unresolvedId && (
+                  <button type="button" onClick={goToUnresolved} data-testid="go-to-unresolved"
+                    className="ml-auto shrink-0 rounded-full border border-red-300 bg-white px-3 py-1 max-lg:min-h-11 text-[11px] font-bold text-red-700 transition hover:bg-red-100">
+                    {tr ? 'Soruya git' : 'Go to the question'}
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -5164,10 +5192,10 @@ export function QuestionnaireTab({
             down to a line; the current question is also pinned on top of the
             form, so it is in view whatever the scroll position. */}
         {inputPanelShown && (
-          <div data-testid="input-panel" className={`min-h-0 overflow-y-auto overscroll-contain bg-white px-3 pb-2 sm:px-6 sm:pb-3 ${threadEmpty ? 'flex-1' : 'max-h-[65%] shrink border-t border-[#E6EDE7] max-[480px]:max-h-[61%] [@media(max-height:640px)]:max-h-[57%]'}`}>
+          <div data-testid="input-panel" className={`min-h-0 overflow-y-auto overscroll-contain bg-white px-3 pb-2 sm:px-6 sm:pb-3 ${threadEmpty ? 'flex-1' : 'max-h-[65%] shrink border-t border-[#E6EDE7] max-[480px]:max-h-[61%] [@media(max-height:640px)]:max-h-[57%] [@media(max-height:480px)]:!max-h-none [@media(max-height:480px)]:flex-1 [@media(max-height:480px)]:border-t-0'}`}>
             <div className="mx-auto w-full max-w-3xl min-[1700px]:max-w-4xl">
               {pinnedQuestionShown && (
-                <div data-testid="pinned-question" className="sticky top-0 z-10 -mx-1 mb-2 bg-white px-1 pb-1.5 pt-3">
+                <div data-testid="pinned-question" data-question-id={currentId} className="sticky top-0 z-10 -mx-1 mb-2 bg-white px-1 pb-1.5 pt-3 [@media(max-height:640px)]:static">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <p className="text-[11px] font-bold uppercase tracking-wide text-[#1D9C31]">
                       {tr ? 'Soru' : 'Question'} {currentQuestion.number}
@@ -6716,7 +6744,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                       placeholder={tr ? 'Carbonless\'a sor…' : 'Ask Carbonless…'}
                       aria-label={tr ? 'Carbonless\'a mesajınız' : 'Your message to Carbonless'}
                       rows={1}
-                      className="min-h-[24px] max-h-[120px] w-full resize-none bg-transparent text-sm font-medium text-[#175022] outline-none placeholder:text-[#175022]/30 disabled:cursor-not-allowed"
+                      className="min-h-[24px] max-h-[min(120px,20svh)] w-full resize-none bg-transparent text-sm font-medium text-[#175022] outline-none placeholder:text-[#175022]/30 disabled:cursor-not-allowed"
                       style={{ scrollbarWidth: 'none' }}
                       onInput={e => {
                         e.target.style.height = 'auto';
@@ -6731,7 +6759,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                     }}
                     disabled={!input.trim() || sending || creatingSession || charOver}
                     aria-label={tr ? 'Gönder' : 'Send'}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full btn-dark transition disabled:cursor-not-allowed"
+                    className="flex h-8 w-8 max-lg:h-11 max-lg:w-11 shrink-0 items-center justify-center rounded-full btn-dark transition disabled:cursor-not-allowed"
                   >
                     {(sending || creatingSession)
                       ? <Loader2 className="h-3.5 w-3.5 animate-spin" />

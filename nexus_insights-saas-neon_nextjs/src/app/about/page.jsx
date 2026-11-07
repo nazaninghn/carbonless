@@ -6,6 +6,7 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
 import { ArrowRight, Leaf, Shield, BarChart3, Globe } from 'lucide-react';
 import ArtVisual from '@/components/ArtVisual';
+import Reveal from '@/components/Reveal';
 
 export default function AboutPage() {
   const { language } = useLanguage();
@@ -16,37 +17,40 @@ export default function AboutPage() {
       <Header wide />
       <main>
         {/* Mission */}
-        <section className="py-12 sm:py-20 lg:py-28">
+        <section className="py-10 sm:py-14 lg:py-20">
           <div className="max-w-6xl mx-auto px-4 sm:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
               <div>
-                <h1 className="lp-display mb-5 sm:mb-6">
+                <Reveal as="h1" className="lp-display mb-5">
                   {tr ? 'Misyonumuz' : 'Our Mission'}
-                </h1>
-                <p className="lp-text mb-4 sm:mb-5">
+                </Reveal>
+                <Reveal as="p" delay={80} className="lp-text mb-4">
                   {tr
                     ? 'Carbonless, İstinye Üniversitesi IT Valley bünyesinde geliştirilen bir akademik karbon ayak izi hesaplama platformudur. Amacımız, şirketlerin sera gazı emisyonlarını ISO 14064-1 ve GHG Protocol standartlarına uygun şekilde ölçmelerini, raporlamalarını ve azaltmalarını sağlamaktır.'
                     : 'Carbonless is an academic carbon footprint calculation platform developed at İstinye University IT Valley. Our mission is to help companies measure, report, and reduce their greenhouse gas emissions in compliance with ISO 14064-1 and GHG Protocol standards.'}
-                </p>
-                <p className="lp-text">
+                </Reveal>
+                <Reveal as="p" delay={160} className="lp-text">
                   {tr
                     ? 'Türkiye ve global emisyon faktörleri ile desteklenen sistemimiz, ISO 14064-1 doğrulanmış envanter, Defra 2024, IPCC 2019 ve ulusal veriler kullanmaktadır.'
                     : 'Our system is supported by Turkey and global emission factors, using ISO 14064-1 verified inventory data, Defra 2024, IPCC 2019, and national data sources.'}
-                </p>
+                </Reveal>
               </div>
               <div className="flex items-center justify-center">
-                {/* public/aboutNEWW.png: 1024 x 1024, transparent. It fades in and rises once when it scrolls into
-                    view, then floats gently (ArtVisual); reduced motion shows it still. */}
+                {/* public/greeen.png: 1261 x 1247, transparent (a loop of trees around a factory, its smoke rising to the top right).
+                    It fades in and slides in once when it scrolls into view, then floats gently (ArtVisual); on hover it rises a
+                    little and grows ~3%. No glow behind it: the page stays pure white. Reduced motion shows it still. */}
                 <ArtVisual
-                  src="/aboutNEWW.png"
-                  natW={1024}
-                  natH={1024}
+                  src="/greeen.png"
+                  natW={1261}
+                  natH={1247}
                   cropLeft={0}
                   testId="mission-visual"
-                  maskClass="eco-mask--mission"
+                  maskClass="eco-mask--loop"
+                  plain
+                  lift
                   sizes="(min-width: 1024px) 560px, 92vw"
-                  className="max-w-[460px] sm:max-w-[540px] lg:max-w-none"
-                  alt={tr ? 'Yeşil bir tesis: bacalardan ağaçlar büyüyor, çevresinde yeşil bir enerji akışı' : 'A green industrial site with trees growing from its chimneys, wrapped in a flow of green energy'}
+                  className="max-w-[300px] sm:max-w-[430px] lg:max-w-[460px]"
+                  alt={tr ? 'Bir sanayi tesisini çevreleyen, dairesel ok biçiminde ağaçlar; tesisten hafif bir duman yükseliyor' : 'Trees shaped into a circular arrow around an industrial site, with a soft plume of smoke rising'}
                 />
               </div>
             </div>
@@ -54,14 +58,14 @@ export default function AboutPage() {
         </section>
 
         {/* Parent company */}
-        <section className="py-12 sm:py-16 lg:py-24 bg-[#DEFAE1]/20">
+        <section className="py-12 sm:py-16 lg:py-20 bg-[#DEFAE1]/20">
           <div className="max-w-5xl mx-auto px-4 sm:px-8">
-            <div className="text-center mb-8 sm:mb-10">
+            <Reveal className="text-center mb-8 sm:mb-10">
               <h2 className="lp-h2">
                 {tr ? 'Carbonless Network\'ün Bir Parçasıyız' : 'Part of the Carbonless Network'}
               </h2>
-            </div>
-            <div className="max-w-2xl mx-auto space-y-4 sm:space-y-5 lp-text-block text-center">
+            </Reveal>
+            <Reveal delay={80} className="max-w-2xl mx-auto space-y-4 sm:space-y-5 lp-text-block text-center">
               <p>
                 {tr
                   ? 'Carbonless Network, karbonsuz bir gezegen için işletim sistemini inşa ediyor. Karbon, modern ekonominin en kritik metriklerinden biri haline geldi — ancak bunu yönetecek altyapı hâlâ dağınık ve opak.'
@@ -77,8 +81,8 @@ export default function AboutPage() {
                   ? 'Hedefimiz: Karbon görünürlüğünü evrensel, azaltmayı kaçınılmaz ve karbonsuz geleceği ölçeklenebilir kılmak.'
                   : 'Our goal: Make carbon visibility universal, reduction inevitable, and a carbonless future scalable.'}
               </p>
-            </div>
-            <div className="mt-8 sm:mt-10 text-center">
+            </Reveal>
+            <Reveal delay={160} className="mt-8 sm:mt-10 text-center">
               <a
                 href="https://www.carbonless.network/"
                 target="_blank"
@@ -88,7 +92,7 @@ export default function AboutPage() {
                 carbonless.network
                 <ArrowRight className="w-4 h-4" />
               </a>
-            </div>
+            </Reveal>
           </div>
         </section>
 

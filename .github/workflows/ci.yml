@@ -14,10 +14,10 @@ jobs:
     defaults:
       run:
         working-directory: carbonless_backend
-    env:
-      # TEST-ONLY value: the inventories the tests create must count as ownership-scoped. It is not used by, and
-      # must never be copied to, Production / Render / Vercel (there it is set to the real go-live moment).
-      INVENTORY_OWNERSHIP_CUTOVER: '2000-01-01T00:00:00+00:00'
+    # INVENTORY_OWNERSHIP_CUTOVER is deliberately NOT set here. Tests that need ownership-scoped inventories pin their own
+    # value with @override_settings (and `settings_test`, used by the file-backed steps below, carries its own). Exporting
+    # a 2000-01-01 cutover job-wide makes every test-created inventory ownership-scoped, which defeats the tests of
+    # legacy UNLINKED inventories (they must stay refused with 409 inventory_not_ownership_scoped): five of them fail.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

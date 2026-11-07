@@ -40,6 +40,7 @@ def dump():
                       CustomEmissionRequest, ReductionTarget)}
 
 
+@_base.signing_without_the_completion_gate
 @override_settings(INVENTORY_OWNERSHIP_CUTOVER=CUTOVER)
 class _Base(TestCase):
     _factor = _base.StepEntriesTests._factor

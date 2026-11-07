@@ -455,7 +455,7 @@ export default function DashboardOverview({
               : `No data for ${selectedYear} yet. Your entries are in other years: ${otherYears.join(', ')}.`}
           </span>
           {onYearChange && (
-            <button onClick={() => onYearChange(otherYears[0])} className="rounded-md border border-[#CDE7D2] bg-[#F4FBF5] px-2.5 py-1 text-[11px] font-semibold text-[#175022] hover:bg-[#E3F7E7]">
+            <button onClick={() => onYearChange(otherYears[0])} className="rounded-md border border-[#CDE7D2] bg-[#F4FBF5] px-2.5 py-1 max-lg:min-h-11 text-[11px] font-semibold text-[#175022] hover:bg-[#E3F7E7]">
               {tr ? `${otherYears[0]} yılına geç` : `Switch to ${otherYears[0]}`}
             </button>
           )}
@@ -464,14 +464,14 @@ export default function DashboardOverview({
       {entries.length === 0 && otherYears.length === 0 && (
         <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-[#CDE7D2] bg-[#F4FBF5] px-3 py-2 text-[12px] text-[#175022]">
           <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#2ABD41]" />
-          <span className="min-w-0 flex-1 font-medium">
+          <span className="min-w-0 flex-[1_1_14rem] font-medium">
             {tr ? 'İlk kaydınızı girin, gerisini biz hesaplayalım — AI ile (önerilen) ya da manuel.' : "Log your first entry and we'll take it from there — with AI (recommended) or manually."}
           </span>
-          <button onClick={() => setActiveTab('ai_carbon')} className="inline-flex items-center gap-1 rounded-md btn-primary px-2.5 py-1 text-[11px] font-bold">
+          <button onClick={() => setActiveTab('ai_carbon')} className="inline-flex items-center gap-1 rounded-md btn-primary px-2.5 py-1 max-lg:min-h-11 text-[11px] font-bold">
             <Sparkles className="h-3 w-3" />{tr ? 'AI ile Başla' : 'Start with AI'}
           </button>
           {canEdit && (
-            <button onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }} className="inline-flex items-center gap-1 rounded-md border border-[#CDE7D2] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#175022] hover:bg-[#E3F7E7]">
+            <button onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }} className="inline-flex items-center gap-1 rounded-md border border-[#CDE7D2] bg-white px-2.5 py-1 max-lg:min-h-11 text-[11px] font-semibold text-[#175022] hover:bg-[#E3F7E7]">
               <Plus className="h-3 w-3" />{tr ? 'Manuel Giriş' : 'Manual Entry'}
             </button>
           )}
@@ -492,13 +492,13 @@ export default function DashboardOverview({
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setActiveTab('reporting')}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#E1E9E3] bg-white px-3 text-[12px] font-semibold text-[#0E2A14]/80 transition hover:bg-[#F6FAF7]">
+            className="inline-flex h-8 max-lg:h-11 items-center gap-1.5 rounded-lg border border-[#E1E9E3] bg-white px-3 text-[12px] font-semibold text-[#0E2A14]/80 transition hover:bg-[#F6FAF7]">
             {tr ? 'Rapor' : 'Report'}
           </button>
           {/* An auditor can't add entries (read-only role). */}
           {canEdit && (
             <button onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg btn-primary px-3 text-[12px] font-bold transition">
+              className="inline-flex h-8 max-lg:h-11 items-center gap-1.5 rounded-lg btn-primary px-3 text-[12px] font-bold transition">
               <Plus className="h-3.5 w-3.5" />{tr ? 'Veri Ekle' : 'Add Data'}
             </button>
           )}

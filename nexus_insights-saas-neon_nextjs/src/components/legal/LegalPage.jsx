@@ -12,7 +12,7 @@ export default function LegalPage({ content }) {
   return (
     <div className="min-h-screen bg-[#F1FCF2] px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-3xl">
-        <Link href="/" className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-[#072C0E]/50 transition hover:text-[#072C0E]">
+        <Link href="/" className="mb-8 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#072C0E]/50 transition hover:text-[#072C0E]">
           <ArrowLeft className="h-4 w-4" /> {tr ? 'Ana Sayfaya Dön' : 'Back to Home'}
         </Link>
 

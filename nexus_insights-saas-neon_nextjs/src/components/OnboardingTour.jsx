@@ -155,9 +155,9 @@ export default function OnboardingTour({ language, onComplete }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="tour-dialog-title"
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 p-4 backdrop-blur-md"
+      className="fixed inset-0 z-[100] flex overflow-y-auto bg-black/20 p-4 backdrop-blur-md"
     >
-      <div className="w-full max-w-md overflow-hidden rounded-[1.5rem] border border-[#072C0E]/10 bg-white/95 shadow-[0_20px_60px_rgba(7, 44, 14,0.18)] backdrop-blur-2xl">
+      <div className="m-auto w-full max-w-md overflow-hidden rounded-[1.5rem] border border-[#072C0E]/10 bg-white/95 shadow-[0_20px_60px_rgba(7, 44, 14,0.18)] backdrop-blur-2xl">
         {/* Progress bar */}
         <div className="h-1 bg-[#072C0E]/6">
           <div

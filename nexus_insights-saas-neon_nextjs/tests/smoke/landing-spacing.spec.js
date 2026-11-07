@@ -64,11 +64,11 @@ for (const lang of ['en', 'tr']) {
   }
 }
 
-test.describe('the AI section: pale green that melts in from the white About (details: about-eco.spec.js)', () => {
+test.describe('every homepage section is plain white: Hero, About, AI, Pricing, FAQ (details: about-eco.spec.js)', () => {
   const widths = [{ width: 360, height: 740 }, { width: 390, height: 844 }, { width: 430, height: 932 }, { width: 768, height: 1024 }, { width: 820, height: 1180 }, { width: 1024, height: 768 }, { width: 1280, height: 720 }, { width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1920, height: 1080 }];
   for (const lang of ['en', 'tr']) {
     for (const s of widths) {
-      test(`${lang} ${s.width}: AI has the soft green gradient; About, Pricing and the Hero keep theirs`, async ({ page }) => {
+      test(`${lang} ${s.width}: all sections are plain white, no gradient or tint`, async ({ page }) => {
         await page.setViewportSize(s);
         await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.addInitScript(l => { localStorage.setItem('language', l); localStorage.setItem('language_explicit', '1'); }, lang);
@@ -83,17 +83,16 @@ test.describe('the AI section: pale green that melts in from the white About (de
                    headline: getComputedStyle(ai.querySelector('h2')).color, lead: getComputedStyle(ai.querySelector('.lp-lead')).color,
                    laptop: !!document.querySelector('#ai [data-testid="laptop"]'), overflowX: document.documentElement.scrollWidth - innerWidth };
         });
-        expect(g.ai.img).toContain('linear-gradient'); expect(g.ai.img).toContain('rgb(241, 252, 242)');   // #F1FCF2, fading to white at both edges
+        for (const k of ['ai', 'about', 'pricing', 'faq']) { expect(g[k].bg, k).toBe('rgb(255, 255, 255)'); expect(g[k].img, k).toBe('none'); }   // plain white: no gradient, no tint
         expect(g.ai.boxShadow).toBe('none');
         for (const c of g.aiChildren) expect(['rgba(0, 0, 0, 0)', 'rgb(255, 255, 255)']).toContain(c);   // no extra panel inside it
         // readable on white: dark green heading, grey-blue lead text
         expect(g.headline).toBe('rgb(23, 80, 34)');
         expect(g.lead).toBe('rgb(71, 85, 105)');
         expect(g.laptop).toBe(true);                                                   // the AI section's laptop is there
-        // About / Pricing were white, FAQ is still the pale green, the Hero is unchanged
+        // the Hero is plain white too
         expect(g.about.bg).toBe('rgb(255, 255, 255)'); expect(g.pricing.bg).toBe('rgb(255, 255, 255)');
-        expect(g.faq.bg).not.toBe('rgb(255, 255, 255)'); expect(g.faq.bg).toMatch(/^rgb\(24\d, 25\d, 24\d\)$/);   // still the pale green
-        expect(g.hero).toBe('rgb(248, 251, 248)');
+        expect(g.hero).toBe('rgb(255, 255, 255)');                                  // the Hero is plain white now
         expect(g.overflowX).toBeLessThanOrEqual(0);
       });
     }

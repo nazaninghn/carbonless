@@ -82,7 +82,7 @@ export default function ContactPage() {
                     <Mail className="w-6 h-6 text-primary" />
                   </div>
                   <h4 className="text-lg font-semibold mb-2">{tr ? 'E-posta' : 'Email'}</h4>
-                  <a href={`mailto:${t.company.email}`} className="text-primary font-medium hover:underline">{t.company.email}</a>
+                  <a href={`mailto:${t.company.email}`} className="inline-flex min-h-11 items-center text-primary font-medium hover:underline">{t.company.email}</a>
                 </div>
                 <div className="bg-white rounded-2xl p-6 border border-[#072C0E]/8 shadow-sm">
                   <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mb-4">
@@ -96,7 +96,7 @@ export default function ContactPage() {
                     <Phone className="w-6 h-6 text-accent" />
                   </div>
                   <h4 className="text-lg font-semibold mb-2">{tr ? 'Telefon' : 'Phone'}</h4>
-                  <a href={`tel:${t.company.phone}`} className="text-primary font-medium hover:underline">{t.company.phone}</a>
+                  <a href={`tel:${t.company.phone}`} className="inline-flex min-h-11 items-center text-primary font-medium hover:underline">{t.company.phone}</a>
                 </div>
               </div>
 

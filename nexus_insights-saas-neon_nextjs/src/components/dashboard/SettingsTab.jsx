@@ -158,7 +158,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition lg:w-full lg:gap-2 lg:px-2 lg:py-1 lg:text-[12.5px] ${
+                  className={`flex shrink-0 items-center gap-1.5 max-lg:min-h-11 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition lg:w-full lg:gap-2 lg:px-2 lg:py-1 lg:text-[12.5px] ${
                     isActive
                       ? 'bg-[#175022] text-[#DEFAE1] shadow-md shadow-[#072C0E]/12'
                       : 'border border-[#072C0E]/8 bg-white text-[#072C0E]/60 hover:bg-white hover:text-[#072C0E] lg:border-0 lg:bg-transparent'
@@ -375,8 +375,8 @@ export default function SettingsTab({ language, user, fetchData }) {
 
       {/* ─── Delete Account Confirmation Modal ─────────────────────────────── */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-[14px] border border-red-200 bg-white p-4 shadow-[0_24px_60px_rgba(7, 44, 14,0.18)]"
+        <div className="fixed inset-0 z-50 flex overflow-y-auto bg-black/20 p-4 backdrop-blur-sm">
+          <div className="m-auto w-full max-w-sm rounded-[14px] border border-red-200 bg-white p-4 shadow-[0_24px_60px_rgba(7, 44, 14,0.18)]"
             role="dialog" aria-modal="true" aria-labelledby="delete-account-title">
             <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-red-100">
               <Trash2 className="h-5 w-5 text-red-600" />
@@ -448,8 +448,8 @@ function PanelTitle({ icon: Icon, title }) {
 function InfoCard({ label, value }) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-[#072C0E]/8 bg-smoke px-3 py-2 sm:block sm:rounded-xl">
-      <p className="text-[10px] font-bold text-[#072C0E]/40">{label}</p>
-      <p className="text-xs font-bold text-[#072C0E] sm:mt-0.5">{value}</p>
+      <p className="shrink-0 text-[10px] font-bold text-[#072C0E]/40">{label}</p>
+      <p className="min-w-0 break-words text-right text-xs font-bold text-[#072C0E] [overflow-wrap:anywhere] sm:mt-0.5 sm:text-left">{value}</p>
     </div>
   );
 }

@@ -114,7 +114,7 @@ export default function PhoneSlideshow({ images, label, dotLabel, className = ''
               aria-label={dotLabel(i + 1, images.length)}
               aria-current={i === index ? 'true' : undefined}
               onClick={() => show(i)}
-              className="group flex h-6 w-5 items-center justify-center"
+              className="group relative flex h-6 w-6 max-lg:w-7 items-center justify-center before:absolute before:inset-x-0 before:-inset-y-2.5 before:content-['']"
             >
               <span className={`block rounded-full transition-all duration-300 motion-reduce:transition-none ${i === index ? 'h-1.5 w-3.5 bg-[#1A7B2A]' : 'h-1.5 w-1.5 bg-[#1A7B2A]/35 group-hover:bg-[#1A7B2A]/60'}`} />
             </button>

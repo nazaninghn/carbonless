@@ -138,10 +138,11 @@ for (const lang of ['en', 'tr']) {
   }
 }
 
-test('the ladder on desktop: hero 63 > page title 40 > landing section heading 30 > 17 > 15 > 14', async ({ page }) => {
+test('the ladder on desktop: hero ~47 > page title 40 > landing section heading 30 > 17 > 15 > 14', async ({ page }) => {
   await load(page, '/', 'en', { width: 1440, height: 900 });
   const l = await facts(page, { h1: '.hero-h1', h2: '#about h2', lead: '#about .lp-copy p', body: '#faq details p', small: '#about .lp-small' });
   await load(page, '/about', 'en', { width: 1440, height: 900 });
   const t = await facts(page, { title: 'main h1' });
-  expect([Math.round(l.h1.size), t.title.size, l.h2.size, l.lead.size, l.body.size, l.small.size]).toEqual([63, 40, 30, 17, 15, 14]);
+  expect(l.h1.size).toBeGreaterThan(44); expect(l.h1.size).toBeLessThan(64);                                              // the hero headline follows its column (about 47 px here) and stays dominant
+  expect([t.title.size, l.h2.size, l.lead.size, l.body.size, l.small.size]).toEqual([40, 30, 17, 15, 14]);
 });

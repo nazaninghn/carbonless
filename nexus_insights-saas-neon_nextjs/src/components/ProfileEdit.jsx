@@ -116,7 +116,7 @@ function Field({ label, value, onChange }) {
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="block h-9 w-full min-w-0 max-w-full rounded-[10px] border border-[#072C0E]/10 bg-smoke px-3 text-[13px] font-medium text-[#072C0E] outline-none transition placeholder:text-[#072C0E]/30 focus:border-[#2ABD41] focus:bg-white focus:ring-4 focus:ring-[#2ABD41]/15"
+        className="block h-9 max-lg:h-11 w-full min-w-0 max-w-full rounded-[10px] border border-[#072C0E]/10 bg-smoke px-3 text-[13px] font-medium text-[#072C0E] outline-none transition placeholder:text-[#072C0E]/30 focus:border-[#2ABD41] focus:bg-white focus:ring-4 focus:ring-[#2ABD41]/15"
       />
     </label>
   );

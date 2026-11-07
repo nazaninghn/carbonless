@@ -310,10 +310,10 @@ export default function InventoryLibrary({ tr = false }) {
     return { label: tr ? 'Taslak' : 'Draft', cls: 'bg-[#F1F5F2] text-[#4B5B50] ring-[#DCE6DE]', dot: 'bg-[#8A988E]' };
   };
 
-  const ICON_BTN = 'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1 disabled:opacity-60 lg:h-8 lg:w-8';
+  const ICON_BTN = 'inline-flex h-10 w-10 max-lg:h-11 max-lg:w-11 shrink-0 items-center justify-center rounded-[10px] border transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1 disabled:opacity-60 lg:h-8 lg:w-8';
   const ICON_BTN_NEUTRAL = `${ICON_BTN} border-[#DCE6DE] bg-white text-[#175022] hover:border-[#BFE3C6] hover:bg-[#F1FCF2]`;
   const ICON_BTN_DANGER = `${ICON_BTN} border-red-100 bg-white text-red-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600`;
-  const ACT_BTN = 'h-10 flex-1 lg:h-[var(--app-control-h-sm)] lg:flex-none transition-colors duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1';
+  const ACT_BTN = 'h-11 flex-1 lg:h-[var(--app-control-h-sm)] lg:flex-none transition-colors duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1';
 
   const progressBlock = (report) => {
     const percent = Math.max(0, Math.min(100, Number(report.progress?.percent) || 0));
@@ -429,7 +429,7 @@ export default function InventoryLibrary({ tr = false }) {
                     : <Icon className="h-3.5 w-3.5" />}
                 </button>
               ))}
-              {canEdit && (
+              {canEdit && !report.signed_at && (
                 <button
                   onClick={() => handleEditCompleted(report.report_id)}
                   title={tr ? 'Bir bölümü düzelt' : 'Fix a section'}
@@ -489,7 +489,7 @@ export default function InventoryLibrary({ tr = false }) {
       {canRename && (
         <button
           onClick={() => { setRenamingId(report.report_id); setRenameValue(report.title || ''); setRenameError(''); }}
-          className="inline-flex min-h-[26px] shrink-0 items-center gap-1 rounded-md border border-transparent px-1.5 text-[11px] font-semibold text-[#175022]/70 transition-colors hover:border-[#DCE6DE] hover:bg-[#F1FCF2] hover:text-[#175022] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
+          className="inline-flex min-h-[26px] max-lg:min-h-11 shrink-0 items-center gap-1 rounded-md border border-transparent px-1.5 text-[11px] font-semibold text-[#175022]/70 transition-colors hover:border-[#DCE6DE] hover:bg-[#F1FCF2] hover:text-[#175022] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
         >
           <Pencil className="h-3 w-3" aria-hidden="true" />
           {tr ? 'Yeniden adlandır' : 'Rename'}
@@ -545,7 +545,7 @@ export default function InventoryLibrary({ tr = false }) {
 
   return (
     <div className="w-full">
-      <div className="grid w-full gap-3 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
+      <div className="grid w-full gap-3 max-lg:pb-24 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
         {/* ── New inventory: a compact action card; on wide screens it sits in the right rail ── */}
         {canEdit && (
           <div className="rounded-[14px] border border-[#CFE9D4] bg-gradient-to-br from-[#F1FCF2] to-white p-3 shadow-[0_1px_2px_rgba(16,40,20,0.04)] xl:order-2 xl:sticky xl:top-0">
@@ -566,7 +566,7 @@ export default function InventoryLibrary({ tr = false }) {
               <button
                 onClick={openNewDialog}
                 disabled={loading}
-                className="app-btn btn-dark h-10 w-full shrink-0 shadow-sm transition-colors duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2 sm:h-[var(--app-control-h)] sm:w-auto xl:w-full"
+                className="app-btn btn-dark h-10 max-lg:h-11 w-full shrink-0 shadow-sm transition-colors duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2 sm:h-[var(--app-control-h)] sm:w-auto xl:w-full"
               >
                 <Plus />
                 {tr ? 'Başla' : 'Start'}
@@ -641,7 +641,7 @@ export default function InventoryLibrary({ tr = false }) {
       {/* Delete confirmation: nothing is deleted before this is answered. */}
       {deleting && (
         <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-[90] flex overflow-y-auto bg-black/40 p-4"
           onMouseDown={(e) => { if (e.target === e.currentTarget && !deletingId) setConfirmDeleteId(null); }}
         >
           <div
@@ -649,7 +649,7 @@ export default function InventoryLibrary({ tr = false }) {
             aria-modal="true"
             aria-labelledby="delete-inventory-title"
             aria-describedby="delete-inventory-note"
-            className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl"
+            className="m-auto w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl"
             onKeyDown={(e) => { if (e.key === 'Escape' && !deletingId) { e.stopPropagation(); setConfirmDeleteId(null); } }}
           >
             <div className="flex items-start gap-3">
@@ -688,8 +688,8 @@ export default function InventoryLibrary({ tr = false }) {
 
       {/* Naming Dialog */}
       {showNamingDialog && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-4 shadow-2xl"
+        <div className="fixed inset-0 z-[90] flex overflow-y-auto bg-black/40 p-4">
+          <div className="m-auto w-full max-w-md rounded-2xl bg-white p-4 shadow-2xl"
             role="dialog" aria-modal="true" aria-labelledby="new-inventory-title"
             onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setShowNamingDialog(false); } }}>
             <h2 id="new-inventory-title" className="mb-3 text-[15px] font-bold text-[#0E2A14]">

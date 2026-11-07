@@ -57,9 +57,9 @@ export default function Header({ wide = false }) {
     <header className="pointer-events-none sticky top-0 z-50 flex w-full justify-center px-3 max-[390px]:px-2 pt-4">
       <nav ref={menuRef} data-scrolled={scrolled ? 'true' : 'false'} className={`pointer-events-auto relative flex h-14 items-center gap-0.5 rounded-full border border-[#DEFAE1] bg-white/95 px-2 min-[320px]:max-[350px]:px-1 sm:px-3 shadow-[0_8px_30px_rgba(7,44,14,0.10)] backdrop-blur-md transition-[box-shadow,border-color,background-color] duration-300 motion-reduce:transition-none data-[scrolled=true]:border-[#B2F2BB] data-[scrolled=true]:bg-white/90 data-[scrolled=true]:shadow-[0_10px_34px_rgba(7,44,14,0.16)] ${wide ? 'w-full max-w-5xl justify-between' : 'max-w-full'}`}>
         {/* Logo */}
-        <Link href="/" className="group flex shrink-0 items-center gap-2 min-[320px]:max-[350px]:gap-1.5 rounded-full px-2 max-[390px]:px-1 sm:px-3 py-1.5 transition-colors hover:bg-[#F1FCF2]">
+        <Link href="/" className="group flex min-h-11 shrink-0 items-center gap-2 min-[320px]:max-[350px]:gap-1.5 rounded-full px-2 max-[390px]:px-1 sm:px-3 py-1.5 transition-colors hover:bg-[#F1FCF2]">
           <Image src="/carbonless.png" alt="Carbonless" width={32} height={32} className="h-7 w-7 min-[320px]:max-[350px]:h-6 min-[320px]:max-[350px]:w-6 sm:h-8 sm:w-8 object-contain transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
-          <span className="max-[320px]:hidden text-[15px] min-[320px]:max-[350px]:text-[14px] sm:text-[16px] font-bold tracking-tight text-[#072C0E]">Carbonless</span>
+          <span className="max-[340px]:hidden text-[15px] min-[320px]:max-[350px]:text-[14px] sm:text-[16px] font-bold tracking-tight text-[#072C0E]">Carbonless</span>
         </Link>
 
         <div className="flex items-center gap-0.5">
@@ -68,7 +68,7 @@ export default function Header({ wide = false }) {
             onClick={() => setMenuOpen(v => !v)}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
-            className="md:hidden btn-icon shrink-0 rounded-full"
+            className="md:hidden btn-icon min-h-11 min-w-11 shrink-0 rounded-full"
           >
             {menuOpen ? <X className="h-[18px] w-[18px]" /> : <Menu className="h-[18px] w-[18px]" />}
           </button>
@@ -83,7 +83,7 @@ export default function Header({ wide = false }) {
               <a
                 key={item.key}
                 href={item.href}
-                className="whitespace-nowrap rounded-full px-3 py-2 text-[13px] font-medium text-[#072C0E]/70 transition-all duration-200 hover:bg-[#F1FCF2] hover:text-[#072C0E]"
+                className="whitespace-nowrap rounded-full px-3 py-2 max-lg:py-3 text-[13px] font-medium text-[#072C0E]/70 transition-all duration-200 hover:bg-[#F1FCF2] hover:text-[#072C0E]"
               >
                 {lang === 'tr' ? item.tr : item.en}
               </a>
@@ -98,7 +98,7 @@ export default function Header({ wide = false }) {
             <button
               onClick={() => changeLanguage(lang === 'tr' ? 'en' : 'tr')}
               aria-label={lang === 'tr' ? 'Switch to English' : 'Türkçeye geç'}
-              className="btn-tertiary rounded-full px-2 min-[320px]:max-[350px]:px-1.5 sm:px-2.5 py-1.5 text-[11px] sm:text-[12px] font-semibold uppercase"
+              className="btn-tertiary min-h-11 min-w-11 rounded-full px-2 min-[320px]:max-[350px]:px-1.5 sm:px-2.5 py-1.5 text-[11px] sm:text-[12px] font-semibold uppercase"
             >
               {lang === 'tr' ? 'EN' : 'TR'}
             </button>
@@ -107,16 +107,16 @@ export default function Header({ wide = false }) {
               {lang === 'tr' ? 'Giriş Yap' : 'Log In'}
             </Link>
             <Link href="/register"
-              className="ml-0.5 rounded-full btn-primary px-3.5 max-[390px]:px-3 min-[320px]:max-[350px]:px-2 sm:px-5 py-2 text-[11px] sm:text-[13px] font-bold transition-all duration-200 whitespace-nowrap">
+              className="ml-0.5 min-[360px]:min-h-11 rounded-full btn-primary px-3.5 max-[390px]:px-3 min-[320px]:max-[350px]:px-2 sm:px-5 py-2 text-[11px] sm:text-[13px] font-bold transition-all duration-200 whitespace-nowrap">
               {lang === 'tr' ? 'Hesap Oluştur' : 'Create Account'}
             </Link>
           </div>
         </div>
 
-        {/* Mobile dropdown panel — hangs below the pill, never clipped
-            (no overflow-hidden on the nav) */}
+        {/* Mobile dropdown panel — hangs below the pill, never clipped (no overflow-hidden on the nav); on a short screen (a phone in
+            landscape) it is capped to the window and scrolls, so every link stays reachable */}
         {menuOpen && (
-          <div className="md:hidden absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-2xl border border-[#DEFAE1] bg-white shadow-[0_16px_40px_rgba(7,44,14,0.14)]">
+          <div className="md:hidden absolute left-0 right-0 top-full mt-2 max-h-[calc(100svh-6rem)] overflow-y-auto overscroll-contain rounded-2xl border border-[#DEFAE1] bg-white shadow-[0_16px_40px_rgba(7,44,14,0.14)]">
             {NAV_ITEMS.map(item => (
               <a key={item.key} href={item.href} onClick={() => setMenuOpen(false)}
                 className="block px-5 py-3 text-[14px] font-medium text-[#072C0E]/70 transition-colors hover:bg-[#F1FCF2] hover:text-[#072C0E] focus-visible:-outline-offset-2 focus-visible:rounded-2xl">

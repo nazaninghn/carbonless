@@ -9,8 +9,8 @@ export default function SaveDraftModal({ tr = false }) {
   if (!showSaveModal) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-[#175022]/10"
+    <div className="fixed inset-0 z-[200] flex overflow-y-auto bg-black/30 p-4">
+      <div className="m-auto w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-[#175022]/10"
         role="dialog" aria-modal="true" aria-labelledby="save-draft-title"
         onKeyDown={(e) => { if (e.key === 'Escape' && !loading) { e.stopPropagation(); handleSaveModalResponse(null); } }}>
         <h3 id="save-draft-title" className="text-lg font-bold text-[#175022] mb-2">

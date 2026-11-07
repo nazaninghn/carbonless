@@ -33,7 +33,7 @@ export default function AttentionPanel({ overview, tr = false, open, onToggle, o
       aria-expanded={open} aria-controls={listId}
       aria-label={open ? p.toggleClose : p.toggleOpen}
       onClick={onToggle}
-      className="flex w-full items-center justify-between gap-3 text-left text-xs font-semibold text-amber-800">
+      className="flex w-full items-center justify-between gap-3 max-lg:min-h-11 text-left text-xs font-semibold text-amber-800">
       {bannerText}
       <span aria-hidden="true">{open ? '−' : '+'}</span>
     </button>
@@ -82,7 +82,7 @@ export default function AttentionPanel({ overview, tr = false, open, onToggle, o
                           </span>
                           <button type="button" onClick={() => onGo(item.id)}
                             aria-label={`${c.goTo}: ${c.question} ${number}`}
-                            className={`shrink-0 rounded-lg border px-2.5 py-1 text-xs font-semibold ${g.btn}`}>
+                            className={`shrink-0 rounded-lg border px-2.5 py-1 max-lg:min-h-11 text-xs font-semibold ${g.btn}`}>
                             {c.goTo}
                           </button>
                         </li>

@@ -254,7 +254,7 @@ export default function RegisterPage() {
     <main className="relative min-h-screen bg-green-50 text-[#072C0E]">
 
       <header className="relative z-20 mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex min-h-11 items-center gap-2">
           <Image src="/carbonless.png" alt="Carbonless" width={36} height={36} className="h-8 w-8 sm:h-9 sm:w-9" />
           <span className="text-[15px] sm:text-[16px] font-bold tracking-tight text-[#072C0E]">Carbonless</span>
         </Link>

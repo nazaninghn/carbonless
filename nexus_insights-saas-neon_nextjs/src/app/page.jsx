@@ -178,11 +178,9 @@ export default function Home() {
             </div>
 
             {/* Right: MacBook mockup photo of the actual Carbonless AI chat
-                (public/ai-laptop.png). Soft green glow behind it ties it into
-                the palette. Its lid swings open once, slowly, when it first scrolls into view (LaptopOpen). */}
+                (public/ai-laptop.png). Its lid swings open once, slowly, when it first scrolls into view (LaptopOpen). */}
             <div className="relative flex items-center justify-center">
               <div className="relative w-full max-w-[560px]">
-                <div className="absolute inset-8 rounded-full bg-[#2ABD41]/10 blur-3xl" />
                 <LaptopOpen
                   className="relative"
                   src="/ai-laptop.png"

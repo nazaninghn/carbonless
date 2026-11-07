@@ -403,7 +403,7 @@ export default function DashboardPage() {
         />
 
         <main id="main-content" tabIndex={-1} className={`w-full min-w-0 max-w-full flex-1 min-h-0 overflow-y-auto overflow-x-hidden outline-none ${
-          `p-3 sm:p-3.5 lg:p-4 lg:pb-4 ${activeTab === 'questionnaire' ? 'pb-40 sm:pb-40' : 'pb-24 sm:pb-24'}`
+          `p-3 sm:p-3.5 lg:p-4 lg:pb-4 ${activeTab === 'questionnaire' ? 'pb-40 sm:pb-40 max-lg:[@media(max-height:640px)]:pb-[5.25rem]' : 'pb-24 sm:pb-24'} max-lg:[@media(max-height:480px)]:!pb-3`
         }`}>
           {inventoryNotice && (
             <div role="status" className="mx-auto mb-3 flex w-full max-w-[1380px] items-start justify-between gap-3 rounded-2xl border border-[#F5C26B]/60 bg-[#FFF8E6] px-4 py-3 text-[13px] text-[#6B4A00]">
@@ -631,7 +631,7 @@ export default function DashboardPage() {
         open={assistantOpen}
         onToggle={() => setAssistantOpen(v => !v)}
         language={language}
-        className={activeTab === 'ai_carbon' ? 'bottom-5' : 'bottom-20 lg:bottom-5'}
+        className={`${activeTab === 'ai_carbon' ? 'bottom-5' : 'bottom-20 lg:bottom-5'} max-lg:[@media(max-height:480px)]:!bottom-3 ${activeTab === 'questionnaire' ? 'max-lg:[@media(max-height:640px)]:hidden' : ''}`}
       />
 
       {/* Browser Back on the Dashboard or the AI Analyzer asks "Do you want to leave?" (Stay / Log Out). */}

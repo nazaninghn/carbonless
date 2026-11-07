@@ -149,18 +149,18 @@ function VerifyContent() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F1FCF2] flex flex-col items-center justify-center px-4">
+    <main className="min-h-screen bg-[#F1FCF2] flex flex-col items-center justify-center px-4 max-[359px]:px-3">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex min-h-11 items-center gap-2">
             <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-10 w-10" />
             <span className="text-[18px] font-bold text-[#072C0E]">Carbonless</span>
           </Link>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-[#DEFAE1] bg-white p-8 shadow-sm text-center">
+        <div className="rounded-2xl border border-[#DEFAE1] bg-white p-5 max-[359px]:p-4 sm:p-8 shadow-sm text-center">
           {status === 'success' ? (
             <>
               <div className="h-16 w-16 rounded-full bg-[#DEFAE1] flex items-center justify-center mx-auto mb-4">
@@ -208,7 +208,7 @@ function VerifyContent() {
               )}
 
               <form onSubmit={handleVerify} className="mt-6">
-                <div className="flex justify-center gap-2" onPaste={handlePaste}>
+                <div className="flex justify-center gap-1.5 max-[359px]:gap-1 sm:gap-2" onPaste={handlePaste}>
                   {digits.map((d, i) => (
                     <input
                       key={i}
@@ -224,7 +224,7 @@ function VerifyContent() {
                       onChange={e => handleDigitChange(i, e.target.value)}
                       onKeyDown={e => handleKeyDown(i, e)}
                       disabled={status === 'verifying'}
-                      className={`h-12 w-10 rounded-xl border text-center text-[18px] font-bold text-[#072C0E] outline-none transition focus:ring-2 focus:ring-[#2ABD41] ${
+                      className={`h-12 min-w-0 max-w-11 flex-1 rounded-xl border text-center text-[18px] font-bold text-[#072C0E] outline-none transition focus:ring-2 focus:ring-[#2ABD41] ${
                         status === 'error' ? 'border-red-300 bg-red-50' : 'border-[#DEFAE1] bg-white'
                       }`}
                     />
@@ -252,7 +252,7 @@ function VerifyContent() {
               <button
                 onClick={handleResend}
                 disabled={resendState === 'sending' || !email}
-                className="mt-4 text-[13px] font-medium text-[#2ABD41] hover:underline disabled:opacity-50"
+                className="mt-1 py-3 text-[13px] font-medium text-[#2ABD41] hover:underline disabled:opacity-50"
               >
                 {resendState === 'sending'
                   ? (tr ? 'Gönderiliyor...' : 'Sending...')

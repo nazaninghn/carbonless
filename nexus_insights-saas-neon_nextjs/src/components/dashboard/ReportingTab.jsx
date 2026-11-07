@@ -760,7 +760,7 @@ export default function ReportingTab({ language, selectedYear, inventoryId = nul
                     onClick={() => handleDownload('pack', l)}
                     disabled={!!pdfLoading || !isoReportId}
                     aria-label={downloadLabel(tr ? 'Üçü tek PDF' : 'All three as one PDF', l, tr)}
-                    className="rounded-lg border border-[#072C0E]/15 bg-white px-3 py-1.5 text-[11px] font-bold text-[#072C0E] transition hover:bg-[#F1FCF2] disabled:opacity-50"
+                    className="rounded-lg max-lg:min-h-11 border border-[#072C0E]/15 bg-white px-3 py-1.5 text-[11px] font-bold text-[#072C0E] transition hover:bg-[#F1FCF2] disabled:opacity-50"
                   >
                     {pdfLoading === `pack${l}` ? '...' : l.toUpperCase()}
                   </button>
@@ -911,7 +911,7 @@ function ReportType({ icon: Icon, title, scope, desc, onDownload, loading, prefi
                 disabled={!!loading || disabled}
                 aria-label={downloadLabel(title, l, tr)}
                 title={disabled ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[#072C0E]/10 bg-white px-3 py-1.5 text-[11px] font-bold text-[#072C0E] transition hover:bg-[#DEFAE1] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 max-lg:min-h-11 rounded-lg border border-[#072C0E]/10 bg-white px-3 py-1.5 text-[11px] font-bold text-[#072C0E] transition hover:bg-[#DEFAE1] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Download className="h-3 w-3 text-[#2ABD41]" />
                 {busy(l) ? '...' : l.toUpperCase()}
