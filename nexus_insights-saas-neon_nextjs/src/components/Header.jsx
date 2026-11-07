@@ -107,7 +107,7 @@ export default function Header({ wide = false }) {
               {lang === 'tr' ? 'Giriş Yap' : 'Log In'}
             </Link>
             <Link href="/register"
-              className="ml-0.5 min-[360px]:min-h-11 rounded-full btn-primary px-3.5 max-[390px]:px-3 min-[320px]:max-[350px]:px-2 sm:px-5 py-2 text-[11px] sm:text-[13px] font-bold transition-all duration-200 whitespace-nowrap">
+              className="ml-0.5 flex items-center justify-center min-[360px]:min-h-11 rounded-full btn-primary px-3.5 max-[390px]:px-3 min-[320px]:max-[350px]:px-2 sm:px-5 py-2 text-[11px] sm:text-[13px] font-bold transition-all duration-200 whitespace-nowrap">
               {lang === 'tr' ? 'Hesap Oluştur' : 'Create Account'}
             </Link>
           </div>
