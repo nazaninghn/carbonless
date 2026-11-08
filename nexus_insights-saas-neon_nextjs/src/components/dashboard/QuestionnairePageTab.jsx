@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { InventoryProvider, useInventory } from './InventoryWorkflow';
 import InventoryLibrary from './InventoryLibrary';
 import ReviewPage from './ReviewPage';
@@ -110,12 +111,25 @@ function ContentFrame({ children }) {
   );
 }
 
-export default function QuestionnairePageTab({ language }) {
+// Tells the page around it whether an inventory's questionnaire is open (mode 'questionnaire'), so AI mode can hand its own
+// header's space to the workspace. Renders nothing; without `onChange` (the dashboard's Carbon Inventory tab) it does nothing.
+function WorkspaceSignal({ onChange }) {
+  const { mode } = useInventory();
+  useEffect(() => {
+    if (!onChange) return undefined;
+    onChange(mode === 'questionnaire');
+    return () => onChange(false);       // leaving the page (or the mode) always gives the header back
+  }, [mode, onChange]);
+  return null;
+}
+
+export default function QuestionnairePageTab({ language, onWorkspaceChange }) {
   const tr = language === 'tr';
 
   return (
     <div className="flex flex-1 flex-col min-h-0">
       <InventoryProvider>
+        <WorkspaceSignal onChange={onWorkspaceChange} />
         <PageHeader tr={tr} />
         {/* Main content area */}
         <ContentFrame>

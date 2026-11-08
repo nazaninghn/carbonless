@@ -258,6 +258,9 @@ export default function DashboardPage() {
   // same assistant as a drawer.
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrefill, setAssistantPrefill] = useState(null);
+  // true while an inventory's questionnaire is open in AI mode: the mode's own header (logo, AI Analyzer / Dashboard
+  // switch, language, user) is then taken out of the layout so the workspace gets the whole screen.
+  const [inQuestionnaire, setInQuestionnaire] = useState(false);
   // Closed by default: the chat opens from the floating Carbon AI button (or from
   // a link/event that asks for it). It floats over every dashboard section and
   // stays open (and keeps its conversation) while the user moves between them.
@@ -553,7 +556,9 @@ export default function DashboardPage() {
       {/* ===== AI MODE  -  the inventory, full screen; Carbon AI is the floating button ===== */}
       {activeTab === 'ai_carbon' && (
         <div className="fixed inset-0 z-[85] flex flex-col bg-green-50">
-          <div className="flex h-[68px] shrink-0 items-center justify-between gap-2 border-b border-white/70 bg-white/75 px-3 shadow-[0_1px_0_rgba(7,44,14,0.04)] backdrop-blur-xl sm:px-6">
+          {/* `hidden` (display: none) takes the header out of the layout while the questionnaire is open, so the workspace below
+              (flex-1) really grows into its 68px; it is back as soon as the user returns to My Inventories. */}
+          <div data-testid="ai-mode-header" className={`${inQuestionnaire ? 'hidden' : 'flex'} h-[68px] shrink-0 items-center justify-between gap-2 border-b border-white/70 bg-white/75 px-3 shadow-[0_1px_0_rgba(7,44,14,0.04)] backdrop-blur-xl sm:px-6`}>
             <div className="flex min-w-0 items-center gap-2.5">
               <Image src="/carbonless.png" alt="Carbonless" width={36} height={36} className="h-9 w-9 object-contain" />
               <span className="hidden text-[15px] font-bold text-[#175022] sm:inline">Carbonless AI</span>
@@ -601,9 +606,9 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex min-h-0 flex-1">
-            <div className="flex min-w-0 flex-1 flex-col overflow-y-auto px-3 pb-[84px] pt-3 sm:px-6 sm:pb-6 sm:pt-5">
+            <div className={`flex min-w-0 flex-1 flex-col overflow-y-auto px-3 pb-[84px] sm:px-6 sm:pb-6 ${inQuestionnaire ? 'pt-3 sm:pt-4' : 'pt-3 sm:pt-5'}`}>
               <ErrorBoundary language={language}>
-                <QuestionnairePageTab language={language} />
+                <QuestionnairePageTab language={language} onWorkspaceChange={setInQuestionnaire} />
               </ErrorBoundary>
             </div>
           </div>
