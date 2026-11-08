@@ -68,10 +68,10 @@ function LoginArt({ tr, widthClass, open }) {
       </div>
       {/* from 1024px up the rule and the tagline sit a little to the left of the picture's centre line, toward the form, so the sentence reads as part of the page's left side; on phones they stay centred */}
       <figcaption className="mt-1 flex flex-col items-center lg:-translate-x-10 xl:-translate-x-14">
-        <span aria-hidden="true" className="mb-4 block h-px w-14 bg-gradient-to-r from-transparent via-[#2ABD41] to-transparent" />
+        <span aria-hidden="true" className="mb-3 block h-px w-14 bg-gradient-to-r from-transparent via-[#2ABD41] to-transparent" />
         <p
           data-testid="login-tagline"
-          className={`${taglineFont.className} max-w-[20em] px-2 text-[clamp(1.375rem,1.1rem+0.9vw,1.875rem)] font-semibold italic leading-[1.3] tracking-[0.012em] text-[#175022]`}
+          className={`${taglineFont.className} max-w-[20em] px-2 text-[clamp(1.375rem,1.1rem+0.5vw,1.625rem)] font-semibold italic leading-[1.3] tracking-[0.012em] text-[#175022]`}
           style={{ textWrap: 'balance' }}
         >
           {tr ? 'Ölçtüğümüz her ayak izi, daha yeşil bir yarına atılmış bir adımdır.' : 'Every footprint we measure is a step toward a greener tomorrow.'}
@@ -273,9 +273,9 @@ function LoginContent() {
 
       {/* Caps the two-column layout on ultra-wide monitors so the form doesn't
           pin to the far-left edge with the image card stranded in empty space. */}
-      <div className="mx-auto flex min-h-screen w-full max-w-[1400px] lg:gap-5 lg:p-5">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1400px] lg:gap-4 lg:px-5 lg:py-3">
       {/* Left — Form column */}
-      <div className="flex w-full lg:w-[44%] flex-col px-6 py-6 sm:px-12">
+      <div className="flex w-full lg:w-[44%] flex-col px-6 py-4 sm:px-12 lg:py-2">
         {/* Top row: logo */}
         <div className="flex items-center">
           <NextLink href="/" className="flex min-h-11 items-center gap-2.5">
@@ -285,22 +285,22 @@ function LoginContent() {
         </div>
 
         {/* Centered form */}
-        <div className="flex flex-1 items-center justify-center py-10">
+        <div className="flex flex-1 items-center justify-center py-4 lg:py-2">
           <div className="w-full max-w-sm">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#DEFAE1] bg-white px-3 py-1 text-[11px] font-bold text-[#1A7B2A]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#2ABD41]" />
               {tr ? 'Karbon muhasebesi platformu' : 'Carbon accounting platform'}
             </span>
-            <h2 className="mt-4 text-[34px] font-extrabold leading-[1.15] tracking-[-0.02em] text-[#072C0E]">
+            <h2 className="mt-3 text-[30px] lg:text-[32px] font-extrabold leading-[1.15] tracking-[-0.02em] text-[#072C0E]">
               {tr ? <>Tekrar <span className="text-[#2ABD41]">hoş geldiniz</span></> : <>Welcome <span className="text-[#2ABD41]">back</span></>}
             </h2>
-            <p className="mt-2 text-[14px] text-[#072C0E]/50">{t.login.subtitle}</p>
+            <p className="mt-1.5 text-[14px] text-[#072C0E]/50">{t.login.subtitle}</p>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+            <form onSubmit={handleSubmit} className="mt-5 space-y-3.5">
               <div>
-                <label htmlFor="login-email" className="mb-2 block text-[12px] font-bold uppercase tracking-wide text-[#072C0E]/55">{t.login.email}</label>
-                <div className="flex items-center gap-3 rounded-2xl border border-[#DEFAE1] bg-white px-4 py-3.5 shadow-sm transition focus-within:border-[#2ABD41] focus-within:ring-4 focus-within:ring-[#2ABD41]/10">
+                <label htmlFor="login-email" className="mb-1.5 block text-[12px] font-bold uppercase tracking-wide text-[#072C0E]/55">{t.login.email}</label>
+                <div className="flex items-center gap-3 rounded-2xl border border-[#DEFAE1] bg-white px-4 py-3 shadow-sm lg:py-2.5 transition focus-within:border-[#2ABD41] focus-within:ring-4 focus-within:ring-[#2ABD41]/10">
                   <Mail className="h-[18px] w-[18px] text-[#2ABD41]" strokeWidth={1.8} />
                   <input id="login-email" type="text" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-transparent text-[14px] font-medium text-[#072C0E] outline-none placeholder:text-[#072C0E]/30" placeholder={t.login.emailPlaceholder} required />
                 </div>
@@ -311,7 +311,7 @@ function LoginContent() {
                   opened the forgot-password page). */}
               <div className="grid grid-cols-[1fr_auto] items-center gap-y-2">
                 <label htmlFor="login-password" className="col-start-1 row-start-1 block text-[12px] font-bold uppercase tracking-wide text-[#072C0E]/55">{t.login.password}</label>
-                <div className="col-span-2 row-start-2 flex items-center gap-3 rounded-2xl border border-[#DEFAE1] bg-white px-4 py-3.5 shadow-sm transition focus-within:border-[#2ABD41] focus-within:ring-4 focus-within:ring-[#2ABD41]/10">
+                <div className="col-span-2 row-start-2 flex items-center gap-3 rounded-2xl border border-[#DEFAE1] bg-white px-4 py-3 shadow-sm lg:py-2.5 transition focus-within:border-[#2ABD41] focus-within:ring-4 focus-within:ring-[#2ABD41]/10">
                   <LockKeyhole className="h-[18px] w-[18px] text-[#2ABD41]" strokeWidth={1.8} />
                   <input id="login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="min-w-0 w-full bg-transparent text-[14px] font-medium text-[#072C0E] outline-none placeholder:text-[#072C0E]/30" placeholder="********" required />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} aria-pressed={showPassword} aria-label={tr ? (showPassword ? 'Şifreyi gizle' : 'Şifreyi göster') : (showPassword ? 'Hide password' : 'Show password')} className="-m-3 shrink-0 rounded-full p-3 text-[#072C0E]/35 hover:text-[#072C0E]">
@@ -349,7 +349,7 @@ function LoginContent() {
                 </div>
               )}
 
-              <button type="submit" disabled={loading || doorOpen} className="group flex w-full items-center justify-center gap-2 rounded-full btn-primary px-5 py-4 text-[14px] font-bold transition disabled:hover:translate-y-0">
+              <button type="submit" disabled={loading || doorOpen} className="group flex w-full items-center justify-center gap-2 rounded-full btn-primary px-5 py-3.5 text-[14px] font-bold transition disabled:hover:translate-y-0">
                 {loading ? (tr ? 'Giriş yapılıyor...' : 'Signing in...') : t.login.title}
                 {!loading && <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />}
               </button>
@@ -362,18 +362,18 @@ function LoginContent() {
                   strategy="afterInteractive"
                   onLoad={() => setGoogleReady(true)}
                 />
-                <div className="mt-6 flex items-center gap-3">
+                <div className="mt-4 flex items-center gap-3">
                   <div className="h-px flex-1 bg-[#DEFAE1]" />
                   <span className="text-[11px] font-bold uppercase tracking-wide text-[#072C0E]/35">
                     {tr ? 'veya' : 'or'}
                   </span>
                   <div className="h-px flex-1 bg-[#DEFAE1]" />
                 </div>
-                <div ref={googleButtonRef} className="mt-5 flex w-full justify-center" />
+                <div ref={googleButtonRef} className="mt-3 flex w-full justify-center" />
               </>
             )}
 
-            <div className="mt-8 flex items-center gap-3">
+            <div className="mt-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-[#DEFAE1]" />
               <p className="text-[12px] text-[#072C0E]/50">
                 {t.login.noAccount}{' '}
@@ -384,20 +384,20 @@ function LoginContent() {
           </div>
         </div>
 
-        <div className="lg:hidden pb-6 pt-2">
+        <div className="lg:hidden pb-4 pt-1">
           <LoginArt tr={tr} widthClass="w-[min(62%,15rem)]" open={doorOpen} />
         </div>
 
-        <p className="text-[11px] text-[#072C0E]/30">&copy; {new Date().getFullYear()} Carbonless</p>
+        <p className="text-[11px] text-[#072C0E]/30 lg:pb-1">&copy; {new Date().getFullYear()} Carbonless</p>
       </div>
 
       {/* Right — the Login illustration (loginnew.png) with the brand tagline under it, then the glass caption; no background card behind it. */}
-      <div className="hidden lg:flex flex-1 items-center justify-center p-8 xl:p-10">
+      <div className="hidden lg:flex flex-1 items-center justify-center p-4 xl:p-6">
         <div className="flex w-full max-w-xl flex-col items-center">
           {/* loginnew.png has a real alpha channel, so it sits straight on the page with no blend trick (the earlier login-bg.png needed one) */}
-          <LoginArt tr={tr} widthClass="w-[min(100%,26rem,calc((100svh-17rem)*0.78))]" open={doorOpen} />
+          <LoginArt tr={tr} widthClass="w-[min(100%,26rem,calc((100svh-16.5rem)*0.78))]" open={doorOpen} />
           {/* Glass caption — attached under the illustration, gentle drift so it feels alive */}
-          <div className="login-caption-float relative mt-8 mx-6 w-full max-w-md rounded-2xl border border-white/60 bg-white/85 p-5 shadow-lg shadow-[#072C0E]/5 backdrop-blur-md">
+          <div className="login-caption-float relative mt-5 mx-6 w-full max-w-md rounded-2xl border border-white/60 bg-white/85 p-4 shadow-lg shadow-[#072C0E]/5 backdrop-blur-md">
             <p className="text-[15px] font-bold text-[#072C0E]">
               {tr ? 'Scope 1 · 2 · 3 emisyonlarınızı AI ile ölçün' : 'Measure your Scope 1 · 2 · 3 emissions with AI'}
             </p>
