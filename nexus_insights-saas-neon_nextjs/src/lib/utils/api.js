@@ -501,6 +501,11 @@ export const api = {
     method: 'POST',
     body: JSON.stringify({ step, data_source: dataSource, language, ...extra }),
   }),
+  // 'total' when the figure of an ANSWERED question is one total for several devices / sites / items, else 'itemised'.
+  setStepDataDetail: (reportId, step, dataDetail, language) => request(`/questionnaire/${reportId}/step-data-source/`, {
+    method: 'POST',
+    body: JSON.stringify({ step, data_detail: dataDetail, language }),
+  }),
   // What the questionnaire shows about one question's data quality: documents, advisor items waiting, small-source offer, totals.
   getStepDataQuality: (reportId, step, language) => request(`/questionnaire/${reportId}/step-document/?step=${encodeURIComponent(step)}&language=${language}`),
   // A measurement record or a supplier declaration for a question (multipart, so not through request()).

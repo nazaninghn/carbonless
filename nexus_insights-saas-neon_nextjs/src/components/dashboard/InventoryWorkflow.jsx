@@ -5,7 +5,7 @@ import { api } from '@/lib/utils/api';
 import { noPermissionMessage } from '@/lib/permissions';
 import { readAnswerValue, unmapPhase1Answer } from '@/lib/carboniq/questions';
 import { storedStepStandards } from '@/lib/carboniq/factorStandard';
-import { storedDataSources } from '@/lib/carboniq/dataSource';
+import { storedDataSources, storedOtherSources, storedDataDetails } from '@/lib/carboniq/dataSource';
 
 // A report resumed from the backend echoes back exactly what was PATCHed for
 // each question — { answer: value } for most questions (mapAnswerForBackend's
@@ -42,6 +42,8 @@ export function InventoryProvider({ children }) {
   // (normalizeHydratedAnswers keeps the answer only).
   const [stepStandards, setStepStandards] = useState({});
   const [dataSources, setDataSources] = useState({});
+  // The rest of what is stored next to the answers about data quality: "other" percentages / reasons, totals.
+  const [dataQualityExtras, setDataQualityExtras] = useState({ others: {}, details: {} });
   const [currentStep, setCurrentStep] = useState('D1');
   // true when currentStep is a question the user asked to open ("Ankette aç"),
   // not the last answered one — the survey then shows exactly that question.
@@ -97,6 +99,7 @@ export function InventoryProvider({ children }) {
       setAnswers({});
       setStepStandards({});
       setDataSources({});
+      setDataQualityExtras({ others: {}, details: {} });
       setDirty(false);
       setMode('questionnaire');
 
@@ -139,6 +142,7 @@ export function InventoryProvider({ children }) {
       setAnswers(normalizeHydratedAnswers(data.answers));
       setStepStandards(storedStepStandards(data.answers));
       setDataSources(storedDataSources(data.answers));
+      setDataQualityExtras({ others: storedOtherSources(data.answers), details: storedDataDetails(data.answers) });
       setDirty(false);
       setMode('questionnaire');
 
@@ -249,6 +253,7 @@ export function InventoryProvider({ children }) {
     answers,
     stepStandards,
     dataSources,
+    dataQualityExtras,
     currentStep,
     stepExact,
     dirty,

@@ -78,7 +78,7 @@ import {
 } from '@/lib/carboniq/factorStandard';
 import {
   DATA_SOURCE_OPTIONS, OTHER_REASON_MIN, OTHER_REASON_MAX, hasDataSource, storedDataSources, storedOtherSources, otherExtra,
-  withDataSource, dataSourceWarning,
+  withDataSource, dataSourceWarning, storedDataDetails, dataDetailWarning,
 } from '@/lib/carboniq/dataSource';
 import { splitStoredAmount, unitWarning } from '@/lib/carboniq/unitInput';
 import { fixed, num } from '@/lib/formatNumber';
@@ -2950,6 +2950,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
     answers: workflowAnswers,
     stepStandards: workflowStepStandards,
     dataSources: workflowDataSources,
+    dataQualityExtras: workflowDataQualityExtras,
     currentStep: workflowStep,
     stepExact: workflowStepExact,
     inventoryStatus,
@@ -2984,6 +2985,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
         initialAnswers={workflowAnswers}
         initialStepStandards={workflowStepStandards}
         initialDataSources={workflowDataSources}
+        initialDataQualityExtras={workflowDataQualityExtras}
         initialStep={workflowStep}
         initialStepExact={workflowStepExact}
         inventoryCompleted={inventoryStatus === 'completed'}
@@ -3006,7 +3008,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
 // instead of landing on this component's own (now-legacy) picker first.
 export function QuestionnaireTab({
   language, isVisible = true,
-  hydrated = false, initialReportId = null, initialAnswers = null, initialStepStandards = null, initialDataSources = null, initialStep = null, initialStepExact = false,
+  hydrated = false, initialReportId = null, initialAnswers = null, initialStepStandards = null, initialDataSources = null, initialDataQualityExtras = null, initialStep = null, initialStepExact = false,
   onDirtyChange = null, onExitToLibrary = null, startedBy = null, inventoryCompleted = false,
 }) {
   const tr = language === 'tr';
@@ -3609,9 +3611,15 @@ export function QuestionnaireTab({
   const dataSourcesRef = useRef(dataSources);
   dataSourcesRef.current = dataSources;
   // "Other": the percentage and the reason the user gives, per question.
-  const [otherSources, setOtherSources] = useState(() => storedOtherSources(hydrated && initialAnswers));
+  const [otherSources, setOtherSources] = useState(() => (
+    (hydrated && initialDataQualityExtras?.others) || storedOtherSources(hydrated && initialAnswers)));
   const otherSourcesRef = useRef(otherSources);
   otherSourcesRef.current = otherSources;
+  // 'total' when the figure of a question is one total for several devices / sites / items.
+  const [dataDetails, setDataDetails] = useState(() => (
+    (hydrated && initialDataQualityExtras?.details) || storedDataDetails(hydrated && initialAnswers)));
+  const dataDetailsRef = useRef(dataDetails);
+  dataDetailsRef.current = dataDetails;
   // What the server says about the current question's data quality: documents, advisor items waiting,
   // the small-source offer, the inventory's uncertainty so far.
   const [dataQuality, setDataQuality] = useState(null);
@@ -4058,6 +4066,30 @@ export function QuestionnaireTab({
     await sendDataSource(questionId, 'other', extra);
   }, [reportId, lang, sendDataSource]);
 
+  // "This figure is a total": saved at once on an answered question, else it travels with the answer.
+  const changeDataDetail = useCallback(async (questionId, isTotal) => {
+    const previous = dataDetailsRef.current[questionId] || '';
+    const next = isTotal ? 'total' : 'itemised';
+    setDataDetails(prev => ({ ...prev, [questionId]: next }));
+    setSaveError('');
+    if (!reportId || !(questionId in answersRef.current)) return;
+    setDataSourceSaving(true);
+    try {
+      const res = await api.setStepDataDetail(reportId, questionId, next, lang);
+      const data = await res.json().catch(() => ({}));
+      if (!isMounted.current) return;
+      if (res.ok && data.success) setDataQuality({ step: questionId, ...data });
+      else if (data?.code !== 'not_answered') {
+        setDataDetails(prev => ({ ...prev, [questionId]: previous }));
+        setSaveError(data?.error || dataSourceFailed);
+      }
+    } catch (e) {
+      if (isMounted.current) { setDataDetails(prev => ({ ...prev, [questionId]: previous })); setSaveError(dataSourceFailed); }
+    } finally {
+      if (isMounted.current) setDataSourceSaving(false);
+    }
+  }, [reportId, lang, dataSourceFailed]);
+
   const acceptSmallSource = useCallback(async (questionId) => {
     setSaveError('');
     if (await sendDataSource(questionId, 'estimate', { data_source_small: true })) {
@@ -4122,7 +4154,7 @@ export function QuestionnaireTab({
     }
     try {
       let backendData = withFactorStandard(questionId, mapAnswerForBackend(questionId, value), stepStandardsRef.current);
-      backendData = withDataSource(questionId, backendData, dataSourcesRef.current, otherSourcesRef.current);
+      backendData = withDataSource(questionId, backendData, dataSourcesRef.current, otherSourcesRef.current, dataDetailsRef.current);
       if (questionId === '7C-2' && backendData && typeof backendData === 'object') {
         const reasons = Object.fromEntries(Object.entries(signOffReasonsRef.current)
           .map(([k, v]) => [k, String(v || '').trim()]).filter(([, v]) => v));
@@ -5100,6 +5132,7 @@ export function QuestionnaireTab({
     setStepStandards({});
     setDataSources({});
     setOtherSources({});
+    setDataDetails({});
     setDataQuality(null);
     setHistory([]);
     setCompleted(false);
@@ -5522,6 +5555,28 @@ export function QuestionnaireTab({
                     <p data-testid="data-source-warning" className={`mt-1 text-[11px] leading-snug ${careful ? 'text-[#175022]/80' : 'font-semibold text-amber-800'}`}>
                       {dq?.warning || dataSourceWarning(source, tr)}
                     </p>
+                    {/* A button with the checkbox role, not an <input>: the answer fields stay the first inputs of the question. */}
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={dataDetails[currentId] === 'total'}
+                      data-testid="data-detail-total"
+                      disabled={dataSourceSaving}
+                      onClick={() => changeDataDetail(currentId, dataDetails[currentId] !== 'total')}
+                      className="mt-2 flex w-full items-start gap-2 text-left text-[12px] text-[#0E2A14] disabled:opacity-60"
+                    >
+                      <span aria-hidden="true" className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[11px] font-bold leading-none ${dataDetails[currentId] === 'total' ? 'border-[#175022] bg-[#175022] text-white' : 'border-[#8FB39A] bg-white text-transparent'}`}>✓</span>
+                      <span>
+                        {tr
+                          ? 'Bu değer bir toplamdır: her cihaz, tesis veya kalem için ayrı değerim yok.'
+                          : 'This figure is a total: I have no separate figure for each device, site or item.'}
+                      </span>
+                    </button>
+                    {dataDetails[currentId] === 'total' && (
+                      <p data-testid="data-detail-warning" className="mt-1 rounded-md bg-white/70 px-2 py-1 text-[11px] font-semibold leading-snug text-amber-800">
+                        {dataDetailWarning('total', tr)}
+                      </p>
+                    )}
                     {dq?.small_row && !source && (
                       <div data-testid="data-source-small" className="mt-1.5 text-[11px] leading-snug text-[#0E2A14]">
                         <p>

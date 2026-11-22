@@ -23,6 +23,7 @@ function QuestionnaireContent({ language }) {
     answers: workflowAnswers,
     stepStandards: workflowStepStandards,
     dataSources: workflowDataSources,
+    dataQualityExtras: workflowDataQualityExtras,
     currentStep: workflowStep,
     stepExact: workflowStepExact,
     inventoryStatus,
@@ -54,6 +55,7 @@ function QuestionnaireContent({ language }) {
         initialAnswers={workflowAnswers}
         initialStepStandards={workflowStepStandards}
         initialDataSources={workflowDataSources}
+        initialDataQualityExtras={workflowDataQualityExtras}
         initialStep={workflowStep}
         initialStepExact={workflowStepExact}
         inventoryCompleted={inventoryStatus === 'completed'}

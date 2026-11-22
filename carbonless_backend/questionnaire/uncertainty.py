@@ -43,6 +43,12 @@ SOURCE_LABELS = {
     OTHER: {'tr': 'Diğer', 'en': 'Other'},
 }
 UNSPECIFIED = ''                      # not chosen: counted as an estimate
+# How the figure was entered: one total for several devices / sites / items, or item by item. A total is less
+# precise (the factor of each item cannot be applied to it): the user is told so and the report states the share
+# of emissions entered that way. It has NO numeric effect on the uncertainty: the specification gives no
+# percentage for it, and none is invented (owner's decision, 2026-11-22).
+TOTAL, ITEMISED = 'total', 'itemised'
+DETAILS = (TOTAL, ITEMISED)
 ROW_FLAG_PERCENT = 60.0
 OTHER_PERCENT_MIN, OTHER_PERCENT_MAX = 0.1, 100.0
 OTHER_REASON_MIN, OTHER_REASON_MAX = 20, 500
@@ -77,17 +83,47 @@ def checked_data_source(step_id, data, saved_answers, lang='en'):
     if step_id not in ENTRY_STEPS or not isinstance(data, dict) or 'answer' not in data:
         return data, None
     keys = ('data_source', 'data_source_percent', 'data_source_reason', 'data_source_small')
+    saved = (saved_answers or {}).get(step_id)
+    saved = saved if isinstance(saved, dict) else {}
     given = {k: data[k] for k in keys if data.get(k) not in (None, '')}
     if 'data_source' not in given:
-        saved = (saved_answers or {}).get(step_id)
-        given = {k: saved[k] for k in keys if isinstance(saved, dict) and saved.get(k) not in (None, '')}
-    data = {k: v for k, v in data.items() if k not in keys}
+        given = {k: saved[k] for k in keys if saved.get(k) not in (None, '')}
+    detail = data.get('data_detail') if data.get('data_detail') not in (None, '') else saved.get('data_detail')
+    data = {k: v for k, v in data.items() if k not in keys and k != 'data_detail'}
+    if detail not in (None, ''):
+        if detail not in DETAILS:
+            return data, detail_error(lang)
+        data['data_detail'] = detail
     if not given.get('data_source'):
         return data, None
     cleaned, error = clean_source(given, lang)
     if error:
         return data, error
     return {**data, **cleaned}, None
+
+
+def detail_error(lang='en'):
+    return ('Geçersiz giriş biçimi. "Toplam" veya "kalem kalem" seçin.' if _tr(lang) else
+            'Invalid entry form. Choose "total" or "item by item".')
+
+
+def step_detail(answers, step_id):
+    """'total' / 'itemised' as declared for a question's figure, or '' when not declared."""
+    stored = (answers or {}).get(step_id)
+    detail = stored.get('data_detail') if isinstance(stored, dict) else None
+    return detail if detail in DETAILS else ''
+
+
+def detail_warning(detail, lang='en'):
+    """What the user is told when a figure is one total for several devices, sites or items."""
+    if detail != TOTAL:
+        return ''
+    return ('Toplam değer girdiniz: cihaz, tesis veya kalem bazında ayrı değerler olmadan her birinin kendi faktörü '
+            'uygulanamaz ve sonucun doğruluğu düşer. Ayrı değerleriniz varsa tek tek girin. Bu, raporda belirtilir.'
+            if _tr(lang) else
+            'You entered a total: without a separate figure for each device, site or item, the factor of each one '
+            'cannot be applied and the result is less accurate. Enter them one by one if you have them. The report '
+            'states this.')
 
 
 def clean_source(given, lang='en'):
@@ -215,7 +251,8 @@ def inventory_uncertainty(report):
         rows.append({
             'step_id': step, 'label_tr': question_label(step, 'tr'), 'label_en': question_label(step, 'en'),
             'factor': entry.emission_factor.name, 'factor_tr': entry.emission_factor.name_tr or entry.emission_factor.name,
-            'co2e_kg': round(kg, 4), 'source': source, 'source_state': state, 'activity_percent': u_a,
+            'co2e_kg': round(kg, 4), 'source': source, 'source_state': state, 'detail': step_detail(ctx.answers, step),
+            'activity_percent': u_a,
             'factor_base_percent': base, 'factor_addon_percent': addon, 'factor_percent': round(u_ef, 2),
             'row_percent': round(u_row, 2), 'absolute_kg': round(abs(kg) * u_row / 100, 4),
             'flagged': u_row > ROW_FLAG_PERCENT,
@@ -239,6 +276,9 @@ def inventory_uncertainty(report):
         'small_rows': small, 'step_share_percent': {k: round(v, 2) for k, v in by_step.items()},
         'accepted_small_share': round(accepted, 2), 'row_flag_percent': ROW_FLAG_PERCENT,
         'pending_approvals': sum(1 for status in ctx.decisions.values() if status == 'pending'),
+        # Figures entered as one total (less precise; no numeric effect on the percentages above).
+        'total_entry_steps': list(dict.fromkeys(r['step_id'] for r in rows if r['detail'] == TOTAL)),
+        'total_entry_share': round(sum(abs(r['co2e_kg']) for r in rows if r['detail'] == TOTAL) / gross * 100, 2) if gross else 0.0,
     }
 
 
