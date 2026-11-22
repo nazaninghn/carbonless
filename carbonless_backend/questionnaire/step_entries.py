@@ -365,6 +365,37 @@ def step_standard(answers, step_id):
     return chosen if chosen in STANDARDS else STANDARD_UNSET
 
 
+def checked_factor_standard(step_id, data, saved_answers, lang='en'):
+    """(data, error) for a calculating question's answer about to be saved.
+
+    The standard a question of a "mix" inventory is calculated on travels with
+    its answer as `factor_standard`. It is kept from the saved answer when a
+    save does not repeat it (each item of a per-item question is saved on its
+    own), refused when it is not a standard, and required in a "mix"
+    inventory: an answer saved without one would be recorded but never
+    calculated."""
+    from emissions.factor_lookup import STANDARDS
+    if step_id not in ENTRY_STEPS or not isinstance(data, dict) or 'answer' not in data:
+        return data, None
+    tr = str(lang or '').lower().startswith('tr')
+    chosen = data.get('factor_standard')
+    if chosen in (None, ''):
+        saved = (saved_answers or {}).get(step_id)
+        chosen = saved.get('factor_standard') if isinstance(saved, dict) else None
+    if chosen not in (None, '') and chosen not in STANDARDS:
+        return data, ('Geçersiz emisyon faktörü standardı. GHG Protokolü, IPCC veya DEFRA seçin.' if tr else
+                      'Invalid emission factor standard. Choose GHG Protocol, IPCC or DEFRA.')
+    if inventory_standard(saved_answers) == 'mix' and not chosen:
+        return data, ('Bu envanter karma standartla hesaplanıyor: bu soru için emisyon faktörü standardını '
+                      '(GHG Protokolü, IPCC veya DEFRA) seçin.' if tr else
+                      'This inventory is calculated on mixed standards: choose the emission factor standard '
+                      '(GHG Protocol, IPCC or DEFRA) for this question.')
+    data = {k: v for k, v in data.items() if k != 'factor_standard'}
+    if chosen:
+        data['factor_standard'] = chosen
+    return data, None
+
+
 @contextlib.contextmanager
 def answers_standard(answers):
     """Calculate inside the block on the standard these answers chose."""

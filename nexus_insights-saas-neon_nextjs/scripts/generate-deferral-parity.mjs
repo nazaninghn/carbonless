@@ -108,7 +108,7 @@ for (const [v, dom] of Object.entries(A.DOMAIN)) for (const val of dom) add('bou
 {
   const Q = POLICY.questions; let made = 0, guardTries = 0;
   while (made < 60 && guardTries++ < 5000) {
-    let id = 'A1'; const A = {}; const seen = new Set(); const answered = {}; let last = null;
+    let id = 'D1'; const A = {}; const seen = new Set(); const answered = {}; let last = null;
     for (let g = 0; id && g < 600; g++) {
       const q = Q[id]; if (!q || seen.has(id)) break;
       seen.add(id);

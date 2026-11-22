@@ -4,8 +4,20 @@ export default {
  "version": 1,
  "generated_from": "src/lib/carboniq/questions.js",
  "questions": {
-  "A1": {
+  "D1": {
    "n": 1,
+   "stage": 1,
+   "type": "single_select",
+   "text": "Which emission factor standard should your inventory be calculated on?",
+   "iso": "ISO 14064-1 §6.1",
+   "req": true,
+   "next": "A1",
+   "kind": "required",
+   "code": "methodology",
+   "reason": "Emission factor database: selects the factor source used by every calculation."
+  },
+  "A1": {
+   "n": 2,
    "stage": 1,
    "type": "text",
    "text": "What is the full legal name of your company?",
@@ -17,7 +29,7 @@ export default {
    "reason": "Legal name of the reporting organization: identifies the inventory in every report and in Company Profile reuse."
   },
   "A2": {
-   "n": 2,
+   "n": 3,
    "stage": 1,
    "type": "text",
    "text": "What is your tax identification number?",
@@ -29,7 +41,7 @@ export default {
    "reason": "Tax identification number: identifies the company, changes neither the route nor any calculation."
   },
   "A3": {
-   "n": 3,
+   "n": 4,
    "stage": 1,
    "type": "country_city",
    "text": "In which country and city is your company registered?",
@@ -41,7 +53,7 @@ export default {
    "reason": "Country and city select the default national grid and regional factors the rest of the questionnaire uses."
   },
   "A4": {
-   "n": 4,
+   "n": 5,
    "stage": 1,
    "type": "year_select",
    "text": "Which reporting year are we preparing this report for?",
@@ -53,7 +65,7 @@ export default {
    "reason": "Reporting year: sets the factor year and every year-scoped record of the inventory."
   },
   "A5": {
-   "n": 5,
+   "n": 6,
    "stage": 1,
    "type": "text",
    "text": "Who is preparing this report? (name and/or department)",
@@ -65,7 +77,7 @@ export default {
    "reason": "Name of the preparer: documentation only."
   },
   "A6": {
-   "n": 6,
+   "n": 7,
    "stage": 1,
    "type": "multi_select",
    "text": "What is the intended use of this report?",
@@ -80,7 +92,7 @@ export default {
    "reason": "Intended use of the report: documentation only."
   },
   "A7": {
-   "n": 7,
+   "n": 8,
    "stage": 1,
    "type": "single_select",
    "text": "Have you prepared a carbon report before?",
@@ -99,7 +111,7 @@ export default {
    "reason": "Its answer chooses the next question (yes / no / skip); without it the route is a guess."
   },
   "A7a": {
-   "n": "7a",
+   "n": "8a",
    "stage": 1,
    "type": "year_select",
    "text": "What is your baseline year?",
@@ -116,7 +128,7 @@ export default {
    "then": "deferrable"
   },
   "A7b": {
-   "n": 8,
+   "n": 9,
    "stage": 1,
    "type": "compound",
    "text": "Complete the organization details that appear in your report.",
@@ -128,7 +140,7 @@ export default {
    "reason": "Organization details printed in the report: documentation only."
   },
   "B1": {
-   "n": 9,
+   "n": 10,
    "stage": 1,
    "type": "single_select",
    "text": "What is the primary sector of your company?",
@@ -140,7 +152,7 @@ export default {
    "reason": "Sector decides whether the process-emission (3C-0) and sold-product-processing (K3C10-0) questions apply."
   },
   "B2": {
-   "n": 10,
+   "n": 11,
    "stage": 1,
    "type": "text",
    "text": "Briefly describe your company's main business activity.",
@@ -152,7 +164,7 @@ export default {
    "reason": "Description of the main activity: documentation only."
   },
   "B3": {
-   "n": 11,
+   "n": 12,
    "stage": 1,
    "type": "single_select",
    "text": "What is your total number of employees?",
@@ -164,7 +176,7 @@ export default {
    "reason": "Employee band: used for the sector-benchmark band and a plausibility warning against the commuting headcounts (K3C7-1); not an input of any emission calculation."
   },
   "B4": {
-   "n": 12,
+   "n": 13,
    "stage": 1,
    "type": "text",
    "text": "How many physical locations does your company operate from?",
@@ -176,7 +188,7 @@ export default {
    "reason": "Number of locations: a reference for the facility count, which 2A-1 asks itself."
   },
   "B5": {
-   "n": 13,
+   "n": 14,
    "stage": 1,
    "type": "multi_select",
    "text": "What types of locations does your company operate?",
@@ -188,7 +200,7 @@ export default {
    "reason": "Location types: documentation only."
   },
   "B6": {
-   "n": 14,
+   "n": 15,
    "stage": 1,
    "type": "single_select",
    "text": "What is your approximate annual revenue range? (Optional)",
@@ -203,7 +215,7 @@ export default {
    "reason": "Revenue band (optional)."
   },
   "C1": {
-   "n": 15,
+   "n": 16,
    "stage": 1,
    "type": "single_select",
    "text": "Does your company have any subsidiaries or affiliates?",
@@ -215,7 +227,7 @@ export default {
    "reason": "Subsidiaries decide whether the subsidiary boundary questions (2A-4) apply."
   },
   "C2": {
-   "n": 16,
+   "n": 17,
    "stage": 1,
    "type": "single_select",
    "text": "Does your company have any international operations?",
@@ -227,28 +239,16 @@ export default {
    "reason": "International operations drive the overseas-site advisor check on later site answers."
   },
   "C3": {
-   "n": 17,
+   "n": 18,
    "stage": 1,
    "type": "single_select",
    "text": "Does your company have any franchise agreements or joint ventures?",
    "iso": "ISO 14064-1 §5.1",
    "req": true,
-   "next": "D1",
+   "next": "D2",
    "kind": "required",
    "code": "structure",
    "reason": "Franchise / joint venture decides whether Scope 3 category 14 (K3C14-0) applies."
-  },
-  "D1": {
-   "n": 18,
-   "stage": 1,
-   "type": "single_select",
-   "text": "Which emission factor standard should your inventory be calculated on?",
-   "iso": "ISO 14064-1 §6.1",
-   "req": true,
-   "next": "D2",
-   "kind": "required",
-   "code": "methodology",
-   "reason": "Emission factor database: selects the factor source used by every calculation."
   },
   "D2": {
    "n": 19,

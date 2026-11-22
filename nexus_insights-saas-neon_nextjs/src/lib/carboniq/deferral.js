@@ -145,7 +145,7 @@ export function createDeferral(policy) {
     const loopHasItems = opts.loopHasItems || (() => true);
     const path = [];
     const seen = new Set();
-    let id = 'A1';
+    let id = 'D1';       // the factor standard is the first question
     while (id && !seen.has(id) && path.length < 2000) {
       const q = Q[id];
       if (!q) break;

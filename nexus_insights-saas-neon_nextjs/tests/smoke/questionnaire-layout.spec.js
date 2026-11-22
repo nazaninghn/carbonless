@@ -8,14 +8,14 @@
 import { test, expect } from '@playwright/test';
 import { mockDjangoApi, seedAuth } from '../helpers/mock-api.js';
 
-const PHASE1 = { A1: { answer: 'Alpha' }, A2: { answer: 'x' }, A3: { answer: 'x' }, A4: { answer: '2025' }, A5: { answer: 'x' }, A6: { answer: 'x' },
+const PHASE1 = { D1: { ef_database: 'DEFRA_TUIK' }, A1: { answer: 'Alpha' }, A2: { answer: 'x' }, A3: { answer: 'x' }, A4: { answer: '2025' }, A5: { answer: 'x' }, A6: { answer: 'x' },
   A7: { answer: 'no' }, B1: { answer: 'NACE_A' }, B2: { answer: 'Makes things' } };
 const report = { report_id: 1, title: 'Inventory A', status: 'in_progress', reporting_year: 2025, current_step: 'B5',
   progress: { percent: 10, completed: 9, total: 98 }, updated_at: '2026-01-01T00:00:00Z', created_by: null };
 
 const COPY = {
-  en: { cont: /Continue/, q: 'What types of locations does your company operate?', n: 'Question 13', later: /answer later/i, help: 'Ask AI Help', info: 'Information', tip: 'How this works' },
-  tr: { cont: /Devam/, q: 'Bu lokasyonların türleri neler?', n: 'Soru 13', later: /sonra yanıtla/i, help: 'AI Yardımı', info: 'Bilgi', tip: 'Nasıl ilerlenir' },
+  en: { cont: /Continue/, q: 'What types of locations does your company operate?', n: 'Question 14', later: /answer later/i, help: 'Ask AI Help', info: 'Information', tip: 'How this works' },
+  tr: { cont: /Devam/, q: 'Bu lokasyonların türleri neler?', n: 'Soru 14', later: /sonra yanıtla/i, help: 'AI Yardımı', info: 'Bilgi', tip: 'Nasıl ilerlenir' },
 };
 
 test.beforeEach(async ({ page }) => {

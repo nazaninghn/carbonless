@@ -27,7 +27,7 @@ const ids = (list) => list.map(i => i.id);
 
 // ── the overview ────────────────────────────────────────────────────────────────────────────────────────────────
 test('an inventory with nothing answered has nothing behind it to attend to', () => {
-  const o = attentionOverview({ answers: {}, pendingIds: [], currentId: 'A1' });
+  const o = attentionOverview({ answers: {}, pendingIds: [], currentId: 'D1' });   // D1: the first question
   assert.deepEqual([o.required, o.deferred, o.needsAttention], [[], [], 0]);
 });
 
@@ -42,7 +42,7 @@ test('a complete route needs no attention, and everything on it is answered', ()
 test('a required question skipped behind the user is listed as required; the question being asked, and those ahead, are not', () => {
   const s = complete[0];
   const route = s.route;
-  const target = route.find(id => policy[id].kind !== 'info' && !policy[id].loop && policy[id].req && id !== 'A1');
+  const target = route.find(id => policy[id].kind !== 'info' && !policy[id].loop && policy[id].req && id !== 'D1');
   const answers = { ...s.answers }; delete answers[target];
   const at = route.indexOf(target);
   const later = route.slice(at + 1).find(id => policy[id].kind !== 'info' && !policy[id].loop);

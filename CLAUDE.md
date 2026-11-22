@@ -110,8 +110,10 @@ An inventory is calculated on the factor standard chosen in question **D1**: `st
 - A standard's rows are data, loaded by their own command, never hand-edited: DEFRA from `emissions/data/defra_factors.json` (every published edition 2014–2026, generated from the gov.uk flat files) by `manage.py seed_defra_factors`. They are `is_default=False`, so no catalogue query sees them.
 - The standard in force is applied in one place: `emissions/factor_lookup.py :: pick_factor` (`use_standard`). The edition is the inventory year's, else the latest earlier one. A source the standard does not publish is **not calculated** (honest note), never taken from another standard — except grid electricity, which keeps the national factor.
 - `questionnaire/step_entries.py :: inventory_standard / answers_standard / report_standard` read the choice from the answers.
+- **D1 is the first question of an inventory** (then A1 …; `getInitialQuestionId`, `STEP_FLOW`, `STRICT_STEP_ORDER`, the route walks in `deferral.py` / `deferral.js` all start at D1). It is never copied by "reuse previous company profile": every inventory is asked for its own standard.
+- **Mix:** each question in `ENTRY_STEPS` carries its own standard. The wizard shows a picker on those questions (`src/lib/carboniq/factorStandard.js`, whose step list a backend test keeps equal to `ENTRY_STEPS`) and sends it as `data.factor_standard`; the server (`step_entries.checked_factor_standard`, called from `SubmitStepView`) refuses an unknown standard, requires one in a mix inventory (bilingual error, code `factor_standard`) and keeps the saved one when a later save does not repeat it. Known gap: `uncalculated_notes` and the existence checks in `activities_for_report` read the inventory-level standard only, so in a mix inventory their notes do not yet follow the per-question choice.
 - IPCC and GHG Protocol have no factor rows yet (the client has not defined their factor sets): an inventory on them calculates only grid electricity until they are loaded.
-- Tests: `questionnaire/test_factor_standards.py`.
+- Tests: `questionnaire/test_factor_standards.py` (backend), `tests/smoke/factor-standard.spec.js` (browser).
 
 ## Calculation & data rules (the DOs and DON'Ts)
 

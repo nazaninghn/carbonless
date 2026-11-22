@@ -177,9 +177,54 @@ function notCalculated(option) {
 }
 
 export const CARBONIQ_QUESTIONS = [
+  // The factor standard is asked first: every calculation of the inventory
+  // depends on it (questionnaire/step_entries.py :: inventory_standard).
+  {
+    id: 'D1',
+    number: 1,
+    stage: 1,
+    block: 'D',
+    isoRef: 'ISO 14064-1 §6.1',
+    type: 'single_select',
+    subtype: 'searchable',
+    required: true,
+    reportField: 'report.ef_database',
+    text: {
+      tr: 'Envanteriniz hangi emisyon faktörü standardına göre hesaplansın?',
+      en: 'Which emission factor standard should your inventory be calculated on?',
+    },
+    placeholder: {
+      tr: 'Standart seçin',
+      en: 'Select a standard',
+    },
+    helper: {
+      tr: 'Seçtiğiniz standardın faktörleri bu envanterdeki tüm hesaplamalarda kullanılır. "Karma" seçerseniz, hesaplama yapılan her soruda o soru için standardı ayrıca seçersiniz. Seçiminiz raporunuzda belgelenir.',
+      en: 'The factors of the standard you choose are used in every calculation of this inventory. With "Mix", you choose the standard separately on each question that is calculated. Your choice is documented in the report.',
+    },
+    options: [
+      { value: 'std_ghg', label: { tr: 'GHG Protokolü', en: 'GHG Protocol' } },
+      { value: 'std_ipcc', label: { tr: 'IPCC', en: 'IPCC' } },
+      { value: 'std_defra', label: { tr: 'DEFRA (Birleşik Krallık dönüşüm faktörleri)', en: 'DEFRA (UK government conversion factors)' } },
+      { value: 'std_mix', label: { tr: 'Karma (her soruda ayrı standart seçilir)', en: 'Mix (a standard is chosen on each question)' } },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen bir emisyon faktörü standardı seçin.', en: 'Please select an emission factor standard.' },
+    },
+    systemMessages: {
+      std_defra: {
+        tr: 'Hesaplamalar, envanter yılınıza ait DEFRA baskısının faktörleriyle yapılır (o yılın baskısı yoksa bir önceki baskı). Şebeke elektriği, tesisin bulunduğu ülkenin ulusal faktörüyle hesaplanır. DEFRA\'nın yayımlamadığı kaynaklar "hesaplanmadı" olarak gösterilir.',
+        en: 'Calculations use the factors of the DEFRA edition of your inventory year (the previous edition when that year has none). Grid electricity is calculated with the national factor of the facility\'s country. Sources DEFRA does not publish are shown as "not calculated".',
+      },
+      std_mix: {
+        tr: 'Hesaplama yapılan her soruda o soru için standardı seçmeniz istenecek. Standardı seçilmemiş bir soru hesaplanmaz.',
+        en: 'On each question that is calculated you will be asked for its standard. A question whose standard is not chosen is not calculated.',
+      },
+    },
+    next: 'A1',
+  },
   {
     id: 'A1',
-    number: 1,
+    number: 2,
     stage: 1,
     block: 'A',
     isoRef: 'ISO 14064-1 §7.5',
@@ -214,7 +259,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'A2',
-    number: 2,
+    number: 3,
     stage: 1,
     block: 'A',
     isoRef: 'ISO 14064-1 §7.5',
@@ -252,7 +297,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'A3',
-    number: 3,
+    number: 4,
     stage: 1,
     block: 'A',
     isoRef: 'ISO 14064-1 §5.1',
@@ -296,7 +341,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'A4',
-    number: 4,
+    number: 5,
     stage: 1,
     block: 'A',
     isoRef: 'ISO 14064-1 §7.5',
@@ -351,7 +396,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'A5',
-    number: 5,
+    number: 6,
     stage: 1,
     block: 'A',
     isoRef: 'ISO 14064-1 §7.5',
@@ -386,7 +431,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'A6',
-    number: 6,
+    number: 7,
     stage: 1,
     block: 'A',
     isoRef: 'ISO 14064-1 §7.5',
@@ -422,7 +467,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'A7',
-    number: 7,
+    number: 8,
     stage: 1,
     block: 'A',
     isoRef: 'ISO 14064-1 §7.5',
@@ -456,7 +501,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'A7a',
-    number: '7a',
+    number: '8a',
     stage: 1,
     block: 'A',
     isoRef: 'ISO 14064-1 §7.5',
@@ -502,7 +547,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'A7b',
-    number: 8,
+    number: 9,
     stage: 1,
     block: 'A',
     isoRef: 'ISO 14064-1 §9.3.1',
@@ -615,7 +660,7 @@ export const CARBONIQ_QUESTIONS = [
   // ── BLOCK B ─ Activity Profile ─────────────────────────────────────────────
   {
     id: 'B1',
-    number: 9,
+    number: 10,
     stage: 1,
     block: 'B',
     isoRef: 'ISO 14064-1 §5.1',
@@ -680,7 +725,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'B2',
-    number: 10,
+    number: 11,
     stage: 1,
     block: 'B',
     isoRef: 'ISO 14064-1 §5.1',
@@ -715,7 +760,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'B3',
-    number: 11,
+    number: 12,
     stage: 1,
     block: 'B',
     isoRef: 'ISO 14064-1 §5.1',
@@ -761,7 +806,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'B4',
-    number: 12,
+    number: 13,
     stage: 1,
     block: 'B',
     isoRef: 'ISO 14064-1 §5.1',
@@ -793,7 +838,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'B5',
-    number: 13,
+    number: 14,
     stage: 1,
     block: 'B',
     isoRef: 'ISO 14064-1 §5.1',
@@ -834,7 +879,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'B6',
-    number: 14,
+    number: 15,
     stage: 1,
     block: 'B',
     isoRef: 'ISO 14064-1 §5.1',
@@ -881,7 +926,7 @@ export const CARBONIQ_QUESTIONS = [
   // ── BLOCK C ─ Structural Information ──────────────────────────────────────
   {
     id: 'C1',
-    number: 15,
+    number: 16,
     stage: 1,
     block: 'C',
     isoRef: 'ISO 14064-1 §5.1',
@@ -913,7 +958,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'C2',
-    number: 16,
+    number: 17,
     stage: 1,
     block: 'C',
     isoRef: 'ISO 14064-1 §5.1',
@@ -945,7 +990,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'C3',
-    number: 17,
+    number: 18,
     stage: 1,
     block: 'C',
     isoRef: 'ISO 14064-1 §5.1',
@@ -973,53 +1018,10 @@ export const CARBONIQ_QUESTIONS = [
         en: 'The party holding operational control of a franchise or joint venture reports all emissions. We will determine in Stage 2 who holds this control.',
       },
     },
-    next: 'D1',
+    next: 'D2',
   },
 
   // ── BLOCK D ─ Reporting Preferences ───────────────────────────────────────
-  {
-    id: 'D1',
-    number: 18,
-    stage: 1,
-    block: 'D',
-    isoRef: 'ISO 14064-1 §6.1',
-    type: 'single_select',
-    subtype: 'searchable',
-    required: true,
-    reportField: 'report.ef_database',
-    text: {
-      tr: 'Envanteriniz hangi emisyon faktörü standardına göre hesaplansın?',
-      en: 'Which emission factor standard should your inventory be calculated on?',
-    },
-    placeholder: {
-      tr: 'Standart seçin',
-      en: 'Select a standard',
-    },
-    helper: {
-      tr: 'Seçtiğiniz standardın faktörleri bu envanterdeki tüm hesaplamalarda kullanılır. "Karma" seçerseniz, hesaplama yapılan her soruda o soru için standardı ayrıca seçersiniz. Seçiminiz raporunuzda belgelenir.',
-      en: 'The factors of the standard you choose are used in every calculation of this inventory. With "Mix", you choose the standard separately on each question that is calculated. Your choice is documented in the report.',
-    },
-    options: [
-      { value: 'std_ghg', label: { tr: 'GHG Protokolü', en: 'GHG Protocol' } },
-      { value: 'std_ipcc', label: { tr: 'IPCC', en: 'IPCC' } },
-      { value: 'std_defra', label: { tr: 'DEFRA (Birleşik Krallık dönüşüm faktörleri)', en: 'DEFRA (UK government conversion factors)' } },
-      { value: 'std_mix', label: { tr: 'Karma (her soruda ayrı standart seçilir)', en: 'Mix (a standard is chosen on each question)' } },
-    ],
-    validate: {
-      requiredMessage: { tr: 'Lütfen bir emisyon faktörü standardı seçin.', en: 'Please select an emission factor standard.' },
-    },
-    systemMessages: {
-      std_defra: {
-        tr: 'Hesaplamalar, envanter yılınıza ait DEFRA baskısının faktörleriyle yapılır (o yılın baskısı yoksa bir önceki baskı). Şebeke elektriği, tesisin bulunduğu ülkenin ulusal faktörüyle hesaplanır. DEFRA\'nın yayımlamadığı kaynaklar "hesaplanmadı" olarak gösterilir.',
-        en: 'Calculations use the factors of the DEFRA edition of your inventory year (the previous edition when that year has none). Grid electricity is calculated with the national factor of the facility\'s country. Sources DEFRA does not publish are shown as "not calculated".',
-      },
-      std_mix: {
-        tr: 'Hesaplama yapılan her soruda o soru için standardı seçmeniz istenecek. Standardı seçilmemiş bir soru hesaplanmaz.',
-        en: 'On each question that is calculated you will be asked for its standard. A question whose standard is not chosen is not calculated.',
-      },
-    },
-    next: 'D2',
-  },
   {
     id: 'D2',
     number: 19,
@@ -7235,7 +7237,7 @@ export function getQuestionById(id) {
 }
 
 export function getInitialQuestionId() {
-  return 'A1';
+  return 'D1';
 }
 
 export function getNextQuestionId(question, answer) {

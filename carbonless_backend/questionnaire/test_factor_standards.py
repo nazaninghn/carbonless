@@ -60,7 +60,7 @@ class PickFactorStandardTests(_base.TestCase):
             self.assertEqual(pick_factor('some-grid', 'turkey', 2025).factor_kg_co2e, Decimal('0.469'))
 
 
-class InventoryStandardTests(_base.TestCase):
+class _InventoryCase(_base.TestCase):
     def setUp(self):
         from rest_framework.test import APIClient
         self.user = User.objects.create_user('fs', 'fs@test.com', 'pass12345')
@@ -83,6 +83,8 @@ class InventoryStandardTests(_base.TestCase):
         return [e.calculated_co2e_kg for e in EmissionEntry.objects.filter(
             inventory=self.report, emission_factor__slug='natural-gas-m3')]
 
+
+class InventoryStandardTests(_InventoryCase):
     def test_choice_values(self):
         self.assertEqual(inventory_standard({'D1': {'ef_database': 'std_defra'}}), 'defra')
         self.assertEqual(inventory_standard({'D1': {'answer': 'std_mix'}}), 'mix')
@@ -124,8 +126,9 @@ class InventoryStandardTests(_base.TestCase):
         self.assertEqual(self.gas_kg(), [Decimal('20667.2000')])
 
     def test_mix_calculates_a_question_on_its_own_standard(self):
+        post_scenario(self.client, self.report)                              # answered before "mix" was chosen
         self.choose('std_mix')
-        post_scenario(self.client, self.report)
+        sync_step_entries(self.user, self.company, self.report, 'D1')
         self.assertEqual(self.gas_kg(), [])                                  # standard of 3A-5 not chosen yet
         step = ReportStep.objects.get(report=self.report, step_id='3A-5')
         step.answer = {**step.answer, 'factor_standard': 'defra'}
@@ -148,3 +151,75 @@ class SeedDefraFactorsTests(_base.TestCase):
         self.assertFalse(EmissionFactor.objects.filter(standard='defra', is_default=True).exists())
         for f in EmissionFactor.objects.filter(standard='defra').exclude(gas_split_basis=''):
             f.clean()                                                        # every published split adds up
+
+
+class MixQuestionStandardTests(_InventoryCase):
+    """The standard of a "mix" inventory's question travels with its answer."""
+
+    def save(self, answer, **extra):
+        return self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
+                                 {'step': '3A-5', 'data': {'answer': answer, **extra}, 'language': 'tr'}, format='json')
+
+    def test_mix_refuses_a_calculating_answer_without_its_standard(self):
+        self.choose('std_mix')
+        r = self.save({'natural_gas': '10000 m³'})
+        self.assertEqual(r.status_code, 400, r.content)
+        self.assertEqual(r.data['code'], 'factor_standard')
+        self.assertIn('standardını', r.data['error'])                         # Turkish, as asked
+        self.assertFalse(ReportStep.objects.filter(report=self.report, step_id='3A-5').exists())
+
+    def test_mix_saves_and_calculates_with_the_chosen_standard(self):
+        self.choose('std_mix')
+        r = self.save({'natural_gas': '10000 m³'}, factor_standard='defra')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(ReportStep.objects.get(report=self.report, step_id='3A-5').answer['factor_standard'], 'defra')
+        self.assertEqual(self.gas_kg(), [Decimal('20667.2000')])
+        # A later save of the same question that does not repeat the standard keeps it.
+        r = self.save({'natural_gas': '5000 m³'})
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self.gas_kg(), [Decimal('10333.6000')])
+
+    def test_an_unknown_standard_is_refused_in_any_inventory(self):
+        r = self.save({'natural_gas': '10000 m³'}, factor_standard='epa')
+        self.assertEqual(r.status_code, 400, r.content)
+        self.assertEqual(r.data['code'], 'factor_standard')
+
+    def test_a_single_standard_inventory_needs_no_choice_per_question(self):
+        self.choose('std_defra')
+        self.assertEqual(self.save({'natural_gas': '10000 m³'}).status_code, 200)
+        self.assertEqual(self.gas_kg(), [Decimal('20667.2000')])
+
+    def test_frontend_step_list_is_the_servers(self):
+        import re
+        from pathlib import Path
+        from questionnaire.step_entries import ENTRY_STEPS
+        src = (Path(__file__).resolve().parents[2] / 'nexus_insights-saas-neon_nextjs' / 'src' / 'lib'
+               / 'carboniq' / 'factorStandard.js').read_text(encoding='utf-8')
+        block = src[src.index('FACTOR_STANDARD_STEPS = new Set(['):src.index(']);')]
+        self.assertEqual(sorted(re.findall(r"'([^']+)'", block)), sorted(ENTRY_STEPS))
+
+
+class StandardIsAskedFirstTests(_InventoryCase):
+    def test_a_new_inventory_starts_at_the_standard(self):
+        self.assertEqual(CarbonReport._meta.get_field('current_step').default, 'D1')
+        from questionnaire.step_handlers import STEP_FLOW, STRICT_STEP_ORDER
+        self.assertEqual(STRICT_STEP_ORDER[:2], ['D1', 'A1'])
+        self.assertEqual((STEP_FLOW['D1'], STEP_FLOW['C3']), ('A1', 'D3'))
+
+    def test_answering_the_standard_leads_to_the_company_name(self):
+        r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
+                              {'step': 'D1', 'data': {'ef_database': 'std_defra'}}, format='json')
+        self.assertEqual((r.status_code, r.data['next_step']), (200, 'A1'))
+
+    def test_a_country_suggestion_never_replaces_the_chosen_standard(self):
+        from questionnaire.step_handlers import handle_A3
+        self.report.ef_database = 'std_ipcc'
+        self.report.save()
+        handle_A3(self.report, {'country': 'TR', 'city': 'Istanbul'})
+        self.report.refresh_from_db()
+        self.assertEqual(self.report.ef_database, 'std_ipcc')
+
+    def test_the_copied_company_profile_leaves_the_standard_out(self):
+        from questionnaire.views import PHASE1_REPORT_FIELDS, PHASE1_STEP_IDS
+        self.assertNotIn('D1', PHASE1_STEP_IDS)
+        self.assertNotIn('ef_database', PHASE1_REPORT_FIELDS)

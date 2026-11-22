@@ -172,7 +172,7 @@ def route_ids(answers, loop_has_items=None, confirmed=False):
     Q = policy()
     src = answers or {}
     path, seen = [], set()
-    cur = 'A1'
+    cur = 'D1'      # the factor standard is the first question
     while cur and cur not in seen and len(path) < 2000:
         q = Q.get(cur)
         if q is None:

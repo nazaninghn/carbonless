@@ -88,25 +88,25 @@ search does not enumerate the four situations below. They are covered by their o
 
 | ID | Q# | Question | Class | Reason | Conditions |
 |---|---|---|---|---|---|
-| `A1` | 1 | What is the full legal name of your company? | A · REQUIRED | Legal name of the reporting organization: identifies the inventory in every report and in Company Profile reuse. |  |
-| `A2` | 2 | What is your tax identification number? | B · DEFERRABLE | Tax identification number: identifies the company, changes neither the route nor any calculation. |  |
-| `A3` | 3 | In which country and city is your company registered? | A · REQUIRED | Country and city select the default national grid and regional factors the rest of the questionnaire uses. |  |
-| `A4` | 4 | Which reporting year are we preparing this report for? | A · REQUIRED | Reporting year: sets the factor year and every year-scoped record of the inventory. |  |
-| `A5` | 5 | Who is preparing this report? (name and/or department) | B · DEFERRABLE | Name of the preparer: documentation only. |  |
-| `A6` | 6 | What is the intended use of this report? | B · DEFERRABLE | Intended use of the report: documentation only. |  |
-| `A7` | 7 | Have you prepared a carbon report before? | A · REQUIRED | Its answer chooses the next question (yes / no / skip); without it the route is a guess. |  |
-| `A7a` | 7a | What is your baseline year? | C · conditional → DEFERRABLE | Data input or documentation: its answer changes neither the route, the boundary nor the method; it can be supplied later. | reached when A7 = yes; required when A7 = yes |
-| `A7b` | 8 | Complete the organization details that appear in your report. | B · DEFERRABLE | Organization details printed in the report: documentation only. |  |
-| `B1` | 9 | What is the primary sector of your company? | A · REQUIRED | Sector decides whether the process-emission (3C-0) and sold-product-processing (K3C10-0) questions apply. |  |
-| `B2` | 10 | Briefly describe your company's main business activity. | B · DEFERRABLE | Description of the main activity: documentation only. |  |
-| `B3` | 11 | What is your total number of employees? | B · DEFERRABLE | Employee band: used for the sector-benchmark band and a plausibility warning against the commuting headcounts (K3C7-1); not an input of any emission calculation. |  |
-| `B4` | 12 | How many physical locations does your company operate from? | B · DEFERRABLE | Number of locations: a reference for the facility count, which 2A-1 asks itself. |  |
-| `B5` | 13 | What types of locations does your company operate? | B · DEFERRABLE | Location types: documentation only. |  |
-| `B6` | 14 | What is your approximate annual revenue range? (Optional) | B · DEFERRABLE | Revenue band (optional). |  |
-| `C1` | 15 | Does your company have any subsidiaries or affiliates? | A · REQUIRED | Subsidiaries decide whether the subsidiary boundary questions (2A-4) apply. |  |
-| `C2` | 16 | Does your company have any international operations? | A · REQUIRED | International operations drive the overseas-site advisor check on later site answers. |  |
-| `C3` | 17 | Does your company have any franchise agreements or joint ventures? | A · REQUIRED | Franchise / joint venture decides whether Scope 3 category 14 (K3C14-0) applies. |  |
-| `D1` | 18 | Which emission factor standard should your inventory be calculated on? | A · REQUIRED | Emission factor database: selects the factor source used by every calculation. |  |
+| `D1` | 1 | Which emission factor standard should your inventory be calculated on? | A · REQUIRED | Emission factor database: selects the factor source used by every calculation. |  |
+| `A1` | 2 | What is the full legal name of your company? | A · REQUIRED | Legal name of the reporting organization: identifies the inventory in every report and in Company Profile reuse. |  |
+| `A2` | 3 | What is your tax identification number? | B · DEFERRABLE | Tax identification number: identifies the company, changes neither the route nor any calculation. |  |
+| `A3` | 4 | In which country and city is your company registered? | A · REQUIRED | Country and city select the default national grid and regional factors the rest of the questionnaire uses. |  |
+| `A4` | 5 | Which reporting year are we preparing this report for? | A · REQUIRED | Reporting year: sets the factor year and every year-scoped record of the inventory. |  |
+| `A5` | 6 | Who is preparing this report? (name and/or department) | B · DEFERRABLE | Name of the preparer: documentation only. |  |
+| `A6` | 7 | What is the intended use of this report? | B · DEFERRABLE | Intended use of the report: documentation only. |  |
+| `A7` | 8 | Have you prepared a carbon report before? | A · REQUIRED | Its answer chooses the next question (yes / no / skip); without it the route is a guess. |  |
+| `A7a` | 8a | What is your baseline year? | C · conditional → DEFERRABLE | Data input or documentation: its answer changes neither the route, the boundary nor the method; it can be supplied later. | reached when A7 = yes; required when A7 = yes |
+| `A7b` | 9 | Complete the organization details that appear in your report. | B · DEFERRABLE | Organization details printed in the report: documentation only. |  |
+| `B1` | 10 | What is the primary sector of your company? | A · REQUIRED | Sector decides whether the process-emission (3C-0) and sold-product-processing (K3C10-0) questions apply. |  |
+| `B2` | 11 | Briefly describe your company's main business activity. | B · DEFERRABLE | Description of the main activity: documentation only. |  |
+| `B3` | 12 | What is your total number of employees? | B · DEFERRABLE | Employee band: used for the sector-benchmark band and a plausibility warning against the commuting headcounts (K3C7-1); not an input of any emission calculation. |  |
+| `B4` | 13 | How many physical locations does your company operate from? | B · DEFERRABLE | Number of locations: a reference for the facility count, which 2A-1 asks itself. |  |
+| `B5` | 14 | What types of locations does your company operate? | B · DEFERRABLE | Location types: documentation only. |  |
+| `B6` | 15 | What is your approximate annual revenue range? (Optional) | B · DEFERRABLE | Revenue band (optional). |  |
+| `C1` | 16 | Does your company have any subsidiaries or affiliates? | A · REQUIRED | Subsidiaries decide whether the subsidiary boundary questions (2A-4) apply. |  |
+| `C2` | 17 | Does your company have any international operations? | A · REQUIRED | International operations drive the overseas-site advisor check on later site answers. |  |
+| `C3` | 18 | Does your company have any franchise agreements or joint ventures? | A · REQUIRED | Franchise / joint venture decides whether Scope 3 category 14 (K3C14-0) applies. |  |
 | `D2` | 19 | Information about Scope 2 calculation methodology | — info / navigation | Information screen: not a question. |  |
 | `D3` | 20 | Which organizational boundary approach will you use? | A · REQUIRED | Consolidation approach: decides which boundary questions follow and how facilities are included. |  |
 | `D4` | 21 | How would you like to determine the scope of your Scope 3 reporting? | A · REQUIRED | Scope 3 reporting approach: decides the Scope 3 route. |  |

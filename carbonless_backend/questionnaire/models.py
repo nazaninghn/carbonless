@@ -54,7 +54,8 @@ class CarbonReport(models.Model):
     # for the two ids longer than 10 chars — 'SCOPE-GROUPING' (14) and
     # '3D-4-zero-decision' (18) — surfacing as a 500 that hard-blocked the
     # questionnaire at Q36 with no way past it.
-    current_step = models.CharField(max_length=50, default='A1')
+    # D1, the factor standard, is the first question of an inventory.
+    current_step = models.CharField(max_length=50, default='D1')
 
     # 1A
     reporting_year = models.IntegerField(null=True, blank=True)

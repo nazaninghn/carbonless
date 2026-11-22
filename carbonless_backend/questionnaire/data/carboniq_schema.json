@@ -1,4 +1,36 @@
 {
+  "D1": {
+    "id": "D1",
+    "type": "single_select",
+    "subtype": "searchable",
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "rangeMessage": null,
+    "notAboveAnswer": null,
+    "uniqueItems": false,
+    "notCalculatedOptions": null,
+    "notCalculated": false,
+    "options": [
+      "std_ghg",
+      "std_ipcc",
+      "std_defra",
+      "std_mix"
+    ],
+    "units": null,
+    "repeatable": false,
+    "loopSource": false,
+    "fields": null,
+    "sumRange": null,
+    "notAbove": null,
+    "stage": 1,
+    "number": 1
+  },
   "A1": {
     "id": "A1",
     "type": "text",
@@ -24,7 +56,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 1
+    "number": 2
   },
   "A2": {
     "id": "A2",
@@ -51,7 +83,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 2
+    "number": 3
   },
   "A3": {
     "id": "A3",
@@ -84,7 +116,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 3
+    "number": 4
   },
   "A4": {
     "id": "A4",
@@ -119,7 +151,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 4
+    "number": 5
   },
   "A5": {
     "id": "A5",
@@ -146,7 +178,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 5
+    "number": 6
   },
   "A6": {
     "id": "A6",
@@ -179,7 +211,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 6
+    "number": 7
   },
   "A7": {
     "id": "A7",
@@ -210,7 +242,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 7
+    "number": 8
   },
   "A7a": {
     "id": "A7a",
@@ -249,7 +281,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": "7a"
+    "number": "8a"
   },
   "A7b": {
     "id": "A7b",
@@ -405,7 +437,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 8
+    "number": 9
   },
   "B1": {
     "id": "B1",
@@ -452,7 +484,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 9
+    "number": 10
   },
   "B2": {
     "id": "B2",
@@ -479,7 +511,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 10
+    "number": 11
   },
   "B3": {
     "id": "B3",
@@ -512,7 +544,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 11
+    "number": 12
   },
   "B4": {
     "id": "B4",
@@ -539,7 +571,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 12
+    "number": 13
   },
   "B5": {
     "id": "B5",
@@ -574,7 +606,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 13
+    "number": 14
   },
   "B6": {
     "id": "B6",
@@ -608,7 +640,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 14
+    "number": 15
   },
   "C1": {
     "id": "C1",
@@ -638,7 +670,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 15
+    "number": 16
   },
   "C2": {
     "id": "C2",
@@ -668,7 +700,7 @@
     "sumRange": null,
     "notAbove": null,
     "stage": 1,
-    "number": 16
+    "number": 17
   },
   "C3": {
     "id": "C3",
@@ -690,38 +722,6 @@
     "options": [
       "yes",
       "no"
-    ],
-    "units": null,
-    "repeatable": false,
-    "loopSource": false,
-    "fields": null,
-    "sumRange": null,
-    "notAbove": null,
-    "stage": 1,
-    "number": 17
-  },
-  "D1": {
-    "id": "D1",
-    "type": "single_select",
-    "subtype": "searchable",
-    "required": true,
-    "numericOnly": false,
-    "exactLength": null,
-    "maxLength": null,
-    "minYear": null,
-    "maxYear": null,
-    "minValue": null,
-    "maxValue": null,
-    "rangeMessage": null,
-    "notAboveAnswer": null,
-    "uniqueItems": false,
-    "notCalculatedOptions": null,
-    "notCalculated": false,
-    "options": [
-      "std_ghg",
-      "std_ipcc",
-      "std_defra",
-      "std_mix"
     ],
     "units": null,
     "repeatable": false,

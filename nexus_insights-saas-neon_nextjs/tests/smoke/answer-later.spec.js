@@ -27,7 +27,7 @@ const COPY = {
 /** The inventory API as the server behaves: a pending list that only holds ids. */
 // Phase 1 up to the question under test, all answered: a required question left unanswered BEHIND the user is listed
 // by the "needs attention" overview (questionnaire-ux.spec.js), so these tests start from an inventory with none.
-const BEHIND = { A1: { answer: 'x' }, A2: { answer: 'x' }, A3: { answer: 'x' }, A4: { answer: '2025' }, A5: { answer: 'x' }, A6: { answer: 'x' },
+const BEHIND = { D1: { ef_database: 'DEFRA_TUIK' }, A1: { answer: 'x' }, A2: { answer: 'x' }, A3: { answer: 'x' }, A4: { answer: '2025' }, A5: { answer: 'x' }, A6: { answer: 'x' },
   A7: { answer: 'no' }, B1: { answer: 'NACE_A' }, B2: { answer: 'x' } };
 async function mockInventoryApi(page, { pending = [], step = STEP, answers = BEHIND, marksStatus = 200 } = {}) {
   const seen = { pending: [...pending], answers: { ...answers }, marks: [], saved: [] };
@@ -128,7 +128,7 @@ for (const lang of ['en', 'tr']) {
 
       await page.getByTestId(`pending-question-${STEP}`).getByRole('button', { name: new RegExp(c.back) }).click();
       await expect(pinned(page)).toContainText(c.q);                        // the original question, not the start
-      await expect(pinned(page)).toContainText('11');
+      await expect(pinned(page)).toContainText('12');
       await expect(page.getByTestId('pending-questions-list')).toHaveCount(0);   // the list closes on return
       await expect(page.getByRole('radio', { name: c.no })).toHaveAttribute('aria-checked', 'false');   // nothing preselected
       expect(seen.saved).toEqual([]);                                        // returning submitted nothing

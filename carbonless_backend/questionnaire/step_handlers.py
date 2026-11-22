@@ -11,8 +11,10 @@ STEP_FLOW = {
     'A7': 'A7a', 'A7a': 'A7b', 'A7b': 'B1',
     'B1': 'B2', 'B2': 'B3', 'B3': 'B4',
     'B4': 'B5', 'B5': 'B6', 'B6': 'C1',
-    'C1': 'C2', 'C2': 'C3', 'C3': 'D1',
-    'D1': 'D3', 'D3': 'D4',
+    # D1 (the factor standard) is the first question of an inventory.
+    'D1': 'A1',
+    'C1': 'C2', 'C2': 'C3', 'C3': 'D3',
+    'D3': 'D4',
     'D4': '2A-0',
 }
 
@@ -20,9 +22,10 @@ STEP_FLOW = {
 # (e.g. editing an earlier answer via the review table's Edit button) —
 # see SubmitStepView.patch's use of this for the current_step rewind guard.
 STRICT_STEP_ORDER = [
+    'D1',
     'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a', 'A7b',
     'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
-    'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
+    'C1', 'C2', 'C3', 'D3', 'D4',
 ]
 
 EF_MAP = {
@@ -123,7 +126,10 @@ def handle_A3(report, data):
 
     country_upper = country.upper()
     suggested_ef = EF_MAP.get(country_upper, 'IPCC_AR6')
-    report.ef_database = suggested_ef
+    # The factor standard chosen in D1 (asked first) is the inventory's own
+    # choice: a country suggestion never replaces it.
+    if not (report.ef_database or '').startswith('std_'):
+        report.ef_database = suggested_ef
     report.save()
 
     ef_labels = {
@@ -139,7 +145,6 @@ def handle_A3(report, data):
         'suggested_ef': suggested_ef,
         'bot_messages': [
             f"✅ Location saved: **{city + ', ' if city else ''}{country}**.",
-            f"📊 Based on your country, I suggest **{ef_labels.get(suggested_ef, suggested_ef)}** as your emission factor database. You can change this in step D1.",
             "Which reporting year are we preparing this report for? (2015–present)"
         ]
     }
@@ -495,12 +500,11 @@ def handle_C3(report, data):
             "ℹ️ Franchise/JV detected — an operational control test will be added in Phase 2."
         )
     bot_messages.append(
-        "Which emission factor standard should your inventory be calculated on?\n\n"
-        "Options: **std_ghg** (GHG Protocol) / **std_ipcc** (IPCC) / **std_defra** (DEFRA) / "
-        "**std_mix** (a standard chosen on each question)"
+        "Which organizational boundary approach will you use?\n\n"
+        "Options: **operational_control** *(recommended)* / **financial_control** / **equity_share**"
     )
     return {
-        'next_step': 'D1',
+        'next_step': 'D3',
         'message': f"JV/Franchise: {has_jv}",
         'warnings': [],
         'bot_messages': bot_messages
@@ -513,27 +517,14 @@ def handle_D1(report, data):
     report.ef_custom_source = data.get('ef_custom_source', '')
     report.ef_custom_year = data.get('ef_custom_year')
     report.save()
-    warnings = []
-    bot_messages = []
-    country = (report.company.country_of_headquarters or '').upper()
-    if ef_db == 'EPA' and country in ['TR', 'TURKEY']:
-        warnings.append('ef_country_mismatch')
-        bot_messages.append(
-            "⚠️ EPA database is US-based. For Turkish operations, DEFRA or IPCC AR6 may be more appropriate."
-        )
-    bot_messages.append(f"✅ Emission factor database set to **{ef_db}**.")
-    bot_messages.append(
-        "ℹ️ This version uses **location-based** Scope 2 methodology. Market-based will be added in a future update."
-    )
-    bot_messages.append(
-        "Which organizational boundary approach will you use?\n\n"
-        "Options: **operational_control** *(recommended)* / **financial_control** / **equity_share**"
-    )
     return {
-        'next_step': 'D3',
+        'next_step': 'A1',
         'message': f"EF Database: {ef_db}",
-        'warnings': warnings,
-        'bot_messages': bot_messages
+        'warnings': [],
+        'bot_messages': [
+            f"✅ Emission factor standard set to **{ef_db}**.",
+            "What is the full legal name of your company?",
+        ]
     }
 
 

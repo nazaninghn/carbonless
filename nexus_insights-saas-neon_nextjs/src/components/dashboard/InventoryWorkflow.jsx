@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef } f
 import { api } from '@/lib/utils/api';
 import { noPermissionMessage } from '@/lib/permissions';
 import { readAnswerValue, unmapPhase1Answer } from '@/lib/carboniq/questions';
+import { storedStepStandards } from '@/lib/carboniq/factorStandard';
 
 // A report resumed from the backend echoes back exactly what was PATCHed for
 // each question — { answer: value } for most questions (mapAnswerForBackend's
@@ -36,7 +37,10 @@ export function InventoryProvider({ children }) {
 
   // Survey state
   const [answers, setAnswers] = useState({});
-  const [currentStep, setCurrentStep] = useState('A1');
+  // "Mix" inventory: the factor standard saved with each calculating answer
+  // (normalizeHydratedAnswers keeps the answer only).
+  const [stepStandards, setStepStandards] = useState({});
+  const [currentStep, setCurrentStep] = useState('D1');
   // true when currentStep is a question the user asked to open ("Ankette aç"),
   // not the last answered one — the survey then shows exactly that question.
   const [stepExact, setStepExact] = useState(false);
@@ -86,9 +90,10 @@ export function InventoryProvider({ children }) {
       setInventoryTitle(data.title);
       setStartedBy(null);
       setInventoryStatus('in_progress');
-      setCurrentStep(data.current_step || 'A1');
+      setCurrentStep(data.current_step || 'D1');
       setStepExact(false);
       setAnswers({});
+      setStepStandards({});
       setDirty(false);
       setMode('questionnaire');
 
@@ -126,9 +131,10 @@ export function InventoryProvider({ children }) {
       setInventoryTitle(data.title || `Inventory ${inventoryId}`);
       setStartedBy(data.started_by || null);
       setInventoryStatus(data.status);
-      setCurrentStep(atStep || data.current_step || 'A1');
+      setCurrentStep(atStep || data.current_step || 'D1');
       setStepExact(!!atStep);
       setAnswers(normalizeHydratedAnswers(data.answers));
+      setStepStandards(storedStepStandards(data.answers));
       setDirty(false);
       setMode('questionnaire');
 
@@ -213,7 +219,7 @@ export function InventoryProvider({ children }) {
       setMode('library');
       setActiveInventoryId(null);
       setAnswers({});
-      setCurrentStep('A1');
+      setCurrentStep('D1');
       setStepExact(false);
       setDirty(false);
     });
@@ -237,6 +243,7 @@ export function InventoryProvider({ children }) {
     startedBy,
     inventoryStatus,
     answers,
+    stepStandards,
     currentStep,
     stepExact,
     dirty,

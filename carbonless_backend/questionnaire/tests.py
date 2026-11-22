@@ -2024,7 +2024,7 @@ class AdvisorFlagsFollowAnswersTests(TestCase):
         res = c.post(f'/api/questionnaire/{self.report.id}/restart/')
         self.assertEqual(res.status_code, 200)
         self.report.refresh_from_db(); other.refresh_from_db()
-        self.assertEqual(self.report.current_step, 'A1')
+        self.assertEqual(self.report.current_step, 'D1')      # the factor standard is the first question
         self.assertEqual(self.report.status, CarbonReport.Status.IN_PROGRESS)
         self.assertFalse(ReportStep.objects.filter(report=self.report).exists())
         self.assertFalse(self._pending())

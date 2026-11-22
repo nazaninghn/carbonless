@@ -85,7 +85,7 @@ const openInventory = async (page, title, lang) => {
 };
 
 // Phase 1 as far as B3, every question answered (the shapes the real status response uses are normalised by the app)
-const PHASE1 = { A1: { answer: 'x' }, A2: { answer: 'x' }, A3: { answer: 'x' }, A4: { answer: '2025' }, A5: { answer: 'x' }, A6: { answer: 'x' },
+const PHASE1 = { D1: { ef_database: 'DEFRA_TUIK' }, A1: { answer: 'x' }, A2: { answer: 'x' }, A3: { answer: 'x' }, A4: { answer: '2025' }, A5: { answer: 'x' }, A6: { answer: 'x' },
   A7: { answer: 'no' }, B1: { answer: 'NACE_A' }, B2: { answer: 'x' } };
 const ANSWERS_A = { ...PHASE1, A1: { answer: 'Alpha' } };
 const ANSWERS_B = { ...PHASE1, A1: { answer: 'Bravo' }, B2: { answer: 'Bravo makes things' } };

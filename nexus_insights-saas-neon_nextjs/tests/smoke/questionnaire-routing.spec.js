@@ -49,7 +49,7 @@ for (const lang of ['en', 'tr']) {
     });
 
     test('with no franchise, "No" at category 13 goes on to category 15 — the questionnaire is not over', async ({ page }) => {
-      const seen = await mockInventoryApi(page, { A1: { answer: 'x' }, C3: { has_jv_franchise: false } }, 'K3C13-0');
+      const seen = await mockInventoryApi(page, { D1: { ef_database: 'DEFRA_TUIK' }, A1: { answer: 'x' }, C3: { has_jv_franchise: false } }, 'K3C13-0');
       await page.goto('/dashboard?tab=questionnaire');
       const pinned = page.getByTestId('pinned-question');
       await expect(pinned).toContainText('103');                                           // K3C13-0
@@ -63,7 +63,7 @@ for (const lang of ['en', 'tr']) {
     });
 
     test('with a franchise, "No" at category 13 still asks the franchise question', async ({ page }) => {
-      const seen = await mockInventoryApi(page, { A1: { answer: 'x' }, C3: { has_jv_franchise: true } }, 'K3C13-0');
+      const seen = await mockInventoryApi(page, { D1: { ef_database: 'DEFRA_TUIK' }, A1: { answer: 'x' }, C3: { has_jv_franchise: true } }, 'K3C13-0');
       await page.goto('/dashboard?tab=questionnaire');
       await expect(page.getByTestId('pinned-question')).toContainText('103');
       await page.getByRole('radio', { name: lang === 'tr' ? /^Hayır/ : /^No/ }).click();

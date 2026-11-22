@@ -545,12 +545,12 @@ class StartReportView(APIView):
                 title=title,
                 reporting_year=year,
                 status=CarbonReport.Status.IN_PROGRESS,
-                current_step='A1'
+                current_step='D1'
             )
 
         return Response({
             'report_id': report.id,
-            'current_step': 'A1',
+            'current_step': 'D1',
             # The dashboard follows the year of the inventory being worked on.
             'reporting_year': report.reporting_year,
             'resumed': False,
@@ -820,6 +820,15 @@ class SubmitStepView(APIView):
         # it applies to).
         saved_answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
         is_valid, validation_error = validate_generic_step(step, data, lang=lang, answers=saved_answers)
+        if is_valid:
+            # The standard a question of a "mix" inventory is calculated on (validated, kept, required).
+            from .step_entries import checked_factor_standard
+            data, standard_error = checked_factor_standard(step, data, saved_answers, lang)
+            if standard_error:
+                return Response({
+                    'success': False, 'step': step, 'next_step': step, 'error': standard_error,
+                    'code': 'factor_standard', 'bot_messages': [f'❌ {standard_error}'],
+                }, status=400)
         if is_valid and step in ('3A-EF-a', '3B-EF-a', '3C-EF-a', '4A-EF-a', '4B-EF-a'):
             from .step_entries import supplier_factor_problem
             doc = data.get('answer') if isinstance(data, dict) and 'answer' in data else data
@@ -1248,17 +1257,19 @@ class PendingQuestionView(APIView):
 # also get denormalised onto CarbonReport itself by step_handlers.py — both
 # need copying for a report to look/behave as if the user answered them fresh.
 
+# D1 (the factor standard, with ef_database / ef_custom_*) is not part of the
+# profile that is copied: every inventory is asked for its own standard, first.
 PHASE1_STEP_IDS = [
     'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a', 'A7b',
     'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
-    'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
+    'C1', 'C2', 'C3', 'D3', 'D4',
 ]
 
 PHASE1_REPORT_FIELDS = [
     'reporting_year', 'prepared_by', 'purposes', 'legal_framework',
     'voluntary_framework', 'has_previous_report', 'baseline_year',
     'has_subsidiaries', 'has_international', 'has_jv_franchise',
-    'ef_database', 'ef_custom_source', 'ef_custom_year', 'scope2_method',
+    'scope2_method',
     'boundary_approach', 'scope3_approach',
 ]
 
@@ -1715,7 +1726,7 @@ class RestartReportView(APIView):
                         owned_step_entries(report, step_id).delete()
             ReportStep.objects.filter(report=report).delete()
             AdvisorApproval.objects.filter(report=report, status=AdvisorApproval.Status.PENDING).delete()
-            report.current_step = 'A1'
+            report.current_step = 'D1'
             report.status = CarbonReport.Status.IN_PROGRESS
             report.client_progress = None
             report.save(update_fields=['current_step', 'status', 'client_progress', 'updated_at'])
