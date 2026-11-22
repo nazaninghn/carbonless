@@ -341,6 +341,29 @@ def _completion_refusal(report, step, lang, missing):
     return None
 
 
+def _data_quality_refusal(report, lang):
+    """Why this inventory cannot be signed yet, as the body of a 400, or None: a data-quality claim (a source
+    "other", a measurement record, a supplier declaration, a row above 60 %) is still waiting for the advisor.
+    The final report is produced only when nothing is pending."""
+    from .step_entries import question_label
+    from .uncertainty import pending_data_quality, sync_data_quality_approvals
+    sync_data_quality_approvals(report)
+    pending = pending_data_quality(report)
+    if not pending:
+        return None
+    steps = list(dict.fromkeys(a.question_id for a in pending))
+    msg_tr = (f'Bu envanter henüz imzalanamaz — {len(pending)} veri kalitesi kaydı danışman onayı bekliyor '
+              f'({", ".join(question_label(s, "tr") for s in steps)}). Onaylandıktan sonra imzalayabilirsiniz.')
+    msg_en = (f'This inventory cannot be signed yet — {len(pending)} data-quality item'
+              f'{"s are" if len(pending) != 1 else " is"} waiting for the advisor '
+              f'({", ".join(question_label(s, "en") for s in steps)}). You can sign once they are approved.')
+    msg = msg_tr if lang == 'tr' else msg_en
+    return {'success': False, 'step': SIGN_OFF_STEP, 'next_step': SIGN_OFF_STEP, 'code': 'data_quality_pending',
+            'error': msg, 'error_tr': msg_tr, 'error_en': msg_en, 'first_question': steps[0],
+            'pending_data_quality': [{'step_id': a.question_id, 'reason_code': a.reason_code} for a in pending],
+            'bot_messages': [f'❌ {msg}']}
+
+
 def _sign_off_exclusions(report, data, lang):
     """(exclusions to store with the signature, refusal body or None).
 
@@ -875,6 +898,16 @@ class SubmitStepView(APIView):
                     'success': False, 'step': step, 'next_step': step, 'error': standard_error,
                     'code': 'factor_standard', 'bot_messages': [f'❌ {standard_error}'],
                 }, status=400)
+        if is_valid:
+            # Where the amount of a calculating question comes from (measurement / invoice / estimate): validated
+            # and kept next to the answer; it sets the activity-data uncertainty (questionnaire/uncertainty.py).
+            from .uncertainty import checked_data_source
+            data, source_error = checked_data_source(step, data, saved_answers, lang)
+            if source_error:
+                return Response({
+                    'success': False, 'step': step, 'next_step': step, 'error': source_error,
+                    'code': 'data_source', 'bot_messages': [f'❌ {source_error}'],
+                }, status=400)
         if is_valid and step in ('3A-EF-a', '3B-EF-a', '3C-EF-a', '4A-EF-a', '4B-EF-a'):
             from .step_entries import supplier_factor_problem
             doc = data.get('answer') if isinstance(data, dict) and 'answer' in data else data
@@ -937,11 +970,17 @@ class SubmitStepView(APIView):
             sign_off_exclusions, refusal = _sign_off_exclusions(report, data, lang)
             if refusal:
                 return Response(refusal, status=400)
+            refusal = _data_quality_refusal(report, lang)
+            if refusal:
+                return Response(refusal, status=400)
             if isinstance(data, dict):
                 data = {k: v for k, v in data.items() if k != 'exclusions'}
         if step == SIGN_OFF_STEP and isinstance(data, dict) and isinstance(data.get('answer'), dict):
             if sign_off_exclusions:
                 data = {**data, 'answer': {**data['answer'], 'exclusions': sign_off_exclusions}}
+            # How sure the inventory is, as signed: the report prints this record, never a later recalculation.
+            from .uncertainty import inventory_uncertainty
+            data = {**data, 'answer': {**data['answer'], 'uncertainty': inventory_uncertainty(report)}}
             # Which account confirmed the signature (shown in the ISO report).
             data = {**data, 'answer': {**data['answer'], 'confirmed_by': (
                 request.user.get_full_name() or request.user.email or request.user.username)}}
@@ -1063,6 +1102,11 @@ class SubmitStepView(APIView):
             try:
                 # A sign-off step produces no entries, and a completed or signed inventory is never synchronised.
                 entries = [] if signoff else sync_step_entries(request.user, report.company, report, step, data)
+                if not signoff:
+                    # The advisor queue follows the inventory's data-quality claims (source "other", measurement
+                    # documents, supplier declarations, rows above 60 %).
+                    from .uncertainty import sync_data_quality_approvals
+                    sync_data_quality_approvals(report)
             except year_guard.InventoryYearConflict as conflict:
                 return Response(year_guard.conflict_payload(conflict.others, conflict.year, lang_, step=step), status=409)
         # What this answer did to the inventory: the CO2e it added or took
@@ -1302,6 +1346,188 @@ class StepStandardView(APIView):
             'calc_feedback': {'delta_kg': round(after_kg - before_kg, 2), 'total_kg': round(approved_kg, 2),
                               'pending': any(e.status == 'submitted' for e in entries), 'notes': notes},
         })
+
+
+class StepDataSourceView(APIView):
+    """POST /api/questionnaire/<report_id>/step-data-source/
+        {step, data_source, data_source_percent?, data_source_reason?, data_source_small?, language}
+
+    Records where the amount of an ANSWERED calculating question comes from, without the answer being entered
+    again. Nothing is recalculated: the source changes how sure the number is, never the number.
+    "other" carries its percentage and reason and goes to the advisor; `data_source_small` accepts a source
+    under 1 % of the inventory as an estimate. Same gates as saving an answer: never a signed / completed
+    inventory."""
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
+
+    def post(self, request, report_id):
+        try:
+            report = _company_reports(request.user).get(id=report_id)
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+        from .step_entries import ENTRY_STEPS
+        from . import immutability, uncertainty as unc
+        lang = 'tr' if str(request.data.get('language') or '').lower().startswith('tr') else 'en'
+        step = request.data.get('step')
+
+        def refuse(code, msg_tr, msg_en, status=400):
+            return Response({'success': False, 'step': step, 'code': code, 'error': msg_tr if lang == 'tr' else msg_en,
+                             'error_tr': msg_tr, 'error_en': msg_en}, status=status)
+
+        if step not in ENTRY_STEPS:
+            return refuse('not_a_calculating_step', 'Bu soru bir emisyon hesabı üretmiyor; veri kaynağı seçilmez.',
+                          'This question produces no emission calculation; it has no data source to choose.')
+        given = {k: request.data.get(k) for k in ('data_source', 'data_source_percent', 'data_source_reason', 'data_source_small')
+                 if request.data.get(k) not in (None, '')}
+        cleaned, error = unc.clean_source(given, lang)
+        if error:
+            return Response({'success': False, 'step': step, 'code': 'data_source', 'error': error}, status=400)
+        immutability.check_report(report, step=step, entry_producing=False)
+        with transaction.atomic():
+            immutability.lock_and_check(report, step=step, entry_producing=False)
+            stored = ReportStep.objects.filter(report=report, step_id=step).values_list('answer', flat=True).first()
+            if not isinstance(stored, dict) or 'answer' not in stored:
+                return refuse('not_answered', 'Bu soru henüz yanıtlanmadı; veri kaynağını yanıtla birlikte seçin.',
+                              'This question is not answered yet; choose its data source with the answer.', 409)
+            if cleaned.get('data_source_small'):
+                why = unc.small_row_refusal(report, step, lang)
+                if why:
+                    return Response({'success': False, 'step': step, 'code': 'not_a_small_row', 'error': why}, status=409)
+            kept = {k: v for k, v in stored.items() if not k.startswith('data_source')}
+            ReportStep.objects.filter(report=report, step_id=step).update(answer={**kept, **cleaned})
+            unc.sync_data_quality_approvals(report)
+        return Response({'success': True, 'step': step, **cleaned, **_data_quality_state(report, step, lang)})
+
+
+def _data_quality_state(report, step, lang):
+    """What the questionnaire shows about one question's data quality after a change."""
+    from . import uncertainty as unc
+    from .models import StepDocument
+    u = unc.inventory_uncertainty(report)
+    ctx = unc._Context(report)
+    percent, source, state = ctx.activity(step)
+    return {
+        'source_state': state, 'activity_percent': percent, 'warning': unc.source_warning(source, lang, state),
+        'small_row': step in u['small_rows'], 'share_percent': u['step_share_percent'].get(step),
+        'pending': [a.reason_code for a in unc.pending_data_quality(report) if a.question_id == step],
+        'documents': [{'id': d.pk, 'kind': d.kind, 'name': d.original_name}
+                      for d in StepDocument.objects.filter(report=report, step_id=step)],
+        'uncertainty': {k: u[k] for k in ('total_kg', 'absolute_kg', 'percent', 'low_kg', 'high_kg', 'pending_approvals')},
+    }
+
+
+class StepDocumentView(APIView):
+    """/api/questionnaire/<report_id>/step-document/
+
+    GET  ?step=…                      what the questionnaire shows about the question's data quality
+    POST multipart {step, kind, file} a measurement record or a supplier declaration for the question;
+                                      it goes to the advisor (see questionnaire/uncertainty.py)
+    DELETE ?id=…                      removes a document (never from a signed inventory)"""
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
+
+    def _report(self, request, report_id):
+        try:
+            return _company_reports(request.user).get(id=report_id)
+        except CarbonReport.DoesNotExist:
+            return None
+
+    def get(self, request, report_id):
+        report = self._report(request, report_id)
+        if report is None:
+            return Response({'error': 'Not found'}, status=404)
+        lang = 'tr' if str(request.query_params.get('language') or '').lower().startswith('tr') else 'en'
+        return Response(_data_quality_state(report, request.query_params.get('step'), lang))
+
+    def post(self, request, report_id):
+        import os
+        from .models import StepDocument
+        from .step_entries import ENTRY_STEPS
+        from . import immutability, uncertainty as unc
+        report = self._report(request, report_id)
+        if report is None:
+            return Response({'error': 'Not found'}, status=404)
+        lang = 'tr' if str(request.data.get('language') or '').lower().startswith('tr') else 'en'
+        step, kind, upload = request.data.get('step'), request.data.get('kind'), request.FILES.get('file')
+
+        def refuse(code, msg_tr, msg_en, status=400):
+            return Response({'success': False, 'step': step, 'code': code, 'error': msg_tr if lang == 'tr' else msg_en,
+                             'error_tr': msg_tr, 'error_en': msg_en}, status=status)
+
+        if step not in ENTRY_STEPS:
+            return refuse('not_a_calculating_step', 'Bu soru bir emisyon hesabı üretmiyor; belge eklenmez.',
+                          'This question produces no emission calculation; no document is attached to it.')
+        if kind not in StepDocument.Kind.values:
+            return refuse('document_kind', 'Geçersiz belge türü. Ölçüm kaydı veya tedarikçi deklarasyonu seçin.',
+                          'Invalid document type. Choose a measurement record or a supplier declaration.')
+        if upload is None:
+            return refuse('document_missing', 'Bir dosya seçin.', 'Choose a file.')
+        if upload.size > StepDocument.MAX_BYTES:
+            return refuse('document_too_large', 'Dosya 10 MB\'tan küçük olmalıdır.', 'The file must be under 10 MB.')
+        if os.path.splitext(upload.name)[1].lower() not in StepDocument.EXTENSIONS:
+            allowed = ', '.join(StepDocument.EXTENSIONS)
+            return refuse('document_type', f'Bu dosya türü kabul edilmiyor. Kabul edilenler: {allowed}',
+                          f'This file type is not accepted. Accepted: {allowed}')
+        immutability.check_report(report, step=step, entry_producing=False)
+        with transaction.atomic():
+            immutability.lock_and_check(report, step=step, entry_producing=False)
+            StepDocument.objects.create(report=report, step_id=step, kind=kind, file=upload,
+                                        original_name=os.path.basename(upload.name)[:255], uploaded_by=request.user)
+            unc.sync_data_quality_approvals(report)
+        return Response({'success': True, 'step': step, **_data_quality_state(report, step, lang)}, status=201)
+
+    def delete(self, request, report_id):
+        from .models import StepDocument
+        from . import immutability, uncertainty as unc
+        report = self._report(request, report_id)
+        if report is None:
+            return Response({'error': 'Not found'}, status=404)
+        lang = 'tr' if str(request.query_params.get('language') or '').lower().startswith('tr') else 'en'
+        doc = StepDocument.objects.filter(report=report, pk=request.query_params.get('id') or 0).first()
+        if doc is None:
+            return Response({'error': 'Not found'}, status=404)
+        step = doc.step_id
+        immutability.check_report(report, step=step, entry_producing=False)
+        with transaction.atomic():
+            immutability.lock_and_check(report, step=step, entry_producing=False)
+            doc.file.delete(save=False)
+            doc.delete()
+            unc.sync_data_quality_approvals(report)
+        return Response({'success': True, 'step': step, **_data_quality_state(report, step, lang)})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def download_step_document(request, report_id, pk):
+    """GET /api/questionnaire/<report_id>/step-document/<pk>/ — the file, to members of the inventory's company only."""
+    from django.http import FileResponse
+    from .models import StepDocument
+    try:
+        report = _company_reports(request.user).get(id=report_id)
+    except CarbonReport.DoesNotExist:
+        return Response({'error': 'Not found'}, status=404)
+    doc = StepDocument.objects.filter(report=report, pk=pk).first()
+    if doc is None:
+        return Response({'error': 'Not found'}, status=404)
+    try:
+        return FileResponse(doc.file.open('rb'), as_attachment=True, filename=doc.original_name)
+    except (FileNotFoundError, OSError, ValueError):
+        return Response({'error': 'The file is recorded but no longer in storage.', 'code': 'document_missing'}, status=410)
+
+
+class InventoryUncertaintyView(APIView):
+    """GET /api/questionnaire/<report_id>/uncertainty/ — how sure the inventory is, row by row and in total."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, report_id):
+        try:
+            report = _company_reports(request.user).get(id=report_id)
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+        from .uncertainty import ACTIVITY_PERCENT, SOURCE_LABELS, inventory_uncertainty, sync_data_quality_approvals
+        sync_data_quality_approvals(report)
+        payload = inventory_uncertainty(report)
+        payload['sources'] = [{'value': k, 'percent': v, **{f'label_{lg}': SOURCE_LABELS[k][lg] for lg in ('tr', 'en')}}
+                              for k, v in ACTIVITY_PERCENT.items()]
+        return Response(payload)
 
 
 class PendingQuestionView(APIView):
@@ -2049,9 +2275,12 @@ def pending_advisor_approvals_view(request):
             company=company, advisor_approvals__status=AdvisorApproval.Status.PENDING).distinct():
         reconcile_advisor_approvals(r)
 
+    # Data-quality items (measurement records, a source "other", supplier declarations, rows above 60 %) are
+    # decided by the platform's advisor in the admin panel, not by the company: they are not offered here.
+    from .uncertainty import UT_CODES
     approvals = AdvisorApproval.objects.filter(
         report__company=company, status=AdvisorApproval.Status.PENDING
-    ).select_related('report').order_by('-created_at')
+    ).exclude(reason_code__in=UT_CODES).select_related('report').order_by('-created_at')
 
     # The flagged answer itself, so the approver sees what they approve
     # (the card used to show only the question). ReportStep.answer holds
@@ -2139,6 +2368,14 @@ def approve_advisor_approval_view(request, pk):
         approval = AdvisorApproval.objects.get(pk=pk, report__company=company)
     except AdvisorApproval.DoesNotExist:
         return Response({'error': 'Entry not found'}, status=404)
+
+    from .uncertainty import UT_CODES
+    if approval.reason_code in UT_CODES and not request.user.is_staff:
+        tr = str(request.data.get('language') or '').lower().startswith('tr')
+        return Response({'error': ('Bu veri kalitesi kaydını platform danışmanı karara bağlar; şirket kullanıcıları '
+                                   'onaylayamaz.' if tr else
+                                   'This data-quality item is decided by the platform advisor; company users cannot '
+                                   'approve it.'), 'code': 'advisor_only'}, status=403)
 
     # A signed inventory's advisor items are part of what it reports (the PDF prints them): approving or
     # rejecting one is a change to it. Refused before anything is written.

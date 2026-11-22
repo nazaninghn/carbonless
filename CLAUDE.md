@@ -129,6 +129,25 @@ An inventory is calculated on the factor standard chosen in question **D1**: `st
 - Still open: the remaining IPCC / GHG Protocol values rest on the implementer's choice of GWP set and IPCC sector tier (DR-02a, DR-11).
 - Tests: `questionnaire/test_factor_standards.py` (backend), `tests/smoke/factor-standard.spec.js` (browser).
 
+## Data quality and uncertainty (owner specification, 2026-11-22)
+
+Every calculating question (`ENTRY_STEPS`) records where its figure comes from, next to the answer as `data_source`: `measurement` (±1 %), `invoice` (±7 %), `estimate` (±20 %) or `other` (the organisation's own percentage, with `data_source_percent` and `data_source_reason`). It is optional; **a question with no source is read as an estimate, and the user is told so** — the wording that the accuracy of the figure is the organisation's responsibility is part of the feature (`uncertainty.source_warning`, mirrored by `src/lib/carboniq/dataSource.js`), in both languages.
+
+- `questionnaire/uncertainty.py` is the whole calculation: `u_ef = √(base² + add-on²)` (base: approved supplier declaration 5 %, Turkish official source 15 %, IPCC / DEFRA / other sets 30 %, the organisation's own figure 30 %; add-on by the factor's unit: one variable 0, several variables such as t·km 15 %, ratio such as per USD 25 %), `u_row = √(u_a² + u_ef²)`, `absolute_row = u_row × E_row`, `absolute_total = √Σ absolute_row²`, rows taken as independent. Worked example of the specification (electricity 250 t, invoice, Turkish grid → 16.6 %) is a test.
+- **A value stated on the factor wins**: `EmissionFactor.uncertainty_percent` (catalogue value or advisor input, edited in the admin panel) is used as it is, instead of base and add-on. It is empty on every row today — no catalogue of factor uncertainties was supplied; do not fill it with a guess.
+- **The source never changes an emission.** It is validated at the serializer (`DataSourceSerializer`, code `data_source`), kept when a later save does not repeat it, and changed on an answered question by `POST /api/questionnaire/<id>/step-data-source/` without re-entering the answer. `GET …/uncertainty/` returns the rows and the total; `…/step-document/` holds the documents of a question (`StepDocument`: `measurement`, `supplier_declaration`; 10 MB, the proof-document file types).
+- **What needs a person goes to the platform advisor** (`AdvisorApproval`, reason codes `ut02_measurement_document`, `ut04_other_source`, `ut05_supplier_declaration`, `ut03_row_above_60`; kept in step with the inventory by `sync_data_quality_approvals`). They are decided **in the admin panel** (Advisor approvals → approve / reject actions; the question's documents are linked there) — not by the company: its review inbox does not list them and its approve endpoint refuses them (`advisor_only`). The other advisor rules never remove them.
+  - A measurement counts only with its record (UT-01): without one it is an estimate; with one it is ±1 % and the advisor reviews it (UT-02).
+  - "Other" needs a percentage (0.1–100) and a reason (20–500 characters) and the advisor's approval (UT-04); a changed claim goes back to pending.
+  - A supplier declaration uploaded for a question makes its `calculated-*` factor a declaration (5 %) once approved (UT-05).
+  - A row above 60 % is sent for review (UT-03) and leaves the queue when it is no longer above.
+  - A claim the advisor rejects is counted as an estimate.
+- **Small sources**: a question under 1 % of the inventory with no stated source may be accepted as an estimate (`data_source_small`), up to 5 % of the inventory in all.
+- **The signature waits for the advisor** (`views._data_quality_refusal`, code `data_quality_pending`): no pending data-quality item, then the inventory can be signed. The uncertainty is recorded with the signature (inside the 7C-2 answer, `signed_uncertainty`) and the ISO report prints that record for a signed inventory, never a recalculation. A signed inventory accepts no write, so its data cannot go out of date.
+- Stationary fuel (3A-5) falls back to the existing per-fuel question 3A-6 when no source is chosen on it.
+- Uploaded documents live in the default file storage: on a host whose disk is rebuilt at deploy they need the external storage the settings describe, like proof documents.
+- Tests: `questionnaire/test_uncertainty.py`, `tests/smoke/data-source.spec.js`.
+
 ## Calculation & data rules (the DOs and DON'Ts)
 
 These are non-negotiable rules established across the inventory/calculation work. They protect the audit-grade correctness of every number.

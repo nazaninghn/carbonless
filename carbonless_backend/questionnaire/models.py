@@ -319,3 +319,37 @@ class AdvisorApproval(models.Model):
 
     def __str__(self):
         return f"AdvisorApproval [{self.reason_code}] {self.status} — report {self.report_id}"
+
+
+def _step_document_path(instance, filename):
+    return f'step_documents/{instance.report_id}/{instance.step_id}/{filename}'
+
+
+class StepDocument(models.Model):
+    """A document that supports the figure or the factor of one calculating question.
+
+    `measurement`: the record of a measured amount — a "measurement" data source counts only with one, and an
+    advisor reviews it. `supplier_declaration`: a supplier's declared emission factor — with the advisor's
+    approval the factor's uncertainty is that of a declaration. It never changes a calculated emission."""
+
+    class Kind(models.TextChoices):
+        MEASUREMENT = 'measurement', 'Measurement record'
+        SUPPLIER_DECLARATION = 'supplier_declaration', 'Supplier declaration'
+
+    MAX_BYTES = 10 * 1024 * 1024
+    EXTENSIONS = ('.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx')
+
+    report = models.ForeignKey(CarbonReport, on_delete=models.CASCADE, related_name='step_documents')
+    step_id = models.CharField(max_length=50)
+    kind = models.CharField(max_length=30, choices=Kind.choices)
+    file = models.FileField(upload_to=_step_document_path, max_length=500)
+    original_name = models.CharField(max_length=255)
+    uploaded_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='step_documents')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['uploaded_at', 'id']
+        indexes = [models.Index(fields=['report', 'step_id', 'kind'])]
+
+    def __str__(self):
+        return f'{self.report_id} · {self.step_id} · {self.kind} · {self.original_name}'

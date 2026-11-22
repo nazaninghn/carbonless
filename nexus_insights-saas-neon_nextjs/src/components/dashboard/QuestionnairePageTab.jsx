@@ -22,6 +22,7 @@ function QuestionnaireContent({ language }) {
     activeInventoryId,
     answers: workflowAnswers,
     stepStandards: workflowStepStandards,
+    dataSources: workflowDataSources,
     currentStep: workflowStep,
     stepExact: workflowStepExact,
     inventoryStatus,
@@ -52,6 +53,7 @@ function QuestionnaireContent({ language }) {
         initialReportId={activeInventoryId}
         initialAnswers={workflowAnswers}
         initialStepStandards={workflowStepStandards}
+        initialDataSources={workflowDataSources}
         initialStep={workflowStep}
         initialStepExact={workflowStepExact}
         inventoryCompleted={inventoryStatus === 'completed'}

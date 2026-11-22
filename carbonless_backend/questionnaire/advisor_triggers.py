@@ -423,7 +423,10 @@ def evaluate_advisor_triggers(report, question_id, answer):
 
     produced = {(m.get('question_id', question_id), m['reason_code']) for m in matches}
     pending = AdvisorApproval.objects.filter(report=report, status=AdvisorApproval.Status.PENDING)
+    from .uncertainty import UT_CODES
     for a in pending:
+        if a.reason_code in UT_CODES:
+            continue        # data-quality items follow uncertainty.sync_data_quality_approvals, not these rules
         key = (a.question_id, a.reason_code)
         governed = (a.question_id, None) in authority or key in authority
         if a.question_id in closed or (governed and key not in produced):
