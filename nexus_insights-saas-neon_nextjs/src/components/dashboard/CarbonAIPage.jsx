@@ -76,6 +76,7 @@ import { calcFeedbackLine } from '@/lib/carboniq/calcFeedback';
 import {
   STEP_STANDARD_OPTIONS, needsStepStandard, storedStepStandards, withFactorStandard,
 } from '@/lib/carboniq/factorStandard';
+import { DATA_SOURCE_OPTIONS, hasDataSource, storedDataSources, withDataSource, dataSourceWarning } from '@/lib/carboniq/dataSource';
 import { splitStoredAmount, unitWarning } from '@/lib/carboniq/unitInput';
 import { fixed, num } from '@/lib/formatNumber';
 import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
@@ -2945,6 +2946,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
     activeInventoryId,
     answers: workflowAnswers,
     stepStandards: workflowStepStandards,
+    dataSources: workflowDataSources,
     currentStep: workflowStep,
     stepExact: workflowStepExact,
     inventoryStatus,
@@ -2978,6 +2980,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
         initialReportId={activeInventoryId}
         initialAnswers={workflowAnswers}
         initialStepStandards={workflowStepStandards}
+        initialDataSources={workflowDataSources}
         initialStep={workflowStep}
         initialStepExact={workflowStepExact}
         inventoryCompleted={inventoryStatus === 'completed'}
@@ -3000,7 +3003,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
 // instead of landing on this component's own (now-legacy) picker first.
 export function QuestionnaireTab({
   language, isVisible = true,
-  hydrated = false, initialReportId = null, initialAnswers = null, initialStepStandards = null, initialStep = null, initialStepExact = false,
+  hydrated = false, initialReportId = null, initialAnswers = null, initialStepStandards = null, initialDataSources = null, initialStep = null, initialStepExact = false,
   onDirtyChange = null, onExitToLibrary = null, startedBy = null, inventoryCompleted = false,
 }) {
   const tr = language === 'tr';
@@ -3597,6 +3600,11 @@ export function QuestionnaireTab({
     (hydrated && initialStepStandards) || storedStepStandards(hydrated && initialAnswers)));
   const stepStandardsRef = useRef(stepStandards);
   stepStandardsRef.current = stepStandards;
+  // Where the amount of each calculating question comes from (measurement / invoice / estimate).
+  const [dataSources, setDataSources] = useState(() => (
+    (hydrated && initialDataSources) || storedDataSources(hydrated && initialAnswers)));
+  const dataSourcesRef = useRef(dataSources);
+  dataSourcesRef.current = dataSources;
   // Facilities already registered (sign-up / Settings): 2A-2's per-facility
   // name+country starts from them instead of blank. Sign-up's placeholder
   // names ("Tesis 1") are not offered as a name, only their country.
@@ -3990,6 +3998,36 @@ export function QuestionnaireTab({
     }
   }, [reportId, lang]);
 
+  // ── changeDataSource ───────────────────────────────────────────────────────
+  // On a question not answered yet the choice waits for the answer (it is sent
+  // with it). On an ANSWERED question it is saved at once; nothing is recalculated.
+  const [dataSourceSaving, setDataSourceSaving] = useState(false);
+  const changeDataSource = useCallback(async (questionId, chosen) => {
+    const previous = dataSourcesRef.current[questionId] || '';
+    setDataSources(prev => ({ ...prev, [questionId]: chosen }));
+    setSaveError('');
+    if (!reportId || !(questionId in answersRef.current)) return;
+    setDataSourceSaving(true);
+    const failed = lang === 'tr' ? 'Veri kaynağı kaydedilemedi. Lütfen tekrar deneyin.' : 'The data source could not be saved. Please try again.';
+    try {
+      const res = await api.setStepDataSource(reportId, questionId, chosen, lang);
+      const data = await res.json().catch(() => ({}));
+      if (!isMounted.current) return;
+      // "Not answered" on the server (a local answer still to be saved): the choice travels with the answer.
+      if ((!res.ok || !data.success) && data?.code !== 'not_answered') {
+        setDataSources(prev => ({ ...prev, [questionId]: previous }));
+        setSaveError(data?.error || failed);
+      }
+    } catch (e) {
+      if (isMounted.current) {
+        setDataSources(prev => ({ ...prev, [questionId]: previous }));
+        setSaveError(failed);
+      }
+    } finally {
+      if (isMounted.current) setDataSourceSaving(false);
+    }
+  }, [reportId, lang]);
+
   // ── saveStepToBackend ──────────────────────────────────────────────────────
   const saveStepToBackend = useCallback(async (questionId, value, rid, confirmed = false) => {
     const rid_ = rid || reportId;
@@ -4005,6 +4043,7 @@ export function QuestionnaireTab({
     }
     try {
       let backendData = withFactorStandard(questionId, mapAnswerForBackend(questionId, value), stepStandardsRef.current);
+      backendData = withDataSource(questionId, backendData, dataSourcesRef.current);
       if (questionId === '7C-2' && backendData && typeof backendData === 'object') {
         const reasons = Object.fromEntries(Object.entries(signOffReasonsRef.current)
           .map(([k, v]) => [k, String(v || '').trim()]).filter(([, v]) => v));
@@ -4980,6 +5019,7 @@ export function QuestionnaireTab({
     setCurrentId(initId);
     setAnswers({});
     setStepStandards({});
+    setDataSources({});
     setHistory([]);
     setCompleted(false);
     setAssumptions([]);
@@ -5315,6 +5355,33 @@ export function QuestionnaireTab({
                   </p>
                 </div>
               )}
+              {hasDataSource(currentId) && (() => {
+                const source = dataSources[currentId] || '';
+                const careful = source === 'measurement' || source === 'invoice';
+                return (
+                  <div data-testid="data-source" className={`mb-2.5 rounded-lg border px-3 py-2 ${careful ? 'border-[#CFE3D3] bg-[#F4FAF5]' : 'border-amber-200 bg-amber-50'}`}>
+                    <label htmlFor="data-source-select" className="block text-[12px] font-semibold text-[#0E2A14]">
+                      {tr ? 'Bu sorudaki değer hangi kaynaktan geliyor?' : 'Where does the figure of this question come from?'}
+                    </label>
+                    <select
+                      id="data-source-select"
+                      data-testid="data-source-select"
+                      value={source}
+                      onChange={(e) => changeDataSource(currentId, e.target.value)}
+                      disabled={dataSourceSaving}
+                      className="mt-1 w-full rounded-md border border-[#B9D3BF] bg-white px-2 py-1.5 text-[13px] text-[#0E2A14] sm:w-72"
+                    >
+                      <option value="" disabled>{tr ? 'Veri kaynağını seçin' : 'Select the data source'}</option>
+                      {DATA_SOURCE_OPTIONS.map(o => (
+                        <option key={o.value} value={o.value}>{o.label[lang] || o.label.en}</option>
+                      ))}
+                    </select>
+                    <p data-testid="data-source-warning" className={`mt-1 text-[11px] leading-snug ${careful ? 'text-[#175022]/80' : 'font-semibold text-amber-800'}`}>
+                      {dataSourceWarning(source, tr)}
+                    </p>
+                  </div>
+                );
+              })()}
               {groupBefore.length > 0 && (
                 <div data-testid="current-question-content" className="mb-2.5 flex flex-col gap-2">
                   {groupBefore.map(msg => <ChatBubble key={msg.id} msg={msg} tr={tr} panelsOnly />)}

@@ -495,6 +495,12 @@ export const api = {
     method: 'POST',
     body: JSON.stringify({ step, factor_standard: factorStandard, language }),
   }),
+  // Where the amount of an ANSWERED calculating question comes from (measurement / invoice / estimate). Nothing is recalculated.
+  setStepDataSource: (reportId, step, dataSource, language) => request(`/questionnaire/${reportId}/step-data-source/`, {
+    method: 'POST',
+    body: JSON.stringify({ step, data_source: dataSource, language }),
+  }),
+  getInventoryUncertainty: (reportId) => request(`/questionnaire/${reportId}/uncertainty/`),
   saveReportDraft: (reportId, data) => request(`/questionnaire/${reportId}/draft/`, {
     method: 'PATCH',
     body: JSON.stringify(data),

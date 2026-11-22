@@ -3208,6 +3208,61 @@ def _category_data_table(E, S, D, cat, lang, TBL):
     _gas_footnote(E, S, lang, rows)
 
 
+def _uncertainty_result(E, S, report, lang):
+    """The uncertainty of this inventory, in words: the result, its interval and what went into it."""
+    # The figures of this inventory (questionnaire/uncertainty.py): the result, its interval, what went into
+    # it and what the reader should know about the sources of the data.
+    from .uncertainty import inventory_uncertainty
+    unc = inventory_uncertainty(report)
+    if unc['rows']:
+        def _tonnes(kg):
+            return _localize_num(f'{kg / 1000:,.2f}', lang == 'tr')
+        unc_pct = _localize_num(f'{unc["percent"]:.1f}', lang == 'tr')
+        n_rows = len(unc['rows'])
+        by_source = {}
+        for r in unc['rows']:
+            by_source[r['source']] = by_source.get(r['source'], 0.0) + abs(r['co2e_kg'])
+        gross = sum(by_source.values()) or 1.0
+        share = lambda key: _localize_num(f'{by_source.get(key, 0.0) / gross * 100:.0f}', lang == 'tr')
+        E.append(Paragraph(
+            (f'<b>Result for this inventory.</b> The questionnaire emissions of {_tonnes(unc["total_kg"])} t CO₂e carry a '
+             f'combined uncertainty of ±{unc_pct} % (±{_tonnes(unc["absolute_kg"])} t CO₂e): the result lies between '
+             f'{_tonnes(unc["low_kg"])} and {_tonnes(unc["high_kg"])} t CO₂e. It combines {n_rows} emission '
+             f'source{"s" if n_rows != 1 else ""}, each taken as independent of the others. Activity data: measurement '
+             f'±1 %, invoice or system data ±7 %, estimate ±20 %. Emission factors: supplier declaration 5 %, Turkish '
+             f'official source 15 %, IPCC / DEFRA / other published sets 30 %, with 15 % added for a factor of several '
+             f'variables (t·km, person·km) and 25 % for a ratio factor (per person, per currency unit). By emissions, '
+             f'{share("measurement")} % of the activity data is measured, {share("invoice")} % comes from invoices or '
+             f'system records and {share("estimate")} % is estimated.')
+            if lang == 'en' else
+            (f'<b>Bu envanterin sonucu.</b> Anketten hesaplanan {_tonnes(unc["total_kg"])} t CO₂e emisyonun birleşik '
+             f'belirsizliği ±%{unc_pct} (±{_tonnes(unc["absolute_kg"])} t CO₂e) olup sonuç {_tonnes(unc["low_kg"])} ile '
+             f'{_tonnes(unc["high_kg"])} t CO₂e arasındadır. Hesap, birbirinden bağımsız kabul edilen {n_rows} emisyon '
+             f'kaynağını birleştirir. Faaliyet verisi: ölçüm ±%1, fatura veya sistem verisi ±%7, tahmin ±%20. Emisyon '
+             f'faktörü: tedarikçi deklarasyonu %5, T.C. resmi kaynağı %15, IPCC / DEFRA / diğer yayımlanmış setler %30; '
+             f'çok değişkenli faktörlerde (t·km, kişi·km) %15, oran faktörlerinde (kişi başına, para birimi başına) %25 '
+             f'eklenir. Emisyona göre faaliyet verisinin %{share("measurement")}\'i ölçüm, %{share("invoice")}\'i fatura '
+             f'veya sistem kaydı, %{share("estimate")}\'i tahmindir.'), S['body']))
+        if unc['unspecified_steps']:
+            n = len(unc['unspecified_steps'])
+            unspecified = _localize_num(f'{by_source.get("", 0.0) / gross * 100:.0f}', lang == 'tr')
+            E.append(Paragraph(
+                (f'For {n} question{"s" if n != 1 else ""} ({unspecified} % of the emissions) the organisation did not '
+                 f'state where the figure comes from; these are counted as estimates (±20 %).')
+                if lang == 'en' else
+                (f'{n} soruda (emisyonların %{unspecified}\'i) kuruluş değerin kaynağını belirtmemiştir; bunlar tahmin '
+                 f'(±%20) olarak sayılmıştır.'), S['body']))
+        if unc['flagged']:
+            n = len(unc['flagged'])
+            E.append(Paragraph(
+                (f'{n} source{"s have" if n != 1 else " has"} an uncertainty above {unc["row_flag_percent"]:.0f} % and '
+                 f'should be reviewed before the result is relied on.')
+                if lang == 'en' else
+                (f'{n} kaynağın belirsizliği %{unc["row_flag_percent"]:.0f}\'ın üzerindedir; sonuca güvenilmeden önce '
+                 f'gözden geçirilmelidir.'), S['body']))
+        E.append(Spacer(1, 2*mm))
+
+
 def _section4(E, S, D, report, lang, TBL, FIG):
     A = D['answers']
     fn, fnb = S['fn'], S['fnb']
@@ -3711,6 +3766,7 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         'ayrıca envanterin bütünü için, karşılık geldiği güven düzeyiyle birlikte '
         'raporlanır.', S['body']))
     E.append(Spacer(1, 2*mm))
+    _uncertainty_result(E, S, report, lang)
     E.append(Paragraph(
         'Data collection standards and forms are developed each period with the specific '
         'aim of reducing the uncertainty level, by replacing apportioned and estimated '

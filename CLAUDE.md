@@ -129,6 +129,16 @@ An inventory is calculated on the factor standard chosen in question **D1**: `st
 - Still open: the remaining IPCC / GHG Protocol values rest on the implementer's choice of GWP set and IPCC sector tier (DR-02a, DR-11).
 - Tests: `questionnaire/test_factor_standards.py` (backend), `tests/smoke/factor-standard.spec.js` (browser).
 
+## Data quality and uncertainty (owner specification, 2026-11-22)
+
+Every calculating question (`ENTRY_STEPS`) records where its figure comes from, next to the answer as `data_source`: `measurement` (±1 %), `invoice` (±7 %), `estimate` (±20 %). It is optional; **a question with no source is read as an estimate, and the user is told so** — the wording that the accuracy of the figure is the organisation's responsibility is part of the feature (`uncertainty.source_warning`, mirrored by `src/lib/carboniq/dataSource.js`), in both languages.
+
+- `questionnaire/uncertainty.py` is the whole calculation: `u_ef = √(base² + add-on²)` (base: Turkish official source 15 %, IPCC / DEFRA / other sets 30 %, the organisation's own figure 30 %; add-on by the factor's unit: one variable 0, several variables such as t·km 15 %, ratio such as per USD 25 %), `u_row = √(u_a² + u_ef²)`, `absolute_row = u_row × E_row`, `absolute_total = √Σ absolute_row²`, rows taken as independent. A row above 60 % is flagged. Worked example of the specification (electricity 250 t, invoice, Turkish grid → 16.6 %) is a test.
+- **The source never changes an emission.** It is validated at save (`checked_data_source`, code `data_source`), kept when a later save does not repeat it, and changed on an answered question by `POST /api/questionnaire/<id>/step-data-source/` without re-entering the answer. `GET …/uncertainty/` returns the rows and the total. The ISO report prints the result and its interval in section 4.1.4.
+- Stationary fuel (3A-5) falls back to the existing per-fuel question 3A-6 when no source is chosen on it.
+- **Not built yet** (they need documents and the advisor queue): the source "other" with a hand-entered percentage and justification; the document a measurement must carry (UT-01 / UT-02); the 5 % of an approved supplier declaration (UT-05); sending a row above 60 % to the advisor (UT-03); suggesting "estimate" for rows under 1 % of the total; freezing the factor snapshot and blocking the report when data changes after completion.
+- Tests: `questionnaire/test_uncertainty.py`, `tests/smoke/data-source.spec.js`.
+
 ## Calculation & data rules (the DOs and DON'Ts)
 
 These are non-negotiable rules established across the inventory/calculation work. They protect the audit-grade correctness of every number.

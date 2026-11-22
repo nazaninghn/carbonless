@@ -875,6 +875,16 @@ class SubmitStepView(APIView):
                     'success': False, 'step': step, 'next_step': step, 'error': standard_error,
                     'code': 'factor_standard', 'bot_messages': [f'❌ {standard_error}'],
                 }, status=400)
+        if is_valid:
+            # Where the amount of a calculating question comes from (measurement / invoice / estimate): validated
+            # and kept next to the answer; it sets the activity-data uncertainty (questionnaire/uncertainty.py).
+            from .uncertainty import checked_data_source
+            data, source_error = checked_data_source(step, data, saved_answers, lang)
+            if source_error:
+                return Response({
+                    'success': False, 'step': step, 'next_step': step, 'error': source_error,
+                    'code': 'data_source', 'bot_messages': [f'❌ {source_error}'],
+                }, status=400)
         if is_valid and step in ('3A-EF-a', '3B-EF-a', '3C-EF-a', '4A-EF-a', '4B-EF-a'):
             from .step_entries import supplier_factor_problem
             doc = data.get('answer') if isinstance(data, dict) and 'answer' in data else data
@@ -1302,6 +1312,64 @@ class StepStandardView(APIView):
             'calc_feedback': {'delta_kg': round(after_kg - before_kg, 2), 'total_kg': round(approved_kg, 2),
                               'pending': any(e.status == 'submitted' for e in entries), 'notes': notes},
         })
+
+
+class StepDataSourceView(APIView):
+    """POST /api/questionnaire/<report_id>/step-data-source/ {step, data_source, language}
+
+    Records where the amount of an ANSWERED calculating question comes from, without the answer being entered
+    again. Nothing is recalculated: the source changes how sure the number is, never the number.
+    Same gates as saving an answer: never a signed / completed inventory."""
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
+
+    def post(self, request, report_id):
+        try:
+            report = _company_reports(request.user).get(id=report_id)
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+        from .step_entries import ENTRY_STEPS
+        from .uncertainty import ACTIVITY_PERCENT, inventory_uncertainty, source_warning
+        from . import immutability
+        lang = 'tr' if str(request.data.get('language') or '').lower().startswith('tr') else 'en'
+        step, chosen = request.data.get('step'), request.data.get('data_source')
+
+        def refuse(code, msg_tr, msg_en, status=400):
+            return Response({'success': False, 'step': step, 'code': code, 'error': msg_tr if lang == 'tr' else msg_en,
+                             'error_tr': msg_tr, 'error_en': msg_en}, status=status)
+
+        if step not in ENTRY_STEPS:
+            return refuse('not_a_calculating_step', 'Bu soru bir emisyon hesabı üretmiyor; veri kaynağı seçilmez.',
+                          'This question produces no emission calculation; it has no data source to choose.')
+        if chosen not in ACTIVITY_PERCENT:
+            return refuse('data_source', 'Geçersiz veri kaynağı. Ölçüm, fatura / sistem verisi veya tahmin seçin.',
+                          'Invalid data source. Choose measurement, invoice / system data or estimate.')
+        immutability.check_report(report, step=step, entry_producing=False)
+        with transaction.atomic():
+            immutability.lock_and_check(report, step=step, entry_producing=False)
+            stored = ReportStep.objects.filter(report=report, step_id=step).values_list('answer', flat=True).first()
+            if not isinstance(stored, dict) or 'answer' not in stored:
+                return refuse('not_answered', 'Bu soru henüz yanıtlanmadı; veri kaynağını yanıtla birlikte seçin.',
+                              'This question is not answered yet; choose its data source with the answer.', 409)
+            ReportStep.objects.filter(report=report, step_id=step).update(answer={**stored, 'data_source': chosen})
+        u = inventory_uncertainty(report)
+        return Response({'success': True, 'step': step, 'data_source': chosen, 'warning': source_warning(chosen, lang),
+                         'uncertainty': {k: u[k] for k in ('total_kg', 'absolute_kg', 'percent', 'low_kg', 'high_kg')}})
+
+
+class InventoryUncertaintyView(APIView):
+    """GET /api/questionnaire/<report_id>/uncertainty/ — how sure the inventory is, row by row and in total."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, report_id):
+        try:
+            report = _company_reports(request.user).get(id=report_id)
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+        from .uncertainty import ACTIVITY_PERCENT, SOURCE_LABELS, inventory_uncertainty
+        payload = inventory_uncertainty(report)
+        payload['sources'] = [{'value': k, 'percent': v, **{f'label_{lg}': SOURCE_LABELS[k][lg] for lg in ('tr', 'en')}}
+                              for k, v in ACTIVITY_PERCENT.items()]
+        return Response(payload)
 
 
 class PendingQuestionView(APIView):
