@@ -120,7 +120,12 @@ MAP = {
  'biogas': (E, dict(l1='Bioenergy', l3='Biogas', uom='kWh')),
  'product-gas-use': (N, F('Natural gas', 'kWh (Net CV)', GJ)),
  'product-fuel-use': (N, F('Diesel (average biofuel blend)', 'litres')),
- 'fuel-extraction': (N, dict(l1='WTT- fuels', l3='Diesel (average biofuel blend)', uom='litres')),
+ # Upstream (well-to-tank) of fuel burnt, per litre: DEFRA publishes one row per fuel. `fuel-extraction` is the
+ # diesel row; the other fuels have their own slugs, which exist under the DEFRA standard only (EXTRA_SLUGS).
+ 'fuel-extraction': (E, dict(l1='WTT- fuels', l3='Diesel (average biofuel blend)', uom='litres')),
+ 'fuel-extraction-petrol': (E, dict(l1='WTT- fuels', l3='Petrol (average biofuel blend)', uom='litres')),
+ 'fuel-extraction-fuel-oil': (E, dict(l1='WTT- fuels', l3='Fuel oil', uom='litres')),
+ 'fuel-extraction-lpg': (E, dict(l1='WTT- fuels', l2='Gaseous fuels', l3='LPG', uom='litres')),
  'vehicle-km': (N, PV('Unknown')), 'car-gasoline': (N, PV('Petrol')), 'car-diesel': (N, PV('Diesel')),
  'car-lpg': (N, PV('LPG')), 'car-hybrid': (N, PV('Hybrid')),
  'taxi': (N, LAND('Regular taxi')), 'road-travel': (N, LAND('Average car', 'Unknown')),
@@ -158,9 +163,10 @@ MAP = {
  'electrical-fridges': (E, MU('Electrical items - fridges and freezers')), 'electrical-it': (E, MU('Electrical items - IT')),
  'glass': (E, MU('Glass')), 'metal-aluminium': (E, MU('Metal: aluminium cans and foil (excl. forming)')),
  'metal-mixed-cans': (E, MU('Metal: mixed cans')), 'metal-steel-cans': (E, MU('Metal: steel cans')),
- 'mineral-oil': (E, MU('Mineral oil')), 'paper-mixed': (E, MU('Paper and board: mixed')),
+ 'mineral-oil': (E, MU('Mineral oil')), 'paper-mixed': (E, MU('Paper and board: paper')),      # the questionnaire option is "Paper"; board is `carton`
+ 
  'plastic-average': (E, MU('Plastics: average plastics')), 'plastic-hdpe': (E, MU('Plastics: HDPE (incl. forming)')),
- 'wood': (E, MU('Wood')), 'plastic': (E, MU('Plastics: average plastics')), 'carton': (E, MU('Paper and board: mixed')),
+ 'wood': (E, MU('Wood')), 'plastic': (E, MU('Plastics: average plastics')), 'carton': (E, MU('Paper and board: board')),
  'metal-primary': (E, MU('Metals')), 'metal-recycled': (E, MU('Metals', 'Closed-loop source')),
  'foam-tape': (N, MU('Plastics: LDPE and LLDPE (incl. forming)')),
  'truck-freight': (N, FR(HGV, ['All HGVs', 'Average non-refrigerated HGVs'], 'Average laden')), 'truck-delivery': (N, FR(HGV, ['All HGVs', 'Average non-refrigerated HGVs'], 'Average laden')),
@@ -184,6 +190,18 @@ MAP = {
  'wt-04-recycling': (M, W('Metal: aluminium cans and foil (excl. forming)', 'Closed-loop')),
  'wt-07-licensed': (M, W('WEEE - mixed', 'Open-loop')),
 }
+# Slugs the platform catalogue does not hold: a DEFRA row of the same kind as an existing slug, used only by an
+# inventory on the DEFRA standard. slug: (catalogue slug it takes unit / scope / category from, name, name_tr)
+EXTRA_SLUGS = {
+    'fuel-extraction-petrol': ('fuel-extraction', 'Fuel supply chain (WTT) — petrol', 'Yakıt üretim zinciri (WTT) — benzin'),
+    'fuel-extraction-fuel-oil': ('fuel-extraction', 'Fuel supply chain (WTT) — fuel oil', 'Yakıt üretim zinciri (WTT) — fuel oil'),
+    'fuel-extraction-lpg': ('fuel-extraction', 'Fuel supply chain (WTT) — LPG', 'Yakıt üretim zinciri (WTT) — LPG'),
+}
+
+# Where the DEFRA row is narrower than the catalogue slug's name, the row is named for what it is.
+DEFRA_NAMES = {'paper-mixed': ('Paper', 'Kağıt'), 'carton': ('Cardboard', 'Karton'),
+               'fuel-extraction': ('Fuel supply chain (WTT) — diesel', 'Yakıt üretim zinciri (WTT) — motorin')}
+
 for k in list(MAP):
     if k.startswith('tm-'):
         MAP[k + '-ds'] = MAP[k]          # the downstream-transport twin of each transport mode
@@ -231,6 +249,11 @@ def build(folder):
     D, first, out = read_flat_files(folder), catalogue(), []
     for slug, (kind, spec) in sorted(MAP.items()):
         base = first.get(slug)
+        if not base and slug in EXTRA_SLUGS:
+            like, name, name_tr = EXTRA_SLUGS[slug]
+            base = {**first[like], 'name': name, 'name_tr': name_tr}
+        if base and slug in DEFRA_NAMES:
+            base = {**base, 'name': DEFRA_NAMES[slug][0], 'name_tr': DEFRA_NAMES[slug][1]}
         if not base:
             continue
         s = spec.get('scale', 1.0)

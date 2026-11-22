@@ -417,7 +417,7 @@ class WithheldDefraMappingTests(_InventoryCase):
 
     def test_the_list_of_withheld_rows(self):
         from emissions.withheld import withheld
-        self.assertEqual({k: len(v) for k, v in withheld().items()}, {'defra': 15, 'ipcc': 0, 'ghg': 0})
+        self.assertEqual({k: len(v) for k, v in withheld().items()}, {'defra': 13, 'ipcc': 0, 'ghg': 0})
         for standard, slugs in withheld().items():
             for slug, why in slugs.items():
                 self.assertTrue(why['reason'].strip(), (standard, slug))
@@ -428,12 +428,12 @@ class WithheldDefraMappingTests(_InventoryCase):
         rows = EmissionFactor.objects.filter(standard='defra')
         self.assertFalse(rows.filter(slug__in=slugs, is_active=True).exists())
         self.assertFalse(rows.exclude(slug__in=slugs).filter(is_active=False).exists())
-        self.assertEqual(rows.exclude(slug__in=slugs).values('slug').distinct().count(), 127)
+        self.assertEqual(rows.exclude(slug__in=slugs).values('slug').distinct().count(), 132)      # 145 slugs - 13 withheld
         self.assertFalse(rows.filter(gwp_basis='').exists())
 
     def test_a_withheld_mapping_is_never_selected(self):
         with use_standard('defra'):
-            for slug in ('coal', 'district-heating', 'steam', 'train', 'metro', 'flight-domestic', 'transmission-losses', 'tm-08'):
+            for slug in ('coal', 'district-heating', 'steam', 'train', 'metro', 'transmission-losses', 'tm-08'):
                 self.assertIsNone(pick_factor(slug, 'global', 2025), slug)
             self.assertIsNotNone(pick_factor('natural-gas-m3', 'global', 2025))          # an exact match stays
 
@@ -608,3 +608,59 @@ class RefrigerantLeakTests(_InventoryCase):
             'EQ-3D-01': {'unit_count': '2', 'site': 'Gebze', 'gas_type': 'R32'}}}}, format='json')
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(self._rows(), [('r32', 'ghg', Decimal('1542.0000'), 'Gebze')])       # 2 kg x 771
+
+
+class DefraRowsByItemTests(_InventoryCase):
+    """Sources DEFRA publishes a row of their own for: cardboard and paper apart, the upstream of each fuel on
+    its own row, and domestic flights."""
+
+    def setUp(self):
+        super().setUp()
+        call_command('seed_defra_factors', verbosity=0)
+
+    def _pick(self, slug, year=2024):
+        with use_standard('defra'):
+            return pick_factor(slug, 'global', year)
+
+    def test_cardboard_and_paper_are_their_own_rows(self):
+        # UK Government conversion factors 2024, Material use, primary production, per tonne / 1000:
+        # board 1 193.97, paper 1 339.32 — the values of the client's 2024 report.
+        self.assertEqual(self._pick('carton').factor_kg_co2e, Decimal('1.193966'))
+        self.assertEqual(self._pick('paper-mixed').factor_kg_co2e, Decimal('1.339318'))
+        self.assertEqual((self._pick('paper-mixed').name, self._pick('carton').name_tr), ('Paper', 'Karton'))
+
+    def test_domestic_flights_are_selectable(self):
+        self.assertTrue(self._pick('flight-domestic').is_active)
+        self.assertEqual(self._pick('flight-domestic').factor_kg_co2e, Decimal('0.272570'))
+
+    def test_upstream_fuel_goes_on_the_row_of_each_fuel(self):
+        self.choose('std_defra')
+
+        def step(step_id, answer):
+            r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
+                                  {'step': step_id, 'data': {'answer': answer}}, format='json')
+            self.assertEqual(r.status_code, 200, r.content)
+        step('3A-0', 'yes')
+        step('3A-5', {'diesel': '1.000 litre', 'fuel_oil': '500 litre', 'lpg': '200 litre'})
+        step('K3C3-INFO', 'confirmed')
+        rows = {e.emission_factor.slug: (e.quantity, e.calculated_co2e_kg) for e in EmissionEntry.objects.filter(
+            inventory=self.report, emission_factor__slug__startswith='fuel-extraction')}
+        expected = {}
+        for slug, litres in (('fuel-extraction', 1000), ('fuel-extraction-fuel-oil', 500), ('fuel-extraction-lpg', 200)):
+            factor = self._pick(slug, 2025)
+            self.assertEqual(factor.standard, 'defra')
+            expected[slug] = (Decimal(litres), (Decimal(litres) * factor.factor_kg_co2e).quantize(Decimal('0.0001')))
+        self.assertEqual({k: (q, kg.quantize(Decimal('0.0001'))) for k, (q, kg) in rows.items()}, expected)
+        self.assertEqual(self._pick('fuel-extraction', 2025).factor_kg_co2e, Decimal('0.611010'))        # diesel
+        self.assertEqual(self._pick('fuel-extraction-fuel-oil', 2025).factor_kg_co2e, Decimal('0.695390'))
+        self.assertEqual(self._pick('fuel-extraction-lpg', 2025).factor_kg_co2e, Decimal('0.185510'))
+
+    def test_another_standard_and_the_catalogue_keep_one_upstream_activity(self):
+        from questionnaire.step_entries import activities_for_report
+        answers = {'3A-0': {'answer': 'yes'}, '3A-5': {'answer': {'diesel': '1.000 litre', 'fuel_oil': '500 litre'}},
+                   'K3C3-INFO': {'answer': 'confirmed'}}
+        for d1, slugs in (('std_defra', ['fuel-extraction', 'fuel-extraction-fuel-oil']), ('std_ipcc', ['fuel-extraction']),
+                          (None, ['fuel-extraction'])):
+            a = {**answers, **({'D1': {'ef_database': d1}} if d1 else {})}
+            got = [x['slug'] for x in activities_for_report(a, 2025, self.company)['K3C3-INFO']]
+            self.assertEqual(got, slugs, d1)

@@ -436,6 +436,14 @@ STANDARD_NAMES = {'defra': {'tr': 'DEFRA', 'en': 'DEFRA'}, 'ipcc': {'tr': 'IPCC'
                   'ghg': {'tr': 'GHG Protokolü', 'en': 'GHG Protocol'}}
 
 
+def _standard_of_step(step):
+    """The standard this question is calculated on in the scope in force: its own in a "mix" inventory,
+    else the inventory's ('' = the platform catalogue)."""
+    from emissions.factor_lookup import active_standard
+    per_step = _STEP_STANDARDS.get()
+    return per_step[step] if per_step and step in per_step else active_standard()
+
+
 def _standard_notes(answers, year, company, note):
     """A source the catalogue can calculate but the standard in force cannot:
     said for each one, so an amount left out by the standard is never taken
@@ -778,10 +786,17 @@ def _upstream_energy(A, groups, skip_sites=frozenset(), uk_sites=frozenset(), ye
               if uk_sites and _uk_td_available(year) else 0)
     kwh += sum(a.get('kwh', 0) for a in groups.get('4A-EV', []))
     litres = 0.0
+    by_fuel = {'diesel': 0.0, 'petrol': 0.0, 'fuel_oil': 0.0, 'lpg': 0.0}
     if groups.get('3A-5') and isinstance(A.get('3A-5'), dict):
         for fuel in ('diesel', 'fuel_oil', 'lpg'):
-            litres += _litres(A['3A-5'].get(fuel)) or 0
-    litres += sum(a.get('litres', 0) for a in groups.get('3B-7', []))
+            amount = _litres(A['3A-5'].get(fuel)) or 0
+            litres += amount
+            by_fuel[fuel] += amount
+    for a in groups.get('3B-7', []):
+        amount = a.get('litres', 0)
+        litres += amount
+        slug = str(a.get('slug') or '')
+        by_fuel['lpg' if slug == 'lpg' else 'petrol' if ('petrol' in slug or 'gasoline' in slug) else 'diesel'] += amount
     out = []
     if kwh:
         out.append({'slug': 'upstream-electricity', 'quantity': kwh,
@@ -793,7 +808,17 @@ def _upstream_energy(A, groups, skip_sites=frozenset(), uk_sites=frozenset(), ye
             out.append({'slug': 'uk-transmission-losses', 'quantity': uk_kwh,
                         'label': {'tr': 'İletim ve dağıtım kayıpları (Birleşik Krallık)',
                                   'en': 'Transmission and distribution losses (UK)'}})
-    if litres:
+    if litres and _standard_of_step('K3C3-INFO') == 'defra':
+        # DEFRA publishes the upstream factor per fuel: each fuel's litres go on its own row.
+        for fuel, slug, tr_name, en_name in (('diesel', 'fuel-extraction', 'motorin', 'diesel'),
+                                             ('petrol', 'fuel-extraction-petrol', 'benzin', 'petrol'),
+                                             ('fuel_oil', 'fuel-extraction-fuel-oil', 'fuel oil', 'fuel oil'),
+                                             ('lpg', 'fuel-extraction-lpg', 'LPG', 'LPG')):
+            if by_fuel[fuel]:
+                out.append({'slug': slug, 'quantity': by_fuel[fuel],
+                            'label': {'tr': f'Yakıt üretim zinciri (WTT) — {tr_name}',
+                                      'en': f'Fuel supply chain (WTT) — {en_name}'}})
+    elif litres:
         out.append({'slug': 'fuel-extraction', 'quantity': litres,
                     'label': {'tr': 'Yakıt üretim zinciri (WTT)', 'en': 'Fuel supply chain (WTT)'}})
     return out
