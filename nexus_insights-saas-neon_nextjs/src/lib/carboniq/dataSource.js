@@ -12,7 +12,10 @@ export const DATA_SOURCE_OPTIONS = [
   { value: 'measurement', percent: 1, label: { tr: 'Ölçüm (±%1)', en: 'Measurement (±1 %)' } },
   { value: 'invoice', percent: 7, label: { tr: 'Fatura / sistem verisi (±%7)', en: 'Invoice / system data (±7 %)' } },
   { value: 'estimate', percent: 20, label: { tr: 'Tahmin (±%20)', en: 'Estimate (±20 %)' } },
+  { value: 'other', percent: null, label: { tr: 'Diğer (yüzdeyi siz girersiniz — danışman onayı)', en: 'Other (you enter the percentage — advisor approval)' } },
 ];
+export const OTHER_REASON_MIN = 20;
+export const OTHER_REASON_MAX = 500;
 const DATA_SOURCES = new Set(DATA_SOURCE_OPTIONS.map((o) => o.value));
 
 export function hasDataSource(questionId) {
@@ -28,22 +31,51 @@ export function storedDataSources(answersMap) {
   return out;
 }
 
+// { stepId: { percent, reason } } of the questions whose stored source is "other".
+export function storedOtherSources(answersMap) {
+  const out = {};
+  Object.entries(answersMap || {}).forEach(([stepId, v]) => {
+    if (v && typeof v === 'object' && !Array.isArray(v) && v.data_source === 'other') {
+      out[stepId] = { percent: String(v.data_source_percent ?? ''), reason: String(v.data_source_reason ?? '') };
+    }
+  });
+  return out;
+}
+
+// The extra fields "other" sends, or null when they are not complete yet.
+export function otherExtra(other) {
+  const percent = Number(String(other?.percent ?? '').replace(',', '.'));
+  const reason = String(other?.reason ?? '').trim();
+  if (!Number.isFinite(percent) || percent < 0.1 || percent > 100) return null;
+  if (reason.length < OTHER_REASON_MIN || reason.length > OTHER_REASON_MAX) return null;
+  return { data_source_percent: percent, data_source_reason: reason };
+}
+
 // The payload of a step save, with the source next to the answer.
-export function withDataSource(questionId, backendData, dataSources) {
+export function withDataSource(questionId, backendData, dataSources, others) {
   const chosen = dataSources?.[questionId];
   if (!DATA_SOURCE_STEPS.has(questionId) || !DATA_SOURCES.has(chosen)) return backendData;
   if (!backendData || typeof backendData !== 'object' || !('answer' in backendData)) return backendData;
+  if (chosen === 'other') {
+    const extra = otherExtra(others?.[questionId]);
+    return extra ? { ...backendData, data_source: chosen, ...extra } : backendData;   // incomplete: nothing is claimed
+  }
   return { ...backendData, data_source: chosen };
 }
 
 // What the user is told about the chosen (or missing) source — same wording as the server's source_warning.
 export function dataSourceWarning(source, tr) {
   if (source === 'measurement') {
-    return tr ? 'Ölçüm: faaliyet verisi belirsizliği ±%1. Ölçüm kaydını saklayın; doğrulamada istenir.'
-      : 'Measurement: activity-data uncertainty ±1 %. Keep the measurement record; a verifier will ask for it.';
+    return tr ? 'Ölçüm (±%1): ölçüm kaydını yükleyin; danışman inceler. Kayıt yüklenene kadar bu değer tahmin (±%20) olarak sayılır.'
+      : 'Measurement (±1 %): upload the measurement record; an advisor reviews it. Until the record is uploaded this figure is counted as an estimate (±20 %).';
   }
   if (source === 'invoice') {
     return tr ? 'Fatura / sistem verisi: faaliyet verisi belirsizliği ±%7.' : 'Invoice / system data: activity-data uncertainty ±7 %.';
+  }
+  if (source === 'other') {
+    return tr
+      ? 'Diğer: girdiğiniz belirsizlik uygulanır; gerekçeniz danışman onayına gider. Onaylanana kadar envanter imzalanamaz.'
+      : 'Other: the uncertainty you entered is applied; your reason goes to the advisor for approval. The inventory cannot be signed until it is approved.';
   }
   if (source === 'estimate') {
     return tr

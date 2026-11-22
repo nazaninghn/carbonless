@@ -496,10 +496,31 @@ export const api = {
     body: JSON.stringify({ step, factor_standard: factorStandard, language }),
   }),
   // Where the amount of an ANSWERED calculating question comes from (measurement / invoice / estimate). Nothing is recalculated.
-  setStepDataSource: (reportId, step, dataSource, language) => request(`/questionnaire/${reportId}/step-data-source/`, {
+  // `extra`: { data_source_percent, data_source_reason } for "other"; { data_source_small: true } to accept a small source as an estimate.
+  setStepDataSource: (reportId, step, dataSource, language, extra = {}) => request(`/questionnaire/${reportId}/step-data-source/`, {
     method: 'POST',
-    body: JSON.stringify({ step, data_source: dataSource, language }),
+    body: JSON.stringify({ step, data_source: dataSource, language, ...extra }),
   }),
+  // What the questionnaire shows about one question's data quality: documents, advisor items waiting, small-source offer, totals.
+  getStepDataQuality: (reportId, step, language) => request(`/questionnaire/${reportId}/step-document/?step=${encodeURIComponent(step)}&language=${language}`),
+  // A measurement record or a supplier declaration for a question (multipart, so not through request()).
+  uploadStepDocument: async (reportId, step, kind, file, language) => {
+    const send = (token) => {
+      const fd = new FormData();
+      fd.append('step', step); fd.append('kind', kind); fd.append('language', language); fd.append('file', file);
+      return fetchWithTimeout(`${API_BASE}/questionnaire/${reportId}/step-document/`, {
+        method: 'POST', credentials: 'include',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+    };
+    const res = await send(getToken());
+    if (res.status !== 401) return res;
+    const refreshResult = await doRefresh();
+    if (!refreshResult?.ok) return new Response(null, { status: refreshResult?.transient ? 503 : 401 });
+    return send(refreshResult.access);
+  },
+  removeStepDocument: (reportId, id, language) => request(`/questionnaire/${reportId}/step-document/?id=${id}&language=${language}`, { method: 'DELETE' }),
   getInventoryUncertainty: (reportId) => request(`/questionnaire/${reportId}/uncertainty/`),
   saveReportDraft: (reportId, data) => request(`/questionnaire/${reportId}/draft/`, {
     method: 'PATCH',

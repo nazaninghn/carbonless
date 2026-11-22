@@ -47,6 +47,12 @@ class EmissionFactorAdmin(ModelAdmin):
         ('Source & Reference', {
             'fields': ('source', 'reference'),
         }),
+        ('Uncertainty', {
+            'fields': ('uncertainty_percent',),
+            'description': 'The stated uncertainty of this factor, in per cent (catalogue value or advisor input). '
+                           'When set, the data-quality calculation uses it instead of the base value of the '
+                           'factor\'s source. Leave empty when not stated. It never changes an emission.',
+        }),
         ('Status', {
             'fields': ('is_active', 'is_default'),
         }),

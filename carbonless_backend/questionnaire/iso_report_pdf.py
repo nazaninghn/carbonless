@@ -3212,8 +3212,9 @@ def _uncertainty_result(E, S, report, lang):
     """The uncertainty of this inventory, in words: the result, its interval and what went into it."""
     # The figures of this inventory (questionnaire/uncertainty.py): the result, its interval, what went into
     # it and what the reader should know about the sources of the data.
-    from .uncertainty import inventory_uncertainty
-    unc = inventory_uncertainty(report)
+    from .uncertainty import inventory_uncertainty, signed_uncertainty
+    # A signed inventory prints the figures recorded with its signature, never a later recalculation.
+    unc = (signed_uncertainty(_answers(report)) if report.signed_at is not None else None) or inventory_uncertainty(report)
     if unc['rows']:
         def _tonnes(kg):
             return _localize_num(f'{kg / 1000:,.2f}', lang == 'tr')
@@ -3252,6 +3253,24 @@ def _uncertainty_result(E, S, report, lang):
                 if lang == 'en' else
                 (f'{n} soruda (emisyonların %{unspecified}\'i) kuruluş değerin kaynağını belirtmemiştir; bunlar tahmin '
                  f'(±%20) olarak sayılmıştır.'), S['body']))
+        not_applied = [r for r in unc['rows'] if r.get('source_state') in ('measurement_no_document', 'rejected')]
+        if not_applied:
+            n = len({r['step_id'] for r in not_applied})
+            E.append(Paragraph(
+                (f'For {n} question{"s" if n != 1 else ""} the source declared by the organisation is not applied — a '
+                 f'measurement without its record, or a claim the advisor did not approve; these are counted as '
+                 f'estimates (±20 %).')
+                if lang == 'en' else
+                (f'{n} soruda kuruluşun beyan ettiği kaynak uygulanmamıştır — kaydı olmayan bir ölçüm veya danışmanın '
+                 f'onaylamadığı bir beyan; bunlar tahmin (±%20) olarak sayılmıştır.'), S['body']))
+        if unc.get('pending_approvals'):
+            n = unc['pending_approvals']
+            E.append(Paragraph(
+                (f'{n} data-quality item{"s are" if n != 1 else " is"} still waiting for the advisor; the figures above '
+                 f'are provisional until they are decided.')
+                if lang == 'en' else
+                (f'{n} veri kalitesi kaydı hâlâ danışman onayı beklemektedir; yukarıdaki değerler karar verilene kadar '
+                 f'geçicidir.'), S['body']))
         if unc['flagged']:
             n = len(unc['flagged'])
             E.append(Paragraph(

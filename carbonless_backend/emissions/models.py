@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -114,6 +115,13 @@ class EmissionFactor(models.Model):
     # whose basis is described in the report as before.
     gwp_basis = models.CharField(max_length=255, blank=True, default='', db_default='',
                                  help_text='GWP source and version of this row (rows of a factor standard)')
+    # Uncertainty of this factor in per cent (95 % confidence), when the catalogue or an advisor states one.
+    # Empty = not stated: the data-quality calculation then takes the base value of the factor's source
+    # (questionnaire/uncertainty.py). It never changes a calculated emission.
+    uncertainty_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],
+        help_text='Stated uncertainty of the factor, % (leave empty when not stated)')
     is_active = models.BooleanField(default=True)
     # Scope 2 method the factor is for: a grid average is location-based, a
     # supplier / contractual or residual-mix factor is market-based. Blank

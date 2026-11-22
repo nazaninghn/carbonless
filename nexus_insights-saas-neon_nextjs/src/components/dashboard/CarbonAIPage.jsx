@@ -76,7 +76,10 @@ import { calcFeedbackLine } from '@/lib/carboniq/calcFeedback';
 import {
   STEP_STANDARD_OPTIONS, needsStepStandard, storedStepStandards, withFactorStandard,
 } from '@/lib/carboniq/factorStandard';
-import { DATA_SOURCE_OPTIONS, hasDataSource, storedDataSources, withDataSource, dataSourceWarning } from '@/lib/carboniq/dataSource';
+import {
+  DATA_SOURCE_OPTIONS, OTHER_REASON_MIN, OTHER_REASON_MAX, hasDataSource, storedDataSources, storedOtherSources, otherExtra,
+  withDataSource, dataSourceWarning,
+} from '@/lib/carboniq/dataSource';
 import { splitStoredAmount, unitWarning } from '@/lib/carboniq/unitInput';
 import { fixed, num } from '@/lib/formatNumber';
 import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
@@ -3605,6 +3608,13 @@ export function QuestionnaireTab({
     (hydrated && initialDataSources) || storedDataSources(hydrated && initialAnswers)));
   const dataSourcesRef = useRef(dataSources);
   dataSourcesRef.current = dataSources;
+  // "Other": the percentage and the reason the user gives, per question.
+  const [otherSources, setOtherSources] = useState(() => storedOtherSources(hydrated && initialAnswers));
+  const otherSourcesRef = useRef(otherSources);
+  otherSourcesRef.current = otherSources;
+  // What the server says about the current question's data quality: documents, advisor items waiting,
+  // the small-source offer, the inventory's uncertainty so far.
+  const [dataQuality, setDataQuality] = useState(null);
   // Facilities already registered (sign-up / Settings): 2A-2's per-facility
   // name+country starts from them instead of blank. Sign-up's placeholder
   // names ("Tesis 1") are not offered as a name, only their country.
@@ -3998,35 +4008,104 @@ export function QuestionnaireTab({
     }
   }, [reportId, lang]);
 
-  // ── changeDataSource ───────────────────────────────────────────────────────
+  // ── data source of a question ──────────────────────────────────────────────
   // On a question not answered yet the choice waits for the answer (it is sent
   // with it). On an ANSWERED question it is saved at once; nothing is recalculated.
   const [dataSourceSaving, setDataSourceSaving] = useState(false);
+  const dataSourceFailed = lang === 'tr' ? 'Veri kaynağı kaydedilemedi. Lütfen tekrar deneyin.' : 'The data source could not be saved. Please try again.';
+  const sendDataSource = useCallback(async (questionId, chosen, extra, previous) => {
+    setDataSourceSaving(true);
+    try {
+      const res = await api.setStepDataSource(reportId, questionId, chosen, lang, extra);
+      const data = await res.json().catch(() => ({}));
+      if (!isMounted.current) return false;
+      if (res.ok && data.success) { setDataQuality({ step: questionId, ...data }); return true; }
+      // "Not answered" on the server (a local answer still to be saved): the choice travels with the answer.
+      if (data?.code === 'not_answered') return true;
+      if (previous !== undefined) setDataSources(prev => ({ ...prev, [questionId]: previous }));
+      setSaveError(data?.error || dataSourceFailed);
+      return false;
+    } catch (e) {
+      if (isMounted.current) {
+        if (previous !== undefined) setDataSources(prev => ({ ...prev, [questionId]: previous }));
+        setSaveError(dataSourceFailed);
+      }
+      return false;
+    } finally {
+      if (isMounted.current) setDataSourceSaving(false);
+    }
+  }, [reportId, lang, dataSourceFailed]);
+
   const changeDataSource = useCallback(async (questionId, chosen) => {
     const previous = dataSourcesRef.current[questionId] || '';
     setDataSources(prev => ({ ...prev, [questionId]: chosen }));
     setSaveError('');
-    if (!reportId || !(questionId in answersRef.current)) return;
+    // "Other" is saved with its percentage and reason (saveOtherSource), not on selection.
+    if (chosen === 'other' || !reportId || !(questionId in answersRef.current)) return;
+    await sendDataSource(questionId, chosen, {}, previous);
+  }, [reportId, sendDataSource]);
+
+  const saveOtherSource = useCallback(async (questionId) => {
+    const extra = otherExtra(otherSourcesRef.current[questionId]);
+    setSaveError('');
+    if (!extra) {
+      setSaveError(lang === 'tr'
+        ? `"Diğer" için %0,1–100 arasında bir belirsizlik ve en az ${OTHER_REASON_MIN} karakterlik bir gerekçe girin.`
+        : `For "other" enter an uncertainty between 0.1 and 100 % and a reason of at least ${OTHER_REASON_MIN} characters.`);
+      return;
+    }
+    if (!reportId || !(questionId in answersRef.current)) return;      // travels with the answer
+    await sendDataSource(questionId, 'other', extra);
+  }, [reportId, lang, sendDataSource]);
+
+  const acceptSmallSource = useCallback(async (questionId) => {
+    setSaveError('');
+    if (await sendDataSource(questionId, 'estimate', { data_source_small: true })) {
+      setDataSources(prev => ({ ...prev, [questionId]: 'estimate' }));
+    }
+  }, [sendDataSource]);
+
+  const uploadStepDocument = useCallback(async (questionId, kind, file) => {
+    if (!file || !reportId) return;
+    setSaveError('');
     setDataSourceSaving(true);
-    const failed = lang === 'tr' ? 'Veri kaynağı kaydedilemedi. Lütfen tekrar deneyin.' : 'The data source could not be saved. Please try again.';
     try {
-      const res = await api.setStepDataSource(reportId, questionId, chosen, lang);
+      const res = await api.uploadStepDocument(reportId, questionId, kind, file, lang);
       const data = await res.json().catch(() => ({}));
       if (!isMounted.current) return;
-      // "Not answered" on the server (a local answer still to be saved): the choice travels with the answer.
-      if ((!res.ok || !data.success) && data?.code !== 'not_answered') {
-        setDataSources(prev => ({ ...prev, [questionId]: previous }));
-        setSaveError(data?.error || failed);
-      }
+      if (res.ok && data.success) setDataQuality({ step: questionId, ...data });
+      else setSaveError(data?.error || (lang === 'tr' ? 'Belge yüklenemedi. Lütfen tekrar deneyin.' : 'The document could not be uploaded. Please try again.'));
     } catch (e) {
-      if (isMounted.current) {
-        setDataSources(prev => ({ ...prev, [questionId]: previous }));
-        setSaveError(failed);
-      }
+      if (isMounted.current) setSaveError(lang === 'tr' ? 'Belge yüklenemedi. Lütfen tekrar deneyin.' : 'The document could not be uploaded. Please try again.');
     } finally {
       if (isMounted.current) setDataSourceSaving(false);
     }
   }, [reportId, lang]);
+
+  const removeStepDocument = useCallback(async (questionId, id) => {
+    setSaveError('');
+    try {
+      const res = await api.removeStepDocument(reportId, id, lang);
+      const data = await res.json().catch(() => ({}));
+      if (!isMounted.current) return;
+      if (res.ok && data.success) setDataQuality({ step: questionId, ...data });
+      else setSaveError(data?.error || (lang === 'tr' ? 'Belge kaldırılamadı.' : 'The document could not be removed.'));
+    } catch (e) {
+      if (isMounted.current) setSaveError(lang === 'tr' ? 'Belge kaldırılamadı.' : 'The document could not be removed.');
+    }
+  }, [reportId, lang]);
+
+  // What the server knows about the current question's data quality (documents, advisor items, totals):
+  // read when an answered calculating question is shown.
+  useEffect(() => {
+    if (!reportId || !hasDataSource(currentId) || !(currentId in answersRef.current)) { setDataQuality(null); return undefined; }
+    let alive = true;
+    api.getStepDataQuality(reportId, currentId, lang)
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => { if (alive && isMounted.current && data) setDataQuality({ step: currentId, ...data }); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [reportId, currentId, lang]);
 
   // ── saveStepToBackend ──────────────────────────────────────────────────────
   const saveStepToBackend = useCallback(async (questionId, value, rid, confirmed = false) => {
@@ -4043,7 +4122,7 @@ export function QuestionnaireTab({
     }
     try {
       let backendData = withFactorStandard(questionId, mapAnswerForBackend(questionId, value), stepStandardsRef.current);
-      backendData = withDataSource(questionId, backendData, dataSourcesRef.current);
+      backendData = withDataSource(questionId, backendData, dataSourcesRef.current, otherSourcesRef.current);
       if (questionId === '7C-2' && backendData && typeof backendData === 'object') {
         const reasons = Object.fromEntries(Object.entries(signOffReasonsRef.current)
           .map(([k, v]) => [k, String(v || '').trim()]).filter(([, v]) => v));
@@ -5020,6 +5099,8 @@ export function QuestionnaireTab({
     setAnswers({});
     setStepStandards({});
     setDataSources({});
+    setOtherSources({});
+    setDataQuality(null);
     setHistory([]);
     setCompleted(false);
     setAssumptions([]);
@@ -5357,7 +5438,33 @@ export function QuestionnaireTab({
               )}
               {hasDataSource(currentId) && (() => {
                 const source = dataSources[currentId] || '';
-                const careful = source === 'measurement' || source === 'invoice';
+                const dq = dataQuality && dataQuality.step === currentId ? dataQuality : null;
+                const state = dq?.source_state || '';
+                const careful = (source === 'measurement' && state !== 'measurement_no_document' && state !== 'rejected' && !!dq)
+                  || source === 'invoice';
+                const other = otherSources[currentId] || { percent: '', reason: '' };
+                const docs = dq?.documents || [];
+                const canUpload = !!reportId && !completed;
+                // A button that opens the file chooser: no file input sits in the panel (the answer fields
+                // stay the first inputs of the question).
+                const pickFile = (kind) => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = '.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx';
+                  input.onchange = () => uploadStepDocument(currentId, kind, input.files?.[0]);
+                  input.click();
+                };
+                const fileInput = (kind, testId, label) => (
+                  <button
+                    type="button"
+                    data-testid={testId}
+                    onClick={() => pickFile(kind)}
+                    disabled={dataSourceSaving}
+                    className="mt-1.5 rounded-md border border-[#B9D3BF] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-[#0E2A14] hover:bg-[#F4FAF5] disabled:opacity-60"
+                  >
+                    {label}
+                  </button>
+                );
                 return (
                   <div data-testid="data-source" className={`mb-2.5 rounded-lg border px-3 py-2 ${careful ? 'border-[#CFE3D3] bg-[#F4FAF5]' : 'border-amber-200 bg-amber-50'}`}>
                     <label htmlFor="data-source-select" className="block text-[12px] font-semibold text-[#0E2A14]">
@@ -5369,16 +5476,107 @@ export function QuestionnaireTab({
                       value={source}
                       onChange={(e) => changeDataSource(currentId, e.target.value)}
                       disabled={dataSourceSaving}
-                      className="mt-1 w-full rounded-md border border-[#B9D3BF] bg-white px-2 py-1.5 text-[13px] text-[#0E2A14] sm:w-72"
+                      className="mt-1 w-full rounded-md border border-[#B9D3BF] bg-white px-2 py-1.5 text-[13px] text-[#0E2A14] sm:w-80"
                     >
                       <option value="" disabled>{tr ? 'Veri kaynağını seçin' : 'Select the data source'}</option>
                       {DATA_SOURCE_OPTIONS.map(o => (
                         <option key={o.value} value={o.value}>{o.label[lang] || o.label.en}</option>
                       ))}
                     </select>
+                    {source === 'other' && (
+                      <div data-testid="data-source-other" className="mt-2 space-y-1.5">
+                        <label className="block text-[11px] font-semibold text-[#0E2A14]">
+                          {tr ? 'Bu değerin belirsizliği (±%)' : 'Uncertainty of this figure (± %)'}
+                          <input
+                            data-testid="data-source-other-percent"
+                            inputMode="decimal"
+                            value={other.percent}
+                            onChange={(e) => setOtherSources(prev => ({ ...prev, [currentId]: { ...other, percent: e.target.value } }))}
+                            placeholder={tr ? 'Örn: 12' : 'e.g. 12'}
+                            className="mt-0.5 block w-28 rounded-md border border-[#B9D3BF] bg-white px-2 py-1 text-[13px] font-normal text-[#0E2A14]"
+                          />
+                        </label>
+                        <label className="block text-[11px] font-semibold text-[#0E2A14]">
+                          {tr ? 'Gerekçe (danışman onayına gider)' : 'Reason (goes to the advisor)'}
+                          <textarea
+                            data-testid="data-source-other-reason"
+                            value={other.reason}
+                            onChange={(e) => setOtherSources(prev => ({ ...prev, [currentId]: { ...other, reason: e.target.value } }))}
+                            rows={2}
+                            maxLength={OTHER_REASON_MAX}
+                            placeholder={tr ? `Bu yüzdeye nasıl ulaştınız? (en az ${OTHER_REASON_MIN} karakter)` : `How did you arrive at this percentage? (at least ${OTHER_REASON_MIN} characters)`}
+                            className="mt-0.5 block w-full rounded-md border border-[#B9D3BF] bg-white px-2 py-1 text-[12px] font-normal text-[#0E2A14]"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          data-testid="data-source-other-save"
+                          onClick={() => saveOtherSource(currentId)}
+                          disabled={dataSourceSaving}
+                          className="rounded-md bg-[#175022] px-2.5 py-1.5 text-[12px] font-semibold text-white disabled:opacity-60"
+                        >
+                          {tr ? 'Kaynağı kaydet' : 'Save the source'}
+                        </button>
+                      </div>
+                    )}
                     <p data-testid="data-source-warning" className={`mt-1 text-[11px] leading-snug ${careful ? 'text-[#175022]/80' : 'font-semibold text-amber-800'}`}>
-                      {dataSourceWarning(source, tr)}
+                      {dq?.warning || dataSourceWarning(source, tr)}
                     </p>
+                    {dq?.small_row && !source && (
+                      <div data-testid="data-source-small" className="mt-1.5 text-[11px] leading-snug text-[#0E2A14]">
+                        <p>
+                          {tr
+                            ? `Bu kaynak envanterin yalnızca %${num(dq.share_percent ?? 0, 2)}'sidir. Küçük kaynaklar (toplamda en çok %5) tahmin olarak kabul edilebilir.`
+                            : `This source is only ${num(dq.share_percent ?? 0, 2)} % of the inventory. Small sources (5 % in all at most) may be accepted as an estimate.`}
+                        </p>
+                        <button
+                          type="button"
+                          data-testid="data-source-small-accept"
+                          onClick={() => acceptSmallSource(currentId)}
+                          disabled={dataSourceSaving}
+                          className="mt-1 rounded-md border border-[#B9D3BF] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-[#0E2A14] disabled:opacity-60"
+                        >
+                          {tr ? 'Tahmin olarak kabul et' : 'Accept as an estimate'}
+                        </button>
+                      </div>
+                    )}
+                    {canUpload && (
+                      <div className="mt-1 flex flex-wrap gap-x-2">
+                        {source === 'measurement' && fileInput('measurement', 'data-source-upload-measurement',
+                          tr ? 'Ölçüm kaydını yükle' : 'Upload the measurement record')}
+                        {fileInput('supplier_declaration', 'data-source-upload-supplier',
+                          tr ? 'Tedarikçi deklarasyonu yükle (faktör için)' : 'Upload a supplier declaration (for the factor)')}
+                      </div>
+                    )}
+                    {docs.length > 0 && (
+                      <ul data-testid="data-source-documents" className="mt-1.5 space-y-0.5 text-[11px] text-[#0E2A14]">
+                        {docs.map(d => (
+                          <li key={d.id} className="flex flex-wrap items-center gap-x-2">
+                            <span className="font-semibold">{d.kind === 'measurement' ? (tr ? 'Ölçüm kaydı' : 'Measurement record') : (tr ? 'Tedarikçi deklarasyonu' : 'Supplier declaration')}:</span>
+                            <span className="break-all">{d.name}</span>
+                            {canUpload && (
+                              <button type="button" onClick={() => removeStepDocument(currentId, d.id)} className="underline text-[#8a1c1c]">
+                                {tr ? 'Kaldır' : 'Remove'}
+                              </button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {(dq?.pending || []).length > 0 && (
+                      <p data-testid="data-source-pending" className="mt-1.5 rounded-md bg-white/70 px-2 py-1 text-[11px] font-semibold leading-snug text-amber-800">
+                        {tr
+                          ? `Danışman onayı bekleniyor (${dq.pending.length} kayıt). Karar verilene kadar envanter imzalanamaz; değerler geçicidir.`
+                          : `Waiting for the advisor (${dq.pending.length} item${dq.pending.length !== 1 ? 's' : ''}). The inventory cannot be signed until it is decided; the figures are provisional.`}
+                      </p>
+                    )}
+                    {dq?.uncertainty && Number(dq.uncertainty.total_kg) !== 0 && (
+                      <p data-testid="data-source-total" className="mt-1.5 text-[11px] leading-snug text-[#175022]/80">
+                        {tr
+                          ? `Envanterin şu anki belirsizliği: ±%${num(dq.uncertainty.percent, 1)}`
+                          : `Uncertainty of the inventory so far: ±${num(dq.uncertainty.percent, 1)} %`}
+                      </p>
+                    )}
                   </div>
                 );
               })()}

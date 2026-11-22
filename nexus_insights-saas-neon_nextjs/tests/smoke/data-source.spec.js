@@ -14,7 +14,7 @@ const REPORT = { report_id: 94, title: 'Inventory 2025', status: 'in_progress', 
 const WASTE = { D1: { ef_database: 'std_defra' }, 'K3C5-0': { answer: 'yes' }, 'K3C5-1': { answer: 'S2_total' } };
 
 async function mockInventoryApi(page, answers, step) {
-  const seen = { saved: [], sources: [] };
+  const seen = { saved: [], sources: [], docs: [], uploads: 0, smallRow: false };
   await page.route('http://localhost:8000/api/**', async (route) => {
     const req = route.request();
     const url = new URL(req.url());
@@ -29,8 +29,21 @@ async function mockInventoryApi(page, answers, step) {
     if (url.pathname === `/api/questionnaire/${REPORT.report_id}/step-data-source/` && req.method() === 'POST') {
       const body = JSON.parse(req.postData() || '{}');
       seen.sources.push(body);
-      return json({ success: true, step: body.step, data_source: body.data_source, warning: '',
-        uncertainty: { total_kg: 100, absolute_kg: 30, percent: 30, low_kg: 70, high_kg: 130 } });
+      return json({ success: true, step: body.step, data_source: body.data_source, warning: '', source_state: 'ok',
+        pending: body.data_source === 'other' ? ['ut04_other_source'] : [], documents: seen.docs, small_row: false,
+        uncertainty: { total_kg: 100, absolute_kg: 30, percent: 30, low_kg: 70, high_kg: 130, pending_approvals: 0 } });
+    }
+    if (url.pathname === `/api/questionnaire/${REPORT.report_id}/step-document/`) {
+      const state = { source_state: seen.docs.length ? 'pending' : 'measurement_no_document', activity_percent: seen.docs.length ? 1 : 20,
+        warning: '', small_row: !!seen.smallRow, share_percent: 0.4, pending: seen.docs.length ? ['ut02_measurement_document'] : [],
+        documents: seen.docs, uncertainty: { total_kg: 1000, absolute_kg: 250, percent: 25, low_kg: 750, high_kg: 1250, pending_approvals: seen.docs.length } };
+      if (req.method() === 'POST') {
+        seen.uploads += 1;
+        seen.docs = [{ id: 7, kind: 'measurement', name: 'meter.pdf' }];
+        return json({ success: true, step: 'K3C5-2b', ...state, source_state: 'pending', activity_percent: 1, documents: seen.docs,
+          pending: ['ut02_measurement_document'] }, 201);
+      }
+      return json(state);
     }
     if (url.pathname === `/api/questionnaire/${REPORT.report_id}/step/` && req.method() === 'PATCH') {
       const body = JSON.parse(req.postData() || '{}');
@@ -90,6 +103,51 @@ for (const lang of ['en', 'tr']) {
       expect(seen.sources[0]).toMatchObject({ step: 'K3C5-2b', data_source: 'measurement' });
       expect(seen.saved.length).toBe(0);                                     // the answer itself was not saved again
       await expect(page.getByTestId('data-source-warning')).toContainText(lang === 'tr' ? '±%1' : '±1 %');
+    });
+
+    test('"other" needs its percentage and reason, and says it waits for the advisor', async ({ page }) => {
+      await open(page, lang, 'K3C5-2b');
+      const seen = await mockInventoryApi(page, { ...WASTE, 'K3C5-2b': { answer: '1000' } }, 'K3C5-2b');
+      await page.goto('/dashboard?tab=questionnaire');
+      await page.getByTestId('data-source-select').selectOption('other');
+      await expect(page.getByTestId('data-source-other')).toBeVisible();
+      expect(seen.sources.length).toBe(0);                                   // choosing "other" alone claims nothing
+      await page.getByTestId('data-source-other-save').click();
+      await expect(page.getByRole('alert').filter({ hasText: lang === 'tr' ? 'en az 20 karakterlik bir gerekçe' : 'a reason of at least 20 characters' })).toBeVisible();
+      expect(seen.sources.length).toBe(0);
+      await page.getByTestId('data-source-other-percent').fill('12');
+      await page.getByTestId('data-source-other-reason').fill('Allocated from the landlord meter by floor area share.');
+      await page.getByTestId('data-source-other-save').click();
+      await expect.poll(() => seen.sources.length).toBe(1);
+      expect(seen.sources[0]).toMatchObject({ step: 'K3C5-2b', data_source: 'other', data_source_percent: 12,
+        data_source_reason: 'Allocated from the landlord meter by floor area share.' });
+      await expect(page.getByTestId('data-source-pending')).toContainText(lang === 'tr' ? 'Danışman onayı bekleniyor' : 'Waiting for the advisor');
+    });
+
+    test('a measurement asks for its record; uploading it sends it to the advisor', async ({ page }) => {
+      await open(page, lang, 'K3C5-2b');
+      const seen = await mockInventoryApi(page, { ...WASTE, 'K3C5-2b': { answer: '1000', data_source: 'measurement' } }, 'K3C5-2b');
+      await page.goto('/dashboard?tab=questionnaire');
+      await expect(page.getByTestId('data-source-select')).toHaveValue('measurement');
+      await expect(page.getByTestId('data-source-total')).toContainText('25');
+      const chooser = page.waitForEvent('filechooser');
+      await page.getByTestId('data-source-upload-measurement').click();
+      await (await chooser).setFiles({ name: 'meter.pdf', mimeType: 'application/pdf', buffer: Buffer.from('record') });
+      await expect.poll(() => seen.uploads).toBe(1);
+      await expect(page.getByTestId('data-source-documents')).toContainText('meter.pdf');
+      await expect(page.getByTestId('data-source-pending')).toBeVisible();
+    });
+
+    test('a small source with no stated origin can be accepted as an estimate', async ({ page }) => {
+      await open(page, lang, 'K3C5-2b');
+      const seen = await mockInventoryApi(page, { ...WASTE, 'K3C5-2b': { answer: '1000' } }, 'K3C5-2b');
+      seen.smallRow = true;
+      await page.goto('/dashboard?tab=questionnaire');
+      await expect(page.getByTestId('data-source-small')).toContainText(lang === 'tr' ? 'tahmin olarak kabul edilebilir' : 'may be accepted as an estimate');
+      await page.getByTestId('data-source-small-accept').click();
+      await expect.poll(() => seen.sources.length).toBe(1);
+      expect(seen.sources[0]).toMatchObject({ step: 'K3C5-2b', data_source: 'estimate', data_source_small: true });
+      await expect(page.getByTestId('data-source-select')).toHaveValue('estimate');
     });
 
     test('a question that calculates nothing shows no data source', async ({ page }) => {

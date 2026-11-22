@@ -223,3 +223,34 @@ class SignOffExclusionsSerializer(serializers.Serializer):
             }),
         error_messages={'not_a_dict': 'Gerekçeler soru başına verilmelidir / Justifications are given per question.'},
     )
+
+
+class DataSourceSerializer(serializers.Serializer):
+    """Where the figure of a calculating question comes from. "other" carries the uncertainty the organisation
+    states for it, in per cent, and the reason — both go to the advisor."""
+    from .uncertainty import (OTHER, SOURCES, OTHER_PERCENT_MIN as PMIN, OTHER_PERCENT_MAX as PMAX,
+                              OTHER_REASON_MIN as RMIN, OTHER_REASON_MAX as RMAX)
+    data_source = serializers.ChoiceField(choices=SOURCES, error_messages={
+        'invalid_choice': 'Geçersiz veri kaynağı. Ölçüm, fatura / sistem verisi, tahmin veya diğer seçin / '
+                          'Invalid data source. Choose measurement, invoice / system data, estimate or other.',
+        'required': 'Veri kaynağı gerekli / A data source is required.'})
+    data_source_percent = serializers.FloatField(required=False, allow_null=True, min_value=PMIN, max_value=PMAX, error_messages={
+        # "%%": DRF formats these messages with the limit value.
+        'min_value': f'Belirsizlik en az %%{PMIN} olmalıdır / The uncertainty must be at least {PMIN} %%.',
+        'max_value': f'Belirsizlik en fazla %%{PMAX:.0f} olabilir / The uncertainty may be at most {PMAX:.0f} %%.',
+        'invalid': 'Belirsizlik için geçerli bir sayı girin / Enter a valid number for the uncertainty.'})
+    data_source_reason = serializers.CharField(required=False, allow_blank=True, min_length=RMIN, max_length=RMAX,
+                                               trim_whitespace=True, error_messages={
+        'min_length': f'Gerekçe en az {RMIN} karakter olmalıdır / The reason must be at least {RMIN} characters.',
+        'max_length': f'Gerekçe en fazla {RMAX} karakter olabilir / The reason may be at most {RMAX} characters.'})
+    data_source_small = serializers.BooleanField(required=False)
+
+    def validate(self, attrs):
+        if attrs['data_source'] == self.OTHER:
+            if attrs.get('data_source_percent') is None:
+                raise serializers.ValidationError({'data_source_percent': [
+                    '"Diğer" için belirsizlik yüzdesini girin / Enter the uncertainty in per cent for "other".']})
+            if not (attrs.get('data_source_reason') or '').strip():
+                raise serializers.ValidationError({'data_source_reason': [
+                    '"Diğer" için gerekçe yazın; danışman onayına gider / Write the reason for "other"; it goes to the advisor.']})
+        return attrs
