@@ -2274,7 +2274,7 @@ def uncalculated_notes(answers, year, company=None, inventory=None):
             note(step,
                  "Bu miktar sayılmadı — ilgili kapsam 'yok' olarak işaretlendi (geçit sorusuna 'hayır').",
                  "This amount was not counted — the scope was marked as not present "
-                 "(answer 'no' to its gate question).")
+                 "(answer 'no' to its gate question).", kind='gate_closed')
 
     if open_('3A-5') and isinstance(A.get('3A-5'), dict):
         given = {f for f, raw in A['3A-5'].items() if _number(_split_amount_unit(raw)[0])}
@@ -2665,3 +2665,43 @@ def uncalculated_notes(answers, year, company=None, inventory=None):
                      f'{cls}: not calculated without the company\'s reported emissions.')
     _standard_notes(answers, year, company, note)
     return _readable_notes(out)
+
+
+# ── Required calculations (final-report gate) ───────────────────────────────
+# ISO 14064-1 requires direct emissions (Scope 1, questions 3…) and indirect
+# emissions from imported energy (Scope 2, questions 4…) to be quantified; a
+# source left out must be explained. Other indirect emissions (Scope 3) follow
+# the organisation's significance assessment, so an amount not calculated
+# there is disclosed in the report but does not hold the signature back.
+REQUIRED_CALCULATION_PREFIXES = ('3', '4')
+EXCLUSION_JUSTIFICATION_MIN, EXCLUSION_JUSTIFICATION_MAX = 20, 1000
+
+
+def unmet_required_calculations(answers, year, company=None, inventory=None):
+    """[{step_id, label_tr, label_en, items_tr, items_en}] — the questions of
+    direct and energy-indirect emissions that hold an amount the inventory
+    does not calculate, one row per question, in questionnaire order. An
+    inventory with such a row is signed only with a written justification
+    for each (see views.SubmitStepView), and its report prints them."""
+    rows = {}
+    for n in uncalculated_notes(answers, year, company, inventory):
+        if n.get('kind') != 'not_calculated':      # a method note or a scope the user marked absent: not a gap
+            continue
+        step = re.sub(r'bio$', '', str(n['step_id']))
+        if not step.startswith(REQUIRED_CALCULATION_PREFIXES):
+            continue
+        row = rows.setdefault(step, {'step_id': step, 'label_tr': question_label(step, 'tr'),
+                                     'label_en': question_label(step, 'en'), 'items_tr': [], 'items_en': []})
+        row['items_tr'].append(n.get('report_tr') or n['tr'])
+        row['items_en'].append(n.get('report_en') or n['en'])
+    return list(rows.values())
+
+
+def signed_exclusions(answers):
+    """The justified exclusions recorded with the signature (7C-2): what was not
+    calculated when the inventory was signed, and why — as signed, never recomputed."""
+    raw = (answers or {}).get('7C-2')
+    raw = raw.get('answer') if isinstance(raw, dict) and 'answer' in raw else raw
+    rows = raw.get('exclusions') if isinstance(raw, dict) else None
+    return [r for r in rows if isinstance(r, dict) and r.get('step_id') and r.get('justification')] \
+        if isinstance(rows, list) else []

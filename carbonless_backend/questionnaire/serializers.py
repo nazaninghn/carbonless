@@ -204,3 +204,22 @@ class StepD3Serializer(serializers.Serializer):
 class StepD4Serializer(serializers.Serializer):
     APPROACHES = ['materiality', 'full']
     scope3_approach = serializers.ChoiceField(choices=APPROACHES)
+
+
+class SignOffExclusionsSerializer(serializers.Serializer):
+    """The written justification the signatory gives, per question, for an amount of direct or
+    energy-indirect emissions the inventory does not calculate: {step_id: text}."""
+    from .step_entries import EXCLUSION_JUSTIFICATION_MIN as MIN, EXCLUSION_JUSTIFICATION_MAX as MAX
+    exclusions = serializers.DictField(
+        required=False,
+        child=serializers.CharField(
+            min_length=MIN, max_length=MAX, trim_whitespace=True,
+            error_messages={
+                'min_length': f'Gerekçe en az {MIN} karakter olmalıdır / The justification must be at least {MIN} characters.',
+                'max_length': f'Gerekçe en fazla {MAX} karakter olabilir / The justification may be at most {MAX} characters.',
+                'blank': 'Gerekçe boş bırakılamaz / The justification cannot be empty.',
+                'invalid': 'Gerekçe metin olmalıdır / The justification must be text.',
+                'null': 'Gerekçe boş bırakılamaz / The justification cannot be empty.',
+            }),
+        error_messages={'not_a_dict': 'Gerekçeler soru başına verilmelidir / Justifications are given per question.'},
+    )

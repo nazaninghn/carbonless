@@ -12,7 +12,7 @@ const REPORT = { report_id: 92, title: 'Inventory 2025', status: 'in_progress', 
 const ANSWERS = { D1: { ef_database: 'DEFRA_TUIK' }, A1: { answer: 'x' }, '2A-1': { answer: '1' }, '7C-1': { answer: 'all_complete' } };
 
 async function mockInventory(page, { answers = ANSWERS, step = '7C-2', onSign, signed = () => null, status = () => 'in_progress' }) {
-  const seen = { saved: [] };
+  const seen = { saved: [], signBodies: [] };
   await page.route('http://localhost:8000/api/**', async (route) => {
     const req = route.request();
     const url = new URL(req.url());
@@ -25,7 +25,8 @@ async function mockInventory(page, { answers = ANSWERS, step = '7C-2', onSign, s
     if (url.pathname === `/api/questionnaire/${REPORT.report_id}/step/` && req.method() === 'PATCH') {
       const body = JSON.parse(req.postData() || '{}');
       seen.saved.push(body.step);
-      return body.step === '7C-2' ? onSign(json) : json({ success: true, step: body.step, reporting_year: 2025 });
+      if (body.step === '7C-2') seen.signBodies.push(body.data);
+      return body.step === '7C-2' ? onSign(json, body.data) : json({ success: true, step: body.step, reporting_year: 2025 });
     }
     return route.fallback();
   });
@@ -82,6 +83,48 @@ for (const lang of ['en', 'tr']) {
     await expect(page.getByTestId('input-panel')).toHaveCount(0);
     await page.waitForTimeout(800);
     expect(seen.saved).toEqual(['7C-2']);
+  });
+}
+
+for (const lang of ['en', 'tr']) {
+  test(`${lang}: an uncalculated Scope 1 amount must be justified in writing before the signature is accepted`, async ({ page }) => {
+    const tr = lang === 'tr';
+    const gap = { step_id: '3A-5', label_tr: 'Soru 45', label_en: 'Question 45',
+      items_tr: ['LPG: kg cinsinden girilen miktar (500 kg) hesaplanmadı.'], items_en: ['LPG: the amount entered in kg (500 kg) was not calculated.'] };
+    const msg = tr ? 'Bu envanter henüz imzalanamaz — hesaplanmayan miktar var (Soru 45).' : 'This inventory cannot be signed yet — an amount is not calculated (Question 45).';
+    let signedAt = null;
+    const why = 'The LPG is invoiced by weight only; the supplier gives no volume.';
+    const seen = await mockInventory(page, {
+      signed: () => signedAt, status: () => (signedAt ? 'completed' : 'in_progress'),
+      onSign: (json, data) => {
+        if (!data?.exclusions?.['3A-5']) {
+          return json({ success: false, step: '7C-2', next_step: '7C-2', code: 'uncalculated_required', error: msg, error_tr: msg, error_en: msg,
+            unmet_calculations: [gap], missing: ['3A-5'], first_question: '3A-5', bot_messages: [`❌ ${msg}`] }, 400);
+        }
+        signedAt = '2026-11-22T10:00:00Z';
+        return json({ success: true, step: '7C-2', next_step: null, completed: true, status: 'COMPLETED', report_id: REPORT.report_id, reporting_year: 2025, signed_at: signedAt });
+      },
+    });
+    await open(page, lang);
+    await expect(page.getByTestId('pinned-question')).toHaveAttribute('data-question-id', '7C-2');
+    await expect(page.getByTestId('sign-off-exclusions')).toHaveCount(0);          // nothing to justify until the server says so
+    await fillSignature(page);
+    await expect(page.getByRole('alert').filter({ hasText: msg })).toBeVisible();
+    const panel = page.getByTestId('sign-off-exclusions');
+    await expect(panel).toBeVisible();
+    await expect(panel).toContainText(tr ? 'Soru 45' : 'Question 45');
+    await expect(panel).toContainText(tr ? gap.items_tr[0] : gap.items_en[0]);
+    await expect(panel).toContainText(tr ? 'hariç tutma gerekçesini yazın' : 'write the justification for leaving it out');
+    await expect(page.getByTestId('inventory-signed-note')).toHaveCount(0);
+    const box = page.getByTestId('sign-off-exclusion-3A-5');
+    await box.fill('too short');
+    await expect(panel).toContainText(tr ? 'en az 20 karakter olmalıdır (9/20)' : 'at least 20 characters (9/20)');
+    await box.fill(why);
+    await page.getByTestId('input-panel').getByRole('button', { name: /Confirm|Onayla/ }).click();
+    await expect(page.getByTestId('inventory-signed-note')).toBeVisible();
+    expect(seen.signBodies[0].exclusions).toBeUndefined();
+    expect(seen.signBodies[seen.signBodies.length - 1].exclusions).toEqual({ '3A-5': why });
+    expect(seen.saved.every(s => s === '7C-2')).toBe(true);
   });
 }
 

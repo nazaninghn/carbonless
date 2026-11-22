@@ -341,6 +341,52 @@ def _completion_refusal(report, step, lang, missing):
     return None
 
 
+def _sign_off_exclusions(report, data, lang):
+    """(exclusions to store with the signature, refusal body or None).
+
+    The questions of direct and energy-indirect emissions that hold an amount this inventory does not
+    calculate each need the signatory's written justification (`data.exclusions = {step_id: text}`). What is
+    stored is the question, what was not calculated (as told to the user, both languages) and the
+    justification — the record the report prints, as signed."""
+    from .serializers import SignOffExclusionsSerializer
+    from .step_entries import recorded_connections, unmet_required_calculations
+    with recorded_connections(report):
+        unmet = unmet_required_calculations(
+            {sid: ans for sid, ans in ReportStep.objects.filter(report=report).values_list('step_id', 'answer')},
+            report.reporting_year or timezone.now().year, report.company, report)
+    if not unmet:
+        return [], None
+
+    def refuse(msg_tr, msg_en, **extra):
+        msg = msg_tr if lang == 'tr' else msg_en
+        return None, {'success': False, 'step': SIGN_OFF_STEP, 'next_step': SIGN_OFF_STEP,
+                      'code': 'uncalculated_required', 'error': msg, 'error_tr': msg_tr, 'error_en': msg_en,
+                      'unmet_calculations': unmet, 'first_question': unmet[0]['step_id'],
+                      'bot_messages': [f'❌ {msg}'], **extra}
+
+    given = data.get('exclusions') if isinstance(data, dict) else None
+    ser = SignOffExclusionsSerializer(data={'exclusions': given if given is not None else {}})
+    if not ser.is_valid():
+        detail = ser.errors.get('exclusions')
+        first = next(iter(detail.values()))[0] if isinstance(detail, dict) and detail else (detail or [''])[0]
+        tr, _, en = str(first).partition(' / ')
+        return refuse(tr, en or tr, field_errors=detail)
+    given = ser.validated_data.get('exclusions') or {}
+    missing = [u for u in unmet if not str(given.get(u['step_id']) or '').strip()]
+    if missing:
+        names_tr = ', '.join(u['label_tr'] for u in missing)
+        names_en = ', '.join(u['label_en'] for u in missing)
+        return refuse(
+            f'Bu envanter henüz imzalanamaz — doğrudan veya enerji kaynaklı dolaylı emisyonlarda hesaplanmayan '
+            f'miktar var ({names_tr}). Her biri için miktarı hesaplanır hâle getirin ya da hariç tutma gerekçesini '
+            f'yazın; gerekçeler raporda yer alır.',
+            f'This inventory cannot be signed yet — direct or energy-indirect emissions hold an amount that is not '
+            f'calculated ({names_en}). For each one, make the amount calculable or write the justification for '
+            f'leaving it out; the justifications are printed in the report.',
+            missing=[u['step_id'] for u in missing])
+    return [{**u, 'justification': given[u['step_id']].strip()} for u in unmet], None
+
+
 def _clear_pending(report, step_id):
     """A saved answer resolves the question: drop it from the pending list. A plain UPDATE, so
     nothing else of the report (status, updated_at, other fields) is touched."""
@@ -882,7 +928,20 @@ class SubmitStepView(APIView):
                     'bot_messages': [f'❌ {msg}'],
                 }, status=400)
 
+        # A signed inventory is final. Where direct or energy-indirect emissions hold an amount that is not
+        # calculated, the signature is accepted only with a written justification for each such question;
+        # the justifications are stored with the signature and printed in the report (ISO 14064-1: a source
+        # left out of the quantification is explained). Validated here, before anything is saved.
+        sign_off_exclusions = None
+        if step == SIGN_OFF_STEP:
+            sign_off_exclusions, refusal = _sign_off_exclusions(report, data, lang)
+            if refusal:
+                return Response(refusal, status=400)
+            if isinstance(data, dict):
+                data = {k: v for k, v in data.items() if k != 'exclusions'}
         if step == SIGN_OFF_STEP and isinstance(data, dict) and isinstance(data.get('answer'), dict):
+            if sign_off_exclusions:
+                data = {**data, 'answer': {**data['answer'], 'exclusions': sign_off_exclusions}}
             # Which account confirmed the signature (shown in the ISO report).
             data = {**data, 'answer': {**data['answer'], 'confirmed_by': (
                 request.user.get_full_name() or request.user.email or request.user.username)}}

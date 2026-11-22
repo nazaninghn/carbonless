@@ -3030,6 +3030,13 @@ export function QuestionnaireTab({
   const [saveError, setSaveError] = useState('');
   // A signature the server refused: the first question still unresolved, offered next to the error.
   const [unresolvedId, setUnresolvedId] = useState(null);
+  // Sign-off: the questions of direct and energy-indirect emissions that hold an
+  // amount the inventory does not calculate (told by the server when it refuses
+  // the signature), and the signatory's written justification for each.
+  const [signOffGaps, setSignOffGaps] = useState([]);
+  const [signOffReasons, setSignOffReasons] = useState({});
+  const signOffReasonsRef = useRef(signOffReasons);
+  signOffReasonsRef.current = signOffReasons;
   // validationError: the message from the last failed submit attempt.
   // showValidationError: true after the first failed Confirm click; reset when question changes.
   // Together they show the error only after submit AND only while the answer is still invalid.
@@ -3997,7 +4004,12 @@ export function QuestionnaireTab({
       return { success: false, data: {} };
     }
     try {
-      const backendData = withFactorStandard(questionId, mapAnswerForBackend(questionId, value), stepStandardsRef.current);
+      let backendData = withFactorStandard(questionId, mapAnswerForBackend(questionId, value), stepStandardsRef.current);
+      if (questionId === '7C-2' && backendData && typeof backendData === 'object') {
+        const reasons = Object.fromEntries(Object.entries(signOffReasonsRef.current)
+          .map(([k, v]) => [k, String(v || '').trim()]).filter(([, v]) => v));
+        if (Object.keys(reasons).length) backendData = { ...backendData, exclusions: reasons };
+      }
       const { answered, total, byStage } = computeSurveyProgress({ ...answersRef.current, [questionId]: value });
       // The user already agreed to this change in the soft check (B3's
       // "Is this answer right?"): do not ask a second time.
@@ -4043,6 +4055,9 @@ export function QuestionnaireTab({
         if (isMounted.current) {
           setSaveError(msg);
           setUnresolvedId(questionId === '7C-2' && typeof respData?.first_question === 'string' ? respData.first_question : null);
+          if (questionId === '7C-2' && respData?.code === 'uncalculated_required' && Array.isArray(respData.unmet_calculations)) {
+            setSignOffGaps(respData.unmet_calculations);
+          }
         }
         return { success: false, data: {} };
       }
@@ -5397,6 +5412,44 @@ export function QuestionnaireTab({
                       ? `Soru 28a'da işletme kontrolü dışında belirttiğiniz tesisler: ${stage2ExclusionRows(answers).map(r => r.source).join(', ')}. "Evet" derseniz ${stage2ExclusionRows(answers).length > 1 ? 'ilki forma dolu gelir; diğerlerini "+ Başka Ekle" ile ekleyin' : 'hariç tutma formuna dolu gelir'}.`
                       : `In Question 28a you marked these sites as outside operational control: ${stage2ExclusionRows(answers).map(r => r.source).join(', ')}. Answer "Yes" and the first comes pre-filled in the exclusion form${stage2ExclusionRows(answers).length > 1 ? '; add the others with "+ Add Another"' : ''}.`}
                   </p>
+                )}
+                {currentId === '7C-2' && signOffGaps.length > 0 && (
+                  <div data-testid="sign-off-exclusions" className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-900">
+                    <p className="font-semibold">
+                      {tr
+                        ? 'Doğrudan veya enerji kaynaklı dolaylı emisyonlarda hesaplanmayan miktar var. İmzadan önce her biri için ya ilgili soruya dönüp miktarı hesaplanır hâle getirin ya da hariç tutma gerekçesini yazın. Gerekçeler raporun 3.4 bölümünde yayımlanır.'
+                        : 'Direct or energy-indirect emissions hold an amount that is not calculated. Before signing, for each one either go back to its question and make the amount calculable, or write the justification for leaving it out. The justifications are published in section 3.4 of the report.'}
+                    </p>
+                    {signOffGaps.map((gap) => {
+                      const text = signOffReasons[gap.step_id] || '';
+                      const length = text.trim().length;
+                      return (
+                        <div key={gap.step_id} className="space-y-1">
+                          <p className="font-semibold">{tr ? gap.label_tr : gap.label_en}</p>
+                          <ul className="list-disc pl-4">
+                            {((tr ? gap.items_tr : gap.items_en) || []).map((item, i) => <li key={i}>{item}</li>)}
+                          </ul>
+                          <label className="block">
+                            <span className="sr-only">{tr ? `${gap.label_tr} için gerekçe` : `Justification for ${gap.label_en}`}</span>
+                            <textarea
+                              data-testid={`sign-off-exclusion-${gap.step_id}`}
+                              value={text}
+                              onChange={(e) => setSignOffReasons(prev => ({ ...prev, [gap.step_id]: e.target.value }))}
+                              rows={3}
+                              maxLength={1000}
+                              placeholder={tr ? 'Bu miktar neden hesaplanmadı? (en az 20 karakter)' : 'Why is this amount not calculated? (at least 20 characters)'}
+                              className="w-full rounded-lg border border-amber-300 bg-white px-2 py-1.5 text-xs text-[#072C0E] focus:outline-none focus:ring-2 focus:ring-amber-400"
+                            />
+                          </label>
+                          <p className={length > 0 && length < 20 ? 'text-red-700' : 'text-amber-800/70'}>
+                            {length > 0 && length < 20
+                              ? (tr ? `Gerekçe en az 20 karakter olmalıdır (${length}/20).` : `The justification must be at least 20 characters (${length}/20).`)
+                              : `${length}/1000`}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
                 {currentId === '7C-2' && !canSign && (
                   <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
