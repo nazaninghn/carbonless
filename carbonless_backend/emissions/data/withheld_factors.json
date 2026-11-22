@@ -1,369 +1,120 @@
 {
- "about": "Factor rows that are loaded but WITHHELD: kept in the database for traceability, never selected (is_active = False), so the activity is reported as \"not calculated — factor under review\". A row is released by removing its slug from this file once its mapping, density or method is individually resolved and approved, then re-running the seed commands. Do not release a row for any other reason. Review: audit/stage7/.",
+ "about": "Factor rows that are loaded but WITHHELD: kept in the database for traceability, never selected (is_active = False), so the activity is reported as \"not calculated — factor under review\". A row is released by removing its slug from this file once its mapping, density or method is individually resolved and approved, then re-running the seed commands. Do not release a row for any other reason. Review and the reasons for every released or re-mapped row: audit/stage7/.",
  "defra": {
-  "air-freight": {
-   "reason": "\"With RF\" rows mapped while DR-09 is undecided; tm-07 / tm-07-short also use \"to/from UK\" routes, and DEFRA has no short-haul freight row for non-UK routes.",
-   "register": "DR-09",
-   "risk": "Medium"
-  },
-  "biodiesel": {
-   "reason": "DEFRA publishes several biodiesels: ME 0.16751 and HVO 0.03558 kg/l. The catalogue value 0.03639 is close to HVO, not to the ME row that was mapped. Biodiesel type and boundary are not stated (DR-12).",
-   "register": "DR-12",
-   "risk": "None now"
-  },
-  "bioethanol": {
-   "reason": "Item name matches the DEFRA row, but the catalogue value differs 3x from it in either direction and the intended boundary (biogenic CO2 excluded / total) is an open decision (DR-12).",
-   "register": "DR-12",
-   "risk": "None now"
-  },
   "coal": {
-   "reason": "Generic / Turkish \"Coal/Lignite\" mapped to UK \"Coal (industrial)\" (NCV 25.4 GJ/t, sheet Fuel properties D22). Turkish lignite has a far lower calorific value (IPCC default 11.9 TJ/Gg, Table 1.2), so the UK row can overstate lignite by roughly a factor of two.",
-   "register": "",
-   "risk": "High"
-  },
-  "diesel-kwh": {
-   "reason": "Catalogue name is \"Diesel (kWh)\" but the cited and mapped row is \"Gas oil\", gross CV. Fuel identity (diesel vs gas oil) and CV basis of a diesel kWh figure are not established; DR-17 is open.",
-   "register": "DR-17",
-   "risk": "Low"
+   "reason": "Generic / Turkish coal and lignite mapped to UK \"Coal (industrial)\" (25.4 GJ/t). Turkish lignite has roughly half that calorific value (IPCC default 11.9 TJ/Gg), so the UK row can overstate it about twofold. Needs a fuel-specific Turkish value."
   },
   "district-heating": {
-   "reason": "UK \"District heat and steam\": the fuel mix of UK heat networks (DUKES 1/3:2/3 method, methodology 2026 para 3.29). Not transferable to a Turkish heat or steam supplier.",
-   "register": "",
-   "risk": "High"
-  },
-  "flight-domestic": {
-   "reason": "Three open points. (1) \"With RF\" rows were mapped; the owner's documented practice is WITHOUT RF (register D-AIR-SHORT-NORF) and DR-09 is undecided. (2) \"to/from UK\" rows describe UK routes; DEFRA provides \"International, to/from non-UK\" for flights between other countries (methodology 2026 para 8.10). (3) DEFRA haul classes are defined by territory relative to the UK (sheet Haul definition; Turkey = Short Haul, C219), not by the km bands of the catalogue (<500 / 500-3700 / >3700 km).",
-   "register": "DR-09, D-AIR-SHORT-NORF",
-   "risk": "High"
-  },
-  "flight-international": {
-   "reason": "Route class is right (\"International, to/from non-UK\"), but the \"With RF\" row was mapped while DR-09 (RF or not) is undecided and the owner's documented practice is without RF.",
-   "register": "DR-09",
-   "risk": "None now"
-  },
-  "flight-long": {
-   "reason": "Three open points. (1) \"With RF\" rows were mapped; the owner's documented practice is WITHOUT RF (register D-AIR-SHORT-NORF) and DR-09 is undecided. (2) \"to/from UK\" rows describe UK routes; DEFRA provides \"International, to/from non-UK\" for flights between other countries (methodology 2026 para 8.10). (3) DEFRA haul classes are defined by territory relative to the UK (sheet Haul definition; Turkey = Short Haul, C219), not by the km bands of the catalogue (<500 / 500-3700 / >3700 km).",
-   "register": "DR-09, D-AIR-SHORT-NORF",
-   "risk": "Medium"
-  },
-  "flight-long-business": {
-   "reason": "Three open points. (1) \"With RF\" rows were mapped; the owner's documented practice is WITHOUT RF (register D-AIR-SHORT-NORF) and DR-09 is undecided. (2) \"to/from UK\" rows describe UK routes; DEFRA provides \"International, to/from non-UK\" for flights between other countries (methodology 2026 para 8.10). (3) DEFRA haul classes are defined by territory relative to the UK (sheet Haul definition; Turkey = Short Haul, C219), not by the km bands of the catalogue (<500 / 500-3700 / >3700 km).",
-   "register": "DR-09, D-AIR-SHORT-NORF",
-   "risk": "High"
-  },
-  "flight-long-economy": {
-   "reason": "Three open points. (1) \"With RF\" rows were mapped; the owner's documented practice is WITHOUT RF (register D-AIR-SHORT-NORF) and DR-09 is undecided. (2) \"to/from UK\" rows describe UK routes; DEFRA provides \"International, to/from non-UK\" for flights between other countries (methodology 2026 para 8.10). (3) DEFRA haul classes are defined by territory relative to the UK (sheet Haul definition; Turkey = Short Haul, C219), not by the km bands of the catalogue (<500 / 500-3700 / >3700 km).",
-   "register": "DR-09, D-AIR-SHORT-NORF",
-   "risk": "High"
-  },
-  "flight-long-first": {
-   "reason": "Three open points. (1) \"With RF\" rows were mapped; the owner's documented practice is WITHOUT RF (register D-AIR-SHORT-NORF) and DR-09 is undecided. (2) \"to/from UK\" rows describe UK routes; DEFRA provides \"International, to/from non-UK\" for flights between other countries (methodology 2026 para 8.10). (3) DEFRA haul classes are defined by territory relative to the UK (sheet Haul definition; Turkey = Short Haul, C219), not by the km bands of the catalogue (<500 / 500-3700 / >3700 km).",
-   "register": "DR-09, D-AIR-SHORT-NORF",
-   "risk": "High"
-  },
-  "flight-medium": {
-   "reason": "Three open points. (1) \"With RF\" rows were mapped; the owner's documented practice is WITHOUT RF (register D-AIR-SHORT-NORF) and DR-09 is undecided. (2) \"to/from UK\" rows describe UK routes; DEFRA provides \"International, to/from non-UK\" for flights between other countries (methodology 2026 para 8.10). (3) DEFRA haul classes are defined by territory relative to the UK (sheet Haul definition; Turkey = Short Haul, C219), not by the km bands of the catalogue (<500 / 500-3700 / >3700 km).",
-   "register": "DR-09, D-AIR-SHORT-NORF",
-   "risk": "Medium"
-  },
-  "flight-short": {
-   "reason": "Three open points. (1) \"With RF\" rows were mapped; the owner's documented practice is WITHOUT RF (register D-AIR-SHORT-NORF) and DR-09 is undecided. (2) \"to/from UK\" rows describe UK routes; DEFRA provides \"International, to/from non-UK\" for flights between other countries (methodology 2026 para 8.10). (3) DEFRA haul classes are defined by territory relative to the UK (sheet Haul definition; Turkey = Short Haul, C219), not by the km bands of the catalogue (<500 / 500-3700 / >3700 km).",
-   "register": "DR-09, D-AIR-SHORT-NORF",
-   "risk": "Medium"
-  },
-  "flight-short-economy": {
-   "reason": "Three open points. (1) \"With RF\" rows were mapped; the owner's documented practice is WITHOUT RF (register D-AIR-SHORT-NORF) and DR-09 is undecided. (2) \"to/from UK\" rows describe UK routes; DEFRA provides \"International, to/from non-UK\" for flights between other countries (methodology 2026 para 8.10). (3) DEFRA haul classes are defined by territory relative to the UK (sheet Haul definition; Turkey = Short Haul, C219), not by the km bands of the catalogue (<500 / 500-3700 / >3700 km).",
-   "register": "DR-09, D-AIR-SHORT-NORF",
-   "risk": "High"
-  },
-  "fuel-extraction": {
-   "reason": "Generic \"fuel extraction and processing per litre\" mapped to the WTT row of diesel. Documented by the owner for diesel only (register D-WTT-DIESEL); DEFRA has a separate WTT row per fuel (petrol 0.58094). Applying the diesel row to other fuels is unsupported.",
-   "register": "D-WTT-DIESEL, DR-15",
-   "risk": "Medium"
-  },
-  "gasoline-generic": {
-   "reason": "Mapped to \"Petrol (average biofuel blend)\" (2.075 kg/l), which embeds the UK E10 ethanol share. The \"100% mineral petrol\" row is 2.354 (13% higher) and the owner's 2024 table gives 2.350 (D24-PETROL-ON). No evidence which blend fits Turkey.",
-   "register": "DR-16, D24-PETROL-ON",
-   "risk": "Medium"
-  },
-  "general-landfill": {
-   "reason": "Mapped to \"Commercial and industrial waste, landfill\" (520.6 kg/t). The owner's document uses \"Household residual waste, landfill\" (497.3 kg/t; register D-WASTE-LANDFILL) and DR-13(c) holds the choice until the waste category is declared.",
-   "register": "DR-13, D-WASTE-LANDFILL",
-   "risk": "Medium"
-  },
-  "landfill": {
-   "reason": "Mapped to \"Commercial and industrial waste, landfill\" (520.6 kg/t). The owner's document uses \"Household residual waste, landfill\" (497.3 kg/t; register D-WASTE-LANDFILL) and DR-13(c) holds the choice until the waste category is declared.",
-   "register": "DR-13, D-WASTE-LANDFILL",
-   "risk": "Medium"
-  },
-  "metro": {
-   "reason": "UK \"Light rail and tram\": driven almost entirely by the UK grid factor (0.131 kg/kWh in 2026, against 0.44-0.48 for Türkiye). Applying it to a Turkish metro understates by a large factor.",
-   "register": "",
-   "risk": "None now"
-  },
-  "metro-commute": {
-   "reason": "UK \"Light rail and tram\": driven almost entirely by the UK grid factor (0.131 kg/kWh in 2026, against 0.44-0.48 for Türkiye). Applying it to a Turkish metro understates by a large factor.",
-   "register": "",
-   "risk": "None now"
-  },
-  "off-road-diesel-desnz": {
-   "reason": "Mapped to UK \"Gas oil\" (red diesel). The owner's document treats off-road diesel as ordinary diesel with off-road CH4/N2O (register D-DIESEL-OFF, DR-03). Gas oil (2.755) vs diesel average blend (2.584) differ by 6.6%: the fuel identity is not established.",
-   "register": "DR-03, D-DIESEL-OFF",
-   "risk": "Medium"
-  },
-  "off-road-gasoline-desnz": {
-   "reason": "Mapped to \"Petrol (average biofuel blend)\" (2.075 kg/l), which embeds the UK E10 ethanol share. The \"100% mineral petrol\" row is 2.354 (13% higher) and the owner's 2024 table gives 2.350 (D24-PETROL-ON). No evidence which blend fits Turkey.",
-   "register": "DR-16, D24-PETROL-ON",
-   "risk": "Medium"
-  },
-  "on-road-petrol-desnz": {
-   "reason": "Mapped to \"Petrol (average biofuel blend)\" (2.075 kg/l), which embeds the UK E10 ethanol share. The \"100% mineral petrol\" row is 2.354 (13% higher) and the owner's 2024 table gives 2.350 (D24-PETROL-ON). No evidence which blend fits Turkey.",
-   "register": "DR-16, D24-PETROL-ON",
-   "risk": "None now"
-  },
-  "product-landfill": {
-   "reason": "Mapped to \"Commercial and industrial waste, landfill\" (520.6 kg/t). The owner's document uses \"Household residual waste, landfill\" (497.3 kg/t; register D-WASTE-LANDFILL) and DR-13(c) holds the choice until the waste category is declared.",
-   "register": "DR-13, D-WASTE-LANDFILL",
-   "risk": "Medium"
-  },
-  "road-travel": {
-   "reason": "Mapped to \"Average car, Unknown fuel\". The owner's document uses \"Average car, Diesel\" for the same activity (register D-CAR-BTRAVEL, D-CAR-SERVICE; the catalogue value 0.169826 equals that DEFRA 2023 row).",
-   "register": "D-CAR-BTRAVEL",
-   "risk": "Low"
+   "reason": "The DEFRA value is driven by UK-only infrastructure (UK grid electricity or UK heat networks). DEFRA limits its factors to UK operations (methodology 2026, paras 1.4-1.5, 10.1); for a site outside the UK the number can be wrong by a large factor."
   },
   "steam": {
-   "reason": "UK \"District heat and steam\": the fuel mix of UK heat networks (DUKES 1/3:2/3 method, methodology 2026 para 3.29). Not transferable to a Turkish heat or steam supplier.",
-   "register": "",
-   "risk": "High"
-  },
-  "tm-04": {
-   "reason": "Mapped to \"Container ship, Average\" although DEFRA publishes size classes (8000+ TEU 0.01266; 5000-7999 and 3000-4999 TEU 0.01681). The catalogue items name a size (>10,000 TEU; 3,000-8,000 TEU), so a closer row exists.",
-   "register": "",
-   "risk": "Medium"
-  },
-  "tm-04-ds": {
-   "reason": "Mapped to \"Container ship, Average\" although DEFRA publishes size classes (8000+ TEU 0.01266; 5000-7999 and 3000-4999 TEU 0.01681). The catalogue items name a size (>10,000 TEU; 3,000-8,000 TEU), so a closer row exists.",
-   "register": "",
-   "risk": "Medium"
-  },
-  "tm-05": {
-   "reason": "Mapped to \"Container ship, Average\" although DEFRA publishes size classes (8000+ TEU 0.01266; 5000-7999 and 3000-4999 TEU 0.01681). The catalogue items name a size (>10,000 TEU; 3,000-8,000 TEU), so a closer row exists.",
-   "register": "",
-   "risk": "Low"
-  },
-  "tm-05-ds": {
-   "reason": "Mapped to \"Container ship, Average\" although DEFRA publishes size classes (8000+ TEU 0.01266; 5000-7999 and 3000-4999 TEU 0.01681). The catalogue items name a size (>10,000 TEU; 3,000-8,000 TEU), so a closer row exists.",
-   "register": "",
-   "risk": "Low"
-  },
-  "tm-07": {
-   "reason": "\"With RF\" rows mapped while DR-09 is undecided; tm-07 / tm-07-short also use \"to/from UK\" routes, and DEFRA has no short-haul freight row for non-UK routes.",
-   "register": "DR-09",
-   "risk": "Medium"
-  },
-  "tm-07-ds": {
-   "reason": "\"With RF\" rows mapped while DR-09 is undecided; tm-07 / tm-07-short also use \"to/from UK\" routes, and DEFRA has no short-haul freight row for non-UK routes.",
-   "register": "DR-09",
-   "risk": "Medium"
-  },
-  "tm-07-short": {
-   "reason": "\"With RF\" rows mapped while DR-09 is undecided; tm-07 / tm-07-short also use \"to/from UK\" routes, and DEFRA has no short-haul freight row for non-UK routes.",
-   "register": "DR-09",
-   "risk": "Medium"
-  },
-  "tm-07-short-ds": {
-   "reason": "\"With RF\" rows mapped while DR-09 is undecided; tm-07 / tm-07-short also use \"to/from UK\" routes, and DEFRA has no short-haul freight row for non-UK routes.",
-   "register": "DR-09",
-   "risk": "Medium"
-  },
-  "tm-08": {
-   "reason": "Catalogue item is \"Rail (electric)\"; the only DEFRA freight-train row is the UK average, mostly diesel traction. Traction does not correspond.",
-   "register": "",
-   "risk": "Medium"
-  },
-  "tm-08-ds": {
-   "reason": "Catalogue item is \"Rail (electric)\"; the only DEFRA freight-train row is the UK average, mostly diesel traction. Traction does not correspond.",
-   "register": "",
-   "risk": "Medium"
-  },
-  "train": {
-   "reason": "UK \"National rail\": a mix of diesel and UK-grid electric traction with UK occupancy. Not transferable to another country's railway; DEFRA itself limits its factors to UK activity (methodology 2026 para 1.4-1.5).",
-   "register": "",
-   "risk": "High"
-  },
-  "train-commute": {
-   "reason": "UK \"National rail\": a mix of diesel and UK-grid electric traction with UK occupancy. Not transferable to another country's railway; DEFRA itself limits its factors to UK activity (methodology 2026 para 1.4-1.5).",
-   "register": "",
-   "risk": "Medium"
-  },
-  "train-travel": {
-   "reason": "UK \"National rail\": a mix of diesel and UK-grid electric traction with UK occupancy. Not transferable to another country's railway; DEFRA itself limits its factors to UK activity (methodology 2026 para 1.4-1.5).",
-   "register": "",
-   "risk": "None now"
+   "reason": "The DEFRA value is driven by UK-only infrastructure (UK grid electricity or UK heat networks). DEFRA limits its factors to UK operations (methodology 2026, paras 1.4-1.5, 10.1); for a site outside the UK the number can be wrong by a large factor."
   },
   "transmission-losses": {
-   "reason": "Generic T&D loss factor mapped to the UK grid T&D row. DR-06 decided T&D stays unchanged; a UK grid value must not stand for another country's network.",
-   "register": "DR-06",
-   "risk": "High"
+   "reason": "The DEFRA value is driven by UK-only infrastructure (UK grid electricity or UK heat networks). DEFRA limits its factors to UK operations (methodology 2026, paras 1.4-1.5, 10.1); for a site outside the UK the number can be wrong by a large factor."
   },
-  "truck-delivery": {
-   "reason": "Mapped to \"All HGVs, average laden\" per tonne-km. DR-01 (tonne-km and vehicle-km are separate methods) is undecided; the owner's document uses rigid HGVs per vehicle-km (register D-HGV-KM) and the Turkish catalogue row stores that per-km value under a tonne-km unit.",
-   "register": "DR-01, D-HGV-KM",
-   "risk": "Medium"
+  "train": {
+   "reason": "The DEFRA value is driven by UK-only infrastructure (UK grid electricity or UK heat networks). DEFRA limits its factors to UK operations (methodology 2026, paras 1.4-1.5, 10.1); for a site outside the UK the number can be wrong by a large factor. UK \"National rail\" mixes diesel and UK-grid electric traction."
   },
-  "truck-freight": {
-   "reason": "Mapped to \"All HGVs, average laden\" per tonne-km. DR-01 (tonne-km and vehicle-km are separate methods) is undecided; the owner's document uses rigid HGVs per vehicle-km (register D-HGV-KM) and the Turkish catalogue row stores that per-km value under a tonne-km unit.",
-   "register": "DR-01, D-HGV-KM",
-   "risk": "High"
+  "train-travel": {
+   "reason": "The DEFRA value is driven by UK-only infrastructure (UK grid electricity or UK heat networks). DEFRA limits its factors to UK operations (methodology 2026, paras 1.4-1.5, 10.1); for a site outside the UK the number can be wrong by a large factor."
   },
-  "wood-pellets": {
-   "reason": "Item name matches the DEFRA row, but the catalogue value differs 3x from it in either direction and the intended boundary (biogenic CO2 excluded / total) is an open decision (DR-12).",
-   "register": "DR-12",
-   "risk": "Medium"
+  "train-commute": {
+   "reason": "The DEFRA value is driven by UK-only infrastructure (UK grid electricity or UK heat networks). DEFRA limits its factors to UK operations (methodology 2026, paras 1.4-1.5, 10.1); for a site outside the UK the number can be wrong by a large factor."
   },
-  "wt-01-recycling": {
-   "reason": "The catalogue factors are negative (avoided-emission credits); DEFRA's rows are small positive transport-only values. Which method the platform uses is DR-07 (negative recycling credits), undecided; the mapping would settle it silently for DEFRA inventories.",
-   "register": "DR-07",
-   "risk": "Medium"
+  "metro": {
+   "reason": "The DEFRA value is driven by UK-only infrastructure (UK grid electricity or UK heat networks). DEFRA limits its factors to UK operations (methodology 2026, paras 1.4-1.5, 10.1); for a site outside the UK the number can be wrong by a large factor. UK \"Light rail and tram\" is almost entirely UK-grid electricity."
   },
-  "wt-03-recycling": {
-   "reason": "The catalogue factors are negative (avoided-emission credits); DEFRA's rows are small positive transport-only values. Which method the platform uses is DR-07 (negative recycling credits), undecided; the mapping would settle it silently for DEFRA inventories.",
-   "register": "DR-07",
-   "risk": "Medium"
+  "metro-commute": {
+   "reason": "The DEFRA value is driven by UK-only infrastructure (UK grid electricity or UK heat networks). DEFRA limits its factors to UK operations (methodology 2026, paras 1.4-1.5, 10.1); for a site outside the UK the number can be wrong by a large factor."
   },
-  "wt-04-recycling": {
-   "reason": "The catalogue factors are negative (avoided-emission credits); DEFRA's rows are small positive transport-only values. Which method the platform uses is DR-07 (negative recycling credits), undecided; the mapping would settle it silently for DEFRA inventories.",
-   "register": "DR-07",
-   "risk": "Medium"
+  "flight-domestic": {
+   "reason": "DEFRA publishes domestic flights for UK routes only (\"Domestic, to/from UK\"); it has no row for a domestic flight inside another country."
   },
-  "wt-10-landfill": {
-   "reason": "Mapped to \"Commercial and industrial waste, landfill\" (520.6 kg/t). The owner's document uses \"Household residual waste, landfill\" (497.3 kg/t; register D-WASTE-LANDFILL) and DR-13(c) holds the choice until the waste category is declared.",
-   "register": "DR-13, D-WASTE-LANDFILL",
-   "risk": "Medium"
+  "tm-08": {
+   "reason": "Catalogue item is electric rail freight; DEFRA's only freight-train row is the UK average, mostly diesel. Traction does not correspond."
+  },
+  "tm-08-ds": {
+   "reason": "Catalogue item is electric rail freight; DEFRA's only freight-train row is the UK average, mostly diesel. Traction does not correspond."
+  },
+  "diesel-kwh": {
+   "reason": "The slug is \"diesel in kWh\" but the DEFRA row mapped is gas oil on a gross calorific basis; neither the fuel nor the calorific basis of a diesel kWh figure is established."
+  },
+  "biodiesel": {
+   "reason": "DEFRA publishes several biodiesels (ME 0.168 kg/l, HVO 0.036 kg/l). The catalogue item does not say which; the two differ 4.7 times."
+  },
+  "fuel-extraction": {
+   "reason": "One generic \"fuel extraction per litre\" slug is applied to diesel, fuel oil and LPG litres together, but DEFRA publishes a separate well-to-tank row per fuel. The diesel row was mapped; applying it to the other fuels is not what DEFRA publishes."
   }
  },
  "ipcc": {
   "diesel": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "diesel-generic": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "fuel-oil": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "gasoline-generic": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "lpg": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "motorin-mobile": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
-  },
-  "natural-gas-m3": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "off-road-diesel-desnz": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "off-road-gasoline-desnz": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "on-road-diesel-desnz": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "on-road-petrol-desnz": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "product-fuel-use": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   }
  },
  "ghg": {
   "diesel": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "diesel-generic": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "fuel-oil": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "gasoline-generic": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "lpg": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "motorin-mobile": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
-  },
-  "natural-gas-m3": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "off-road-diesel-desnz": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "off-road-gasoline-desnz": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "on-road-diesel-desnz": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "on-road-petrol-desnz": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   },
   "product-fuel-use": {
-   "reason": "Per-litre / per-m3 row built with the DEFRA 2026 fuel density and net CV. No density is approved for this fuel, country and inventory year, and the owner's documented formula uses the IPCC NCV with the density of the inventory-year edition.",
-   "register": "DR-03, DR-04, DR-05, DR-20",
-   "risk": "Medium"
+   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
   }
  }
 }

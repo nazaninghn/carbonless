@@ -55,6 +55,9 @@ VERIFIED = {
 }
 
 
+GRID_EDITIONS = ('turkey-grid-transmission', 'turkey-grid-distribution')   # also seeded for data year 2022
+
+
 class _Catalog(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -66,6 +69,8 @@ class _Catalog(TestCase):
         qs = EmissionFactor.objects.filter(slug=slug, country=country)
         if year:
             qs = qs.filter(year=year)
+        elif slug in GRID_EDITIONS:
+            qs = qs.filter(year=2023)                  # the catalogue row; other data years are separate editions
         return qs.get()
 
 
@@ -252,6 +257,14 @@ class FactorSelectionTests(_Catalog):
         self.assertEqual(f.year, 2023)
         from questionnaire.step_entries import factor_reference_years     # the disclosure used by the ISO report
         self.assertTrue(callable(factor_reference_years))
+
+    def test_the_2022_edition_is_the_ministrys_form_and_serves_inventories_up_to_2022(self):
+        # ETKB-EVCED-FRM-042 Rev.01, period 2022, published 06.12.2024: consumption point, tCO2-eq/MWh.
+        for slug, value_2022, value_2023 in (('turkey-grid-transmission', '0.445', '0.436'),
+                                             ('turkey-grid-distribution', '0.478', '0.469')):
+            self.assertEqual(D(str(self.factor(slug, 'turkey', 2022).factor_kg_co2e)), D(value_2022))
+            for year, expected in ((2020, value_2022), (2022, value_2022), (2023, value_2023), (2025, value_2023)):
+                self.assertEqual(D(str(self.pick(slug, 'turkey', year).factor_kg_co2e)), D(expected), (slug, year))
 
     def test_a_facility_abroad_never_gets_turkeys_grid(self):
         from companies.models import Company, Facility

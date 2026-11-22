@@ -466,8 +466,8 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
                 </select>
                 <p className="mt-1 text-[11px] text-[#072C0E]/50">
                   {tr
-                    ? 'Resmi Türkiye elektrik faktörü bağlantıya göre değişir (ETKB, 2023 veri yılı: iletim 0,436 · dağıtım 0,469 kg CO₂e/kWh). Seçilmezse tesisin elektriği hesaplanmaz. Bağlantı türü fatura veya sözleşmede açıkça belirtilmemişse boş bırakın ve elektrik şirketinden ya da tesis sorumlusundan teyit alın.'
-                    : 'The official Turkish electricity factor depends on the connection (ETKB, data year 2023: transmission 0.436 · distribution 0.469 kg CO₂e/kWh). Without it the facility\'s electricity is not calculated. If the connection type is not clearly stated on the bill or contract, leave it empty and confirm it with the electricity company or the person responsible for the facility.'}
+                    ? 'Resmi Türkiye elektrik faktörü bağlantıya göre değişir (ETKB kg CO₂e/kWh — 2023 veri yılı: iletim 0,436 · dağıtım 0,469; 2022 veri yılı: iletim 0,445 · dağıtım 0,478). Seçilmezse tesisin elektriği hesaplanmaz. Bağlantı türü fatura veya sözleşmede açıkça belirtilmemişse boş bırakın ve elektrik şirketinden ya da tesis sorumlusundan teyit alın.'
+                    : 'The official Turkish electricity factor depends on the connection (ETKB kg CO₂e/kWh — data year 2023: transmission 0.436 · distribution 0.469; data year 2022: transmission 0.445 · distribution 0.478). Without it the facility\'s electricity is not calculated. If the connection type is not clearly stated on the bill or contract, leave it empty and confirm it with the electricity company or the person responsible for the facility.'}
                 </p>
               </div>
             )}

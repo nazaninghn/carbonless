@@ -2259,10 +2259,15 @@ def uncalculated_notes(answers, year, company=None, inventory=None):
             loose = [a for a in _named_sites(_electricity(A.get('4A-1')), A.get('2A-2'))
                      if facility_of(a.get('facility_name')) is None] if A.get('4A-1') not in (None, '') else []
             if loose:
+                # The edition this inventory year is calculated on (2022 or 2023 data year).
+                grid = _catalogue_factor('turkey-grid-distribution', year)
+                value = f'{grid.factor_kg_co2e:.3f}' if grid else '0.469'
+                data_year = grid.year if grid else 2023
                 note('4A-1', 'Bir tesise bağlı olmayan elektrik tüketimi için şebeke bağlantısı bilinmediğinden '
-                             'dağıtım bağlantısı faktörü (0,469 kg CO₂e/kWh, ETKB 2023 veri yılı) varsayılmıştır.',
+                             f'dağıtım bağlantısı faktörü ({value.replace(".", ",")} kg CO₂e/kWh, ETKB {data_year} '
+                             'veri yılı) varsayılmıştır.',
                      'For electricity not tied to a facility the grid connection is unknown, so the distribution '
-                     'connection factor (0.469 kg CO₂e/kWh, ETKB data year 2023) is assumed.', kind='method')
+                     f'connection factor ({value} kg CO₂e/kWh, ETKB data year {data_year}) is assumed.', kind='method')
 
     for step, gate in _GATES.items():
         if A.get(gate) not in (None, '', 'yes') and _has_amount(step):
