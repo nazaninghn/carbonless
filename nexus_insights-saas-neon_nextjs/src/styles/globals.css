@@ -53,6 +53,8 @@
   }
 
   [x-cloak] { display: none !important; }
+  /* Inter, self-hosted (see app/layout.jsx). */
+  :root { --font-inter: 'Inter Variable', 'Inter'; }
   html { scrollbar-gutter: stable; overflow-x: hidden; scroll-behavior: smooth; }
   body { overflow-x: clip; /* (clip, not hidden: hidden makes <body> a scroll container and breaks the sticky Header) */ font-family: var(--font-inter), sans-serif; color: var(--color-text); background-color: var(--color-smoke); }
   

@@ -7,7 +7,10 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { authErrorMessage } from '@/lib/authErrors';
 import NextLink from 'next/link';
 import Image from 'next/image';
-import { Cormorant_Garamond } from 'next/font/google';
+// Cormorant Garamond 500 / 600 italic, served from the repository's own dependency (not from Google Fonts at
+// build time); each stylesheet carries latin and latin-ext with their unicode-range, font-display: swap.
+import '@fontsource/cormorant-garamond/500-italic.css';
+import '@fontsource/cormorant-garamond/600-italic.css';
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react';
 import { api, markSessionActive } from '@/lib/utils/api';
 
@@ -36,7 +39,7 @@ const DOOR_MS = 1000;
 
 /* The brand tagline's face: Cormorant Garamond italic, a refined serif that sets the sentence apart from the interface's sans (Inter / General Sans).
    Loaded here, so only the Login page pays for it. latin-ext covers the Turkish letters. */
-const taglineFont = Cormorant_Garamond({ subsets: ['latin', 'latin-ext'], weight: ['500', '600'], style: ['italic'], display: 'swap' });
+const TAGLINE_FONT = { fontFamily: "'Cormorant Garamond', Georgia, 'Times New Roman', serif" };
 
 /* The Login picture (public/loginnew.png, 1122 x 1402, transparent) with the brand tagline directly under it.
    The art spans x 187-974, y 225-1237 of the canvas, so the picture is drawn in a 820 x 1050 box that starts at (170, 210): the empty
@@ -71,8 +74,8 @@ function LoginArt({ tr, widthClass, open }) {
         <span aria-hidden="true" className="mb-3 block h-px w-14 bg-gradient-to-r from-transparent via-[#2ABD41] to-transparent" />
         <p
           data-testid="login-tagline"
-          className={`${taglineFont.className} max-w-[20em] px-2 text-[clamp(1.375rem,1.1rem+0.5vw,1.625rem)] font-semibold italic leading-[1.3] tracking-[0.012em] text-[#175022]`}
-          style={{ textWrap: 'balance' }}
+          className="max-w-[20em] px-2 text-[clamp(1.375rem,1.1rem+0.5vw,1.625rem)] font-semibold italic leading-[1.3] tracking-[0.012em] text-[#175022]"
+          style={{ ...TAGLINE_FONT, textWrap: 'balance' }}
         >
           {tr ? 'Ölçtüğümüz her ayak izi, daha yeşil bir yarına atılmış bir adımdır.' : 'Every footprint we measure is a step toward a greener tomorrow.'}
         </p>
