@@ -97,7 +97,8 @@ class RepresentativeInventoryTests(TestCase):
 
     def test_the_pinned_factors_are_the_catalog_values(self):
         for slug, (value, unit, scope) in PINNED.items():
-            f = EmissionFactor.objects.filter(slug=slug, is_active=True, is_default=True).first()
+            f = (EmissionFactor.objects.filter(slug=slug, is_active=True, is_default=True)
+                 .order_by('-year').first())            # the latest edition: what a 2025 inventory uses
             self.assertIsNotNone(f, slug)
             self.assertEqual((D(str(f.factor_kg_co2e)), f.unit.lower(), f.scope), (value, unit, scope), slug)
 

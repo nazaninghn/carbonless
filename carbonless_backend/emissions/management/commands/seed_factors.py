@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.core.management.base import BaseCommand
 from emissions.models import EmissionFactor
-from emissions.seed_data import EMISSION_FACTORS
+from emissions.seed_data import EDITION_FACTORS, EMISSION_FACTORS
 
 
 class Command(BaseCommand):
@@ -20,7 +20,7 @@ class Command(BaseCommand):
             'turkey_fleet': 2025, 'generic': 2024, 'custom': 2024,
         }
 
-        for fd in EMISSION_FACTORS:
+        for fd in [*EMISSION_FACTORS, *EDITION_FACTORS]:
             data = dict(fd)
             # Add year if not present
             if 'year' not in data:

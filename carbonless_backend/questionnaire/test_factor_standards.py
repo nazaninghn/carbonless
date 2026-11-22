@@ -491,3 +491,31 @@ class ReportGwpBasisTests(_InventoryCase):
         for lang in ('en', 'tr'):
             self.assertTrue(generate_iso_report(self.report, lang, draft=True).startswith(b'%PDF'))
 
+
+
+class GridEditionByInventoryYearTests(_base.TestCase):
+    """The official Turkish grid factor follows the inventory year: the ETKB 2022 form for an inventory of
+    2022 or earlier, the 2023 edition from 2023 on."""
+
+    def test_a_2022_inventory_uses_the_2022_form_and_a_2025_inventory_the_2023_edition(self):
+        from django.core.management import call_command
+        from rest_framework.test import APIClient
+        from .test_calc_baseline import SITES
+        call_command('seed_factors', verbosity=0)
+        user = User.objects.create_user('grid', 'grid@test.com', 'pass12345')
+        company = Company.objects.create(
+            legal_entity_name='Grid Co', tax_number='9', country_of_headquarters='TR',
+            countries_of_operation='TR', nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x', number_of_facilities=1)
+        CompanyMembership.objects.create(user=user, company=company, role='owner')
+        client = APIClient()
+        client.force_authenticate(user=user)
+        for year, kg, data_year in ((2022, Decimal('478.0000'), 2022), (2025, Decimal('469.0000'), 2023)):
+            report = CarbonReport.objects.create(company=company, created_by=user, reporting_year=year)
+            for step, answer in (('2A-2', SITES), ('4A-1', {'1': '1000 kWh'})):
+                r = client.patch(f'/api/questionnaire/{report.id}/step/',
+                                 {'step': step, 'data': {'answer': answer}}, format='json')
+                self.assertEqual(r.status_code, 200, r.content)
+            rows = [(e.emission_factor.slug, e.emission_factor.year, e.calculated_co2e_kg)
+                    for e in EmissionEntry.objects.filter(inventory=report, emission_factor__category='electricity')]
+            self.assertEqual(rows, [('turkey-grid-distribution', data_year, kg)], year)

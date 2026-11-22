@@ -13,6 +13,17 @@ TURKEY_GRID_2023 = [
     {'slug': 'turkey-grid-distribution', 'name': 'Turkey grid — distribution connection', 'name_tr': 'Türkiye şebekesi — dağıtım bağlantısı', 'scope': 'scope2', 'category': 'electricity', 'country': 'turkey', 'unit': 'kwh', 'factor_kg_co2e': 0.469, 'source': 'turkey_grid', 'reference': 'T.C. Enerji ve Tabii Kaynaklar Bakanlığı — elektrik tüketimi emisyon faktörü, dağıtım (Dağıtım) bağlantısı, 2023 veri yılı', 'year': 2023, 'method': 'location_based'},
 ]
 
+# The same official ETKB factors for data year 2022 (form ETKB-EVÇED-FRM-042
+# Rev.01, calculation period 2022, published 06.12.2024; CO2-equivalent
+# column, tCO2-eq/MWh == kg CO2e/kWh). An inventory of 2022 or earlier is
+# calculated on this edition; 2023 and later keep the 2023 edition.
+# Kept out of EMISSION_FACTORS (the frozen catalogue, compared row by row
+# with its baseline) and seeded with it through EDITION_FACTORS.
+TURKEY_GRID_2022 = [
+    {'slug': 'turkey-grid-transmission', 'name': 'Turkey grid — transmission connection', 'name_tr': 'Türkiye şebekesi — iletim bağlantısı', 'scope': 'scope2', 'category': 'electricity', 'country': 'turkey', 'unit': 'kwh', 'factor_kg_co2e': 0.445, 'source': 'turkey_grid', 'reference': 'T.C. Enerji ve Tabii Kaynaklar Bakanlığı — elektrik tüketimi emisyon faktörü, iletim (İletim) bağlantısı, 2022 veri yılı (ETKB-EVÇED-FRM-042)', 'year': 2022, 'method': 'location_based'},
+    {'slug': 'turkey-grid-distribution', 'name': 'Turkey grid — distribution connection', 'name_tr': 'Türkiye şebekesi — dağıtım bağlantısı', 'scope': 'scope2', 'category': 'electricity', 'country': 'turkey', 'unit': 'kwh', 'factor_kg_co2e': 0.478, 'source': 'turkey_grid', 'reference': 'T.C. Enerji ve Tabii Kaynaklar Bakanlığı — elektrik tüketimi emisyon faktörü, dağıtım (Dağıtım) bağlantısı, 2022 veri yılı (ETKB-EVÇED-FRM-042)', 'year': 2022, 'method': 'location_based'},
+]
+
 # DESNZ 2025 (UK government GHG conversion factors 2025) — UK reference set
 # only; never a factor for electricity in Turkey.
 DESNZ_2025_UK = [
@@ -427,4 +438,12 @@ EMISSION_FACTORS = [
     {'slug': 'legal-accounting', 'name': 'Legal & accounting services', 'name_tr': 'Hukuk ve muhasebe hizmetleri', 'scope': 'scope3', 'category': 'purchased_goods', 'country': 'global', 'unit': 'usd', 'factor_kg_co2e': 0.13, 'source': 'defra_2024', 'reference': 'Unsourced platform estimate; not a DEFRA/DESNZ factor (the DESNZ 2024 workbook publishes no spend-based factors) / Kaynağı belirsiz platform tahmini; DEFRA/DESNZ faktörü değildir (DESNZ 2024 çalışma kitabında harcama bazlı faktör yoktur)'},
     {'slug': 'it-telecom-services', 'name': 'IT & telecom services', 'name_tr': 'BT ve telekom hizmetleri', 'scope': 'scope3', 'category': 'purchased_goods', 'country': 'global', 'unit': 'usd', 'factor_kg_co2e': 0.15, 'source': 'defra_2024', 'reference': 'Unsourced platform estimate; not a DEFRA/DESNZ factor (the DESNZ 2024 workbook publishes no spend-based factors) / Kaynağı belirsiz platform tahmini; DEFRA/DESNZ faktörü değildir (DESNZ 2024 çalışma kitabında harcama bazlı faktör yoktur)'},
     {'slug': 'marketing-advertising', 'name': 'Marketing & advertising', 'name_tr': 'Pazarlama ve reklam', 'scope': 'scope3', 'category': 'purchased_goods', 'country': 'global', 'unit': 'usd', 'factor_kg_co2e': 0.17, 'source': 'defra_2024', 'reference': 'Unsourced platform estimate; not a DEFRA/DESNZ factor (the DESNZ 2024 workbook publishes no spend-based factors) / Kaynağı belirsiz platform tahmini; DEFRA/DESNZ faktörü değildir (DESNZ 2024 çalışma kitabında harcama bazlı faktör yoktur)'},
+]
+
+
+# Further editions of factors the catalogue already holds: same slug, another
+# data year. `seed_factors` loads them after EMISSION_FACTORS; `pick_factor`
+# selects by the inventory year. Nothing here changes a catalogue row.
+EDITION_FACTORS = [
+    *TURKEY_GRID_2022,
 ]

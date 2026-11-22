@@ -44,6 +44,13 @@ def _key(fd):
     return fd['slug'], fd.get('country', 'global')
 
 
+def _catalogue_row(slug, country):
+    """The row seeded from EMISSION_FACTORS; EDITION_FACTORS adds other data years of a slug."""
+    year = next(fd.get('year') for fd in seed_data.EMISSION_FACTORS if _key(fd) == (slug, country))
+    qs = EmissionFactor.objects.filter(slug=slug, country=country)
+    return qs.get(year=year) if year else qs.get()
+
+
 def _old_catalog():
     """The pre-release catalog: today's non-label fields with yesterday's reference text."""
     out = []
@@ -142,7 +149,7 @@ class LabelOnlyDatabaseTests(TestCase):
 
     def test_calculator_returns_the_same_numbers_under_the_old_and_the_new_label(self):
         self._seed_old_then_new()
-        probes = {(s, c): EmissionFactor.objects.get(slug=s, country=c) for (s, c) in APPROVED}
+        probes = {(s, c): _catalogue_row(s, c) for (s, c) in APPROVED}
         before = {k: calculate_emissions(f.id, 1234.5678, f.unit) for k, f in probes.items()}
         call_command('seed_factors', verbosity=0)
         after = {k: calculate_emissions(f.id, 1234.5678, f.unit) for k, f in probes.items()}
@@ -162,7 +169,7 @@ class LabelOnlyDatabaseTests(TestCase):
         self._seed_old_then_new()
         entries = []
         for (slug, country) in sorted(APPROVED):
-            f = EmissionFactor.objects.get(slug=slug, country=country)
+            f = _catalogue_row(slug, country)
             entries.append(EmissionEntry.objects.create(
                 user=self.user, company=self.company, emission_factor=f, year=2025, month=3,
                 quantity=Decimal('137.25'), status='approved'))
