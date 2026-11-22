@@ -1,19 +1,13 @@
 import '@/styles/globals.css';
-import { Inter } from 'next/font/google';
+// Inter is served from the repository's own dependency (@fontsource-variable/inter), not downloaded from
+// Google Fonts at build time: a build must not fail because a font server answered oddly. The stylesheet
+// carries every subset with its unicode-range (latin-ext is what Turkish needs: ğ Ğ ş Ş ı İ), one variable
+// file for weights 100-900, font-display: swap. The family is named in globals.css (--font-inter).
+import '@fontsource-variable/inter';
 import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 import PageTitle from '@/components/PageTitle';
 import SessionIdleGuard from '@/components/SessionIdleGuard';
 
-const inter = Inter({
-  // latin-ext is required for Turkish: ğ Ğ ş Ş ı İ live in Latin Extended-A
-  // (U+0100-017F). With only 'latin', those glyphs fell back to Arial/Segoe
-  // mid-word while ç/ö/ü (Latin-1, included in 'latin') stayed Inter —
-  // producing the unstable mixed-font look on every Turkish page.
-  subsets: ['latin', 'latin-ext'],
-  weight: ['300', '400', '500', '600', '700', '800', '900'],
-  display: 'swap',
-  variable: '--font-inter',
-});
 
 export const metadata = {
   title: 'Carbonless — AI-Powered Carbon Calculator Platform',
@@ -44,7 +38,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/carbonless.png" />
