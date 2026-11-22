@@ -358,12 +358,99 @@ class CustomEmissionRequestSerializer(serializers.ModelSerializer):
             'description', 'unit', 'quantity', 'year', 'month', 'facility',
             'status', 'admin_notes', 'approved_factor_kg_co2e',
             'calculated_co2e_kg', 'linked_entry', 'electricity_method',
+            'inventory', 'proposed_factor_kg_co2e', 'factor_source_type', 'factor_source', 'factor_document',
+            'has_document', 'auto_accepted',
             'created_at', 'updated_at'
         ]
         read_only_fields = [
             'user', 'status', 'admin_notes', 'approved_factor_kg_co2e',
-            'calculated_co2e_kg', 'linked_entry', 'electricity_method', 'created_at', 'updated_at'
+            'calculated_co2e_kg', 'linked_entry', 'electricity_method', 'auto_accepted', 'created_at', 'updated_at'
         ]
+        extra_kwargs = {'factor_document': {'write_only': True, 'required': False}}
+
+    has_document = serializers.SerializerMethodField()
+
+    def get_has_document(self, obj):
+        return bool(obj.factor_document)
+
+    # ── the organisation's own factor ────────────────────────────────────────
+    FACTOR_MAX = 1_000_000
+    SOURCE_MIN, SOURCE_MAX = 10, 500
+
+    def validate_inventory(self, value):
+        if value is None:
+            return value
+        from companies.utils import get_current_company
+        request = self.context.get('request')
+        company = get_current_company(request.user) if request else None
+        if not company or value.company_id != company.id:
+            raise serializers.ValidationError('Envanter bulunamadı / Inventory not found.')
+        if value.signed_at is not None:
+            raise serializers.ValidationError('İmzalanmış bir envantere kayıt eklenemez / Nothing can be added to a signed inventory.')
+        return value
+
+    def validate_proposed_factor_kg_co2e(self, value):
+        if value is None:
+            return value
+        if value <= 0:
+            raise serializers.ValidationError('Emisyon faktörü sıfırdan büyük olmalıdır / The emission factor must be greater than zero.')
+        if value > self.FACTOR_MAX:
+            raise serializers.ValidationError('Emisyon faktörü gerçekçi değil; değeri ve birimi kontrol edin / '
+                                              'The emission factor is unrealistically large; check the value and its unit.')
+        return value
+
+    def validate_factor_document(self, value):
+        if not value:
+            return value
+        import os
+        if value.size > CustomEmissionRequest.DOCUMENT_MAX_BYTES:
+            raise serializers.ValidationError("Dosya 10 MB'tan küçük olmalıdır / The file must be under 10 MB.")
+        if os.path.splitext(value.name)[1].lower() not in CustomEmissionRequest.DOCUMENT_EXTENSIONS:
+            allowed = ', '.join(CustomEmissionRequest.DOCUMENT_EXTENSIONS)
+            raise serializers.ValidationError(f'Bu dosya türü kabul edilmiyor ({allowed}) / This file type is not accepted ({allowed}).')
+        return value
+
+    def _own_factor(self, attrs):
+        """The cross-field rules of the organisation's own factor (called from validate)."""
+        factor = attrs.get('proposed_factor_kg_co2e')
+        if factor is None:
+            # No own factor: the request is the earlier kind (the advisor assigns the factor).
+            for k in ('factor_source_type', 'factor_source', 'factor_document'):
+                attrs.pop(k, None)
+            return attrs
+        kind = attrs.get('factor_source_type') or ''
+        where = (attrs.get('factor_source') or '').strip()
+        if not kind:
+            raise serializers.ValidationError({'factor_source_type': [
+                'Faktörün nereden geldiğini seçin / Choose where the factor comes from.']})
+        if not (self.SOURCE_MIN <= len(where) <= self.SOURCE_MAX):
+            raise serializers.ValidationError({'factor_source': [
+                f'Faktörün kaynağını yazın ({self.SOURCE_MIN}–{self.SOURCE_MAX} karakter: yayın, tablo, yıl veya belge adı) / '
+                f'Write where the factor comes from ({self.SOURCE_MIN}–{self.SOURCE_MAX} characters: publication, table, year or document).']})
+        attrs['factor_source'] = where
+        if kind != CustomEmissionRequest.FACTOR_SOURCE_PUBLISHED and not attrs.get('factor_document'):
+            raise serializers.ValidationError({'factor_document': [
+                'Yayımlanmış bir kaynak dışındaki faktörler için belge yükleyin; danışman inceler / '
+                'Upload the document for a factor that is not from a published source; an advisor reviews it.']})
+        return attrs
+
+    def update(self, instance, validated_data):
+        # The inventory a request belongs to is fixed when it is created (the questionnaire it was entered from);
+        # a later edit never moves it to another inventory.
+        validated_data.pop('inventory', None)
+        return super().update(instance, validated_data)
+
+    def create(self, validated_data):
+        factor = validated_data.get('proposed_factor_kg_co2e')
+        if factor is not None and validated_data.get('factor_source_type') == CustomEmissionRequest.FACTOR_SOURCE_PUBLISHED:
+            # A factor from a published source the organisation names is accepted as submitted: it counts at once,
+            # stays listed for the advisor, and can still be rejected later.
+            validated_data.update(
+                status='approved', auto_accepted=True, approved_factor_kg_co2e=factor,
+                calculated_co2e_kg=validated_data['quantity'] * factor,
+                admin_notes='Accepted when submitted: the organisation states a published source for its own factor. / '
+                            'Gönderildiğinde kabul edildi: kuruluş kendi faktörü için yayımlanmış bir kaynak belirtti.')
+        return super().create(validated_data)
 
     def validate_quantity(self, value):
         if value <= 0:
@@ -398,4 +485,4 @@ class CustomEmissionRequestSerializer(serializers.ModelSerializer):
         if is_invalid_year(attrs.get('year')):
             raise serializers.ValidationError(
                 {'year': [invalid_year_message('en')], 'code': INVALID_YEAR_CODE})
-        return attrs
+        return self._own_factor(attrs)

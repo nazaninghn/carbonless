@@ -202,16 +202,71 @@ class CustomEmissionRequestForm(forms.ModelForm):
 class CustomEmissionRequestAdmin(ModelAdmin):
     form = CustomEmissionRequestForm
     list_display = ['user', 'source_name', 'scope_badge', 'category_name',
-                    'quantity', 'unit', 'status_badge', 'created_at']
-    list_filter = ['status', 'scope', 'year']
-    search_fields = ['user__username', 'source_name', 'category_name', 'description']
-    readonly_fields = ['user', 'created_at', 'updated_at']
+                    'quantity', 'unit', 'proposed_factor_kg_co2e', 'factor_source_type', 'has_document',
+                    'status_badge', 'created_at']
+    list_filter = ['status', 'factor_source_type', 'auto_accepted', 'scope', 'year']
+    search_fields = ['user__username', 'source_name', 'category_name', 'description', 'factor_source']
+    readonly_fields = ['user', 'created_at', 'updated_at', 'auto_accepted',
+                       'proposed_factor_kg_co2e', 'factor_source_type', 'factor_source', 'factor_document']
+    actions = ['approve_with_proposed_factor', 'reject_selected']
+
+    @admin.display(boolean=True, description='Document')
+    def has_document(self, obj):
+        return bool(obj.factor_document)
+
+    def _notify(self, obj):
+        if obj.user_id:
+            from .notifications import notify_custom_request_reviewed
+            notify_custom_request_reviewed(obj)
+
+    @admin.action(description='Approve with the proposed factor')
+    def approve_with_proposed_factor(self, request, queryset):
+        from django.contrib import messages
+        done = skipped = 0
+        for obj in queryset:
+            if obj.proposed_factor_kg_co2e is None or (obj.inventory_id and obj.inventory.signed_at is not None):
+                skipped += 1
+                continue
+            obj.status, obj.approved_factor_kg_co2e = 'approved', obj.proposed_factor_kg_co2e
+            obj.calculated_co2e_kg = obj.quantity * obj.proposed_factor_kg_co2e
+            obj.save()
+            self._notify(obj)
+            done += 1
+        self.message_user(request, f'{done} request(s) approved with the proposed factor.' + (
+            f' {skipped} skipped (no proposed factor, or the inventory is signed).' if skipped else ''),
+            level=messages.SUCCESS if done else messages.WARNING)
+
+    @admin.action(description='Reject the selected requests (they are not counted)')
+    def reject_selected(self, request, queryset):
+        from django.contrib import messages
+        done = skipped = 0
+        for obj in queryset:
+            if obj.inventory_id and obj.inventory.signed_at is not None:
+                skipped += 1
+                continue
+            obj.status, obj.calculated_co2e_kg = 'rejected', None
+            obj.save()
+            self._notify(obj)
+            done += 1
+        self.message_user(request, f'{done} request(s) rejected.' + (
+            f' {skipped} skipped: their inventory is signed.' if skipped else ''),
+            level=messages.SUCCESS if done else messages.WARNING)
     list_per_page = 30
 
     fieldsets = (
         ('User Request', {
             'fields': ('user', 'scope', 'category_name', 'source_name', 'description',
                        'unit', 'quantity', 'year', 'month', 'facility'),
+        }),
+        ("The organisation's own factor", {
+            # (The inventory link is not shown here: it is set by the application, never by hand.)
+            'fields': ('proposed_factor_kg_co2e', 'factor_source_type', 'factor_source', 'factor_document',
+                       'auto_accepted'),
+            'description': 'Filled when the organisation proposes its own emission factor. A factor from a published '
+                           'source is accepted when submitted (auto accepted); any other waits here with its '
+                           'document. To approve it, use the action "Approve with the proposed factor" in the list, '
+                           'or set the status and the factor below. Rejecting an auto-accepted one removes it from '
+                           'the totals.',
         }),
         ('Admin Review', {
             'fields': ('status', 'admin_notes', 'approved_factor_kg_co2e', 'electricity_method',

@@ -403,9 +403,15 @@ class ReductionTargetViewSet(viewsets.ModelViewSet):
 
 
 class CustomEmissionRequestViewSet(viewsets.ModelViewSet):
-    """User submits custom emission requests — fully company-scoped"""
+    """User submits custom emission requests — fully company-scoped.
+
+    With `proposed_factor_kg_co2e` it carries the organisation's OWN emission factor for a source the list does
+    not hold (multipart when a document is attached): accepted at once when the stated source is a published
+    one, sent to the advisor with its document otherwise. Either way the questionnaire goes on."""
     serializer_class = CustomEmissionRequestSerializer
     permission_classes = [IsAuthenticated, NotAuditorForWrites]
+    from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def get_queryset(self):
         from emissions.utils import scope_queryset_to_company

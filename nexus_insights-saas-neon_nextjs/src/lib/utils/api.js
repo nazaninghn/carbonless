@@ -444,6 +444,19 @@ export const api = {
   getCustomRequests: () => request('/emissions/custom-requests/'),
   createCustomRequest: (data) => request('/emissions/custom-requests/', { method: 'POST', body: JSON.stringify(data) }),
   deleteCustomRequest: (id) => request(`/emissions/custom-requests/${id}/`, { method: 'DELETE' }),
+  // A source not in the list, with the organisation's own emission factor (multipart: it may carry a document).
+  createOwnFactorRequest: async (formData) => {
+    const send = (token) => fetchWithTimeout(`${API_BASE}/emissions/custom-requests/`, {
+      method: 'POST', credentials: 'include',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    const res = await send(getToken());
+    if (res.status !== 401) return res;
+    const refreshResult = await doRefresh();
+    if (!refreshResult?.ok) return new Response(null, { status: refreshResult?.transient ? 503 : 401 });
+    return send(refreshResult.access);
+  },
 
   downloadReport: (year, lang, inventoryId = null) =>
     request(`/emissions/report/?year=${year}&lang=${lang}${inventoryId ? `&inventory_id=${inventoryId}` : ''}`),

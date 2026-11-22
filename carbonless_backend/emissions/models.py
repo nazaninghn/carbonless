@@ -453,6 +453,29 @@ class CustomEmissionRequest(models.Model):
                   "replaces that facility's 4A-1 factor instead of adding the request's own amount."
     )
 
+    # The organisation's OWN emission factor for a source the list does not hold: the value, where it comes
+    # from and, unless that is a published source, the document behind it. A factor from a published source is
+    # accepted when it is submitted; any other goes to the advisor with its document. Nothing here touches the
+    # platform's factor catalogue.
+    FACTOR_SOURCE_PUBLISHED, FACTOR_SOURCE_SUPPLIER, FACTOR_SOURCE_OWN, FACTOR_SOURCE_OTHER = (
+        'published', 'supplier', 'own_calculation', 'other')
+    FACTOR_SOURCE_CHOICES = [
+        (FACTOR_SOURCE_PUBLISHED, 'Published source (standard, database, official publication)'),
+        (FACTOR_SOURCE_SUPPLIER, 'Supplier or manufacturer declaration'),
+        (FACTOR_SOURCE_OWN, 'Own measurement or calculation'),
+        (FACTOR_SOURCE_OTHER, 'Other'),
+    ]
+    DOCUMENT_MAX_BYTES = 10 * 1024 * 1024
+    DOCUMENT_EXTENSIONS = ('.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx')
+    proposed_factor_kg_co2e = models.DecimalField(
+        max_digits=14, decimal_places=6, null=True, blank=True,
+        help_text="The organisation's own factor, kg CO2e per unit (empty: the advisor assigns one)")
+    factor_source_type = models.CharField(max_length=20, choices=FACTOR_SOURCE_CHOICES, blank=True, default='')
+    factor_source = models.TextField(blank=True, default='', help_text='Where the proposed factor comes from')
+    factor_document = models.FileField(upload_to='own_factors/%Y/%m/', blank=True, null=True, max_length=500)
+    auto_accepted = models.BooleanField(
+        default=False, help_text='Accepted when submitted (published source), not by an advisor')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

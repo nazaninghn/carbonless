@@ -80,6 +80,7 @@ import {
   DATA_SOURCE_OPTIONS, OTHER_REASON_MIN, OTHER_REASON_MAX, hasDataSource, storedDataSources, storedOtherSources, otherExtra,
   withDataSource, dataSourceWarning, storedDataDetails, dataDetailWarning,
 } from '@/lib/carboniq/dataSource';
+import OwnFactorForm from '@/components/dashboard/OwnFactorForm';
 import { splitStoredAmount, unitWarning } from '@/lib/carboniq/unitInput';
 import { fixed, num } from '@/lib/formatNumber';
 import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
@@ -3615,6 +3616,8 @@ export function QuestionnaireTab({
     (hydrated && initialDataQualityExtras?.others) || storedOtherSources(hydrated && initialAnswers)));
   const otherSourcesRef = useRef(otherSources);
   otherSourcesRef.current = otherSources;
+  // The dialog for a source that is not in the list, entered with the organisation's own emission factor.
+  const [ownFactorOpen, setOwnFactorOpen] = useState(false);
   // 'total' when the figure of a question is one total for several devices / sites / items.
   const [dataDetails, setDataDetails] = useState(() => (
     (hydrated && initialDataQualityExtras?.details) || storedDataDetails(hydrated && initialAnswers)));
@@ -5188,6 +5191,25 @@ export function QuestionnaireTab({
 
   return (
     <div ref={flowRootRef} className="flex flex-1 min-h-0 flex-row-reverse overflow-hidden relative">
+      {/* A source not in the list, with the organisation's own factor: a dialog over the question — the
+          questionnaire does not move, whatever is decided about the factor. */}
+      {ownFactorOpen && (
+        <OwnFactorForm
+          reportId={reportId}
+          year={Number(answers?.A4) || reportYearRef.current || new Date().getFullYear()}
+          questionId={currentId}
+          questionLabel={currentQuestion?.number != null ? `${tr ? 'Soru' : 'Question'} ${currentQuestion.number}` : currentId}
+          lang={lang}
+          onClose={() => setOwnFactorOpen(false)}
+          onSaved={(saved) => {
+            if (saved?.status === 'approved') {
+              window.dispatchEvent(new CustomEvent('carbonless:emissions-updated', {
+                detail: { source: 'inventory', year: saved?.year ?? null, inventoryId: reportId ?? null },
+              }));
+            }
+          }}
+        />
+      )}
       {/* Mobile backdrop for progress sidebar */}
       {sidebarOpen && (
         <div
@@ -5576,6 +5598,18 @@ export function QuestionnaireTab({
                       <p data-testid="data-detail-warning" className="mt-1 rounded-md bg-white/70 px-2 py-1 text-[11px] font-semibold leading-snug text-amber-800">
                         {dataDetailWarning('total', tr)}
                       </p>
+                    )}
+                    {!!reportId && !completed && (
+                      <button
+                        type="button"
+                        data-testid="own-factor-open"
+                        onClick={() => setOwnFactorOpen(true)}
+                        className="mt-2 block text-left text-[12px] font-semibold text-[#175022] underline underline-offset-2"
+                      >
+                        {tr
+                          ? 'Kaynağınız listede yok mu? Kendi emisyon faktörünüzle ekleyin.'
+                          : 'Is your source not in the list? Add it with your own emission factor.'}
+                      </button>
                     )}
                     {dq?.small_row && !source && (
                       <div data-testid="data-source-small" className="mt-1.5 text-[11px] leading-snug text-[#0E2A14]">
