@@ -168,7 +168,7 @@ test.describe('inactivity timeout', () => {
 test.describe('unsaved answers', () => {
   const report = { report_id: 1, title: 'Inventory A', status: 'in_progress', reporting_year: 2025, current_step: 'B2',
     progress: { percent: 10, completed: 9, total: 98 }, updated_at: '2026-01-01T00:00:00Z', created_by: null };
-  const PHASE1 = { A1: { answer: 'Alpha' }, A2: { answer: 'x' }, A3: { answer: 'x' }, A4: { answer: '2025' }, A5: { answer: 'x' }, A6: { answer: 'x' }, A7: { answer: 'no' }, B1: { answer: 'NACE_A' } };
+  const PHASE1 = { D1: { ef_database: 'DEFRA_TUIK' }, A1: { answer: 'Alpha' }, A2: { answer: 'x' }, A3: { answer: 'x' }, A4: { answer: '2025' }, A5: { answer: 'x' }, A6: { answer: 'x' }, A7: { answer: 'no' }, B1: { answer: 'NACE_A' } };
 
   test('an answer typed but not submitted is warned about before the session ends, and the login page says it was not saved', async ({ context }) => {
     await setup(context);

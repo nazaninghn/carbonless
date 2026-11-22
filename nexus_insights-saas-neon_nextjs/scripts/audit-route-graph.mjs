@@ -106,7 +106,7 @@ const backEdges = new Set(); const backTargets = new Set();
 {
   const state = {};                                      // 1 = on the DFS stack, 2 = done
   const dfs = (u) => { state[u] = 1; for (const v of edgesOf(u)) { if (!Q[v]) continue; if (state[v] === 1) { backEdges.add(u + '>' + v); backTargets.add(v); } else if (!state[v]) dfs(v); } state[u] = 2; };
-  dfs('A1');
+  dfs('D1');
 }
 const succ = (id) => edgesOf(id).filter(v => Q[v] && !backEdges.has(id + '>' + v));
 const reach = {};                                        // id -> set of ids reachable (including itself)
@@ -184,7 +184,7 @@ function explore({ forbid = null, wantAll = false } = {}) {
       return;
     }
   }
-  go('A1', {}, new Set());
+  go('D1', {}, new Set());
   return { visitedAny, branches, showOutcomes, terminals, endings, states, found };
 }
 
@@ -311,7 +311,7 @@ test('the explorer and the engine give the same route on 20,000 random concrete 
   let checked = 0;
   for (let s = 0; s < 20000; s++) {
     // random walk with the explorer's own step logic
-    let id = 'A1'; const A = {}; const seen = new Set(); const route = [];
+    let id = 'D1'; const A = {}; const seen = new Set(); const route = [];
     for (let guard = 0; id && guard < 600; guard++) {
       const q = Q[id]; if (!q || seen.has(id)) break;
       seen.add(id);

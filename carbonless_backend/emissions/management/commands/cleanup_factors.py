@@ -15,12 +15,12 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # First update all factors with correct year based on source
-        for f in EmissionFactor.objects.all():
+        for f in EmissionFactor.objects.filter(standard=''):     # the platform catalogue only
             correct_year = SOURCE_YEAR.get(f.source, 2024)
             if f.year != correct_year:
                 # Check if a factor with correct year already exists
                 exists = EmissionFactor.objects.filter(
-                    slug=f.slug, country=f.country, year=correct_year
+                    slug=f.slug, country=f.country, year=correct_year, standard=''
                 ).exclude(pk=f.pk).exists()
                 if exists:
                     # This is a duplicate with wrong year, check if referenced
@@ -41,7 +41,7 @@ class Command(BaseCommand):
                             self.stdout.write(f"  Deleted conflict: {f.slug}/{f.country}")
 
         # Set all remaining as is_default=True
-        EmissionFactor.objects.all().update(is_default=True)
+        EmissionFactor.objects.filter(standard='').update(is_default=True)
 
         self.stdout.write(self.style.SUCCESS(
             f"Done. Total factors: {EmissionFactor.objects.count()}"

@@ -42,7 +42,7 @@ class Command(BaseCommand):
         gas_fields = list(EmissionFactor.GAS_FIELDS.values())
 
         if options['clear'] and not dry:
-            cleared = EmissionFactor.objects.exclude(gas_split_basis='').update(
+            cleared = EmissionFactor.objects.filter(standard='').exclude(gas_split_basis='').update(
                 gas_split_basis='', gas_split_reference='',
                 **{f: None for f in gas_fields})
             self.stdout.write(f'Cleared splits on {cleared} factors.')
@@ -50,7 +50,8 @@ class Command(BaseCommand):
         single, apportioned, skipped, mismatched = 0, 0, 0, []
 
         with transaction.atomic():
-            for factor in EmissionFactor.objects.all():
+            # A standard's rows carry the split their publisher issued (seed_defra_factors).
+            for factor in EmissionFactor.objects.filter(standard=''):
                 total = factor.factor_kg_co2e
                 if not total or total <= 0:
                     skipped += 1

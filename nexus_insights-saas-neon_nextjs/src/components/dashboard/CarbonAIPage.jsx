@@ -73,6 +73,9 @@ import {
   efUnitMismatch,
 } from '@/lib/carboniq/questions';
 import { calcFeedbackLine } from '@/lib/carboniq/calcFeedback';
+import {
+  STEP_STANDARD_OPTIONS, needsStepStandard, storedStepStandards, withFactorStandard,
+} from '@/lib/carboniq/factorStandard';
 import { splitStoredAmount, unitWarning } from '@/lib/carboniq/unitInput';
 import { fixed, num } from '@/lib/formatNumber';
 import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
@@ -2941,6 +2944,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
     mode,
     activeInventoryId,
     answers: workflowAnswers,
+    stepStandards: workflowStepStandards,
     currentStep: workflowStep,
     stepExact: workflowStepExact,
     inventoryStatus,
@@ -2973,6 +2977,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
         hydrated
         initialReportId={activeInventoryId}
         initialAnswers={workflowAnswers}
+        initialStepStandards={workflowStepStandards}
         initialStep={workflowStep}
         initialStepExact={workflowStepExact}
         inventoryCompleted={inventoryStatus === 'completed'}
@@ -2995,7 +3000,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
 // instead of landing on this component's own (now-legacy) picker first.
 export function QuestionnaireTab({
   language, isVisible = true,
-  hydrated = false, initialReportId = null, initialAnswers = null, initialStep = null, initialStepExact = false,
+  hydrated = false, initialReportId = null, initialAnswers = null, initialStepStandards = null, initialStep = null, initialStepExact = false,
   onDirtyChange = null, onExitToLibrary = null, startedBy = null, inventoryCompleted = false,
 }) {
   const tr = language === 'tr';
@@ -3005,9 +3010,14 @@ export function QuestionnaireTab({
   const [started, setStarted] = useState(() => hydrated && !!initialReportId);
   // A question opened on purpose ("Ankette aç") is shown as is; a resumed
   // inventory steps past the last answered question.
-  const [currentId, setCurrentId] = useState(() => (hydrated && initialStep && (
-    initialStepExact && getQuestionById(initialStep) ? initialStep : resumeQuestionId(initialStep, initialAnswers)
-  )) || getInitialQuestionId());
+  const [currentId, setCurrentId] = useState(() => {
+    const resumed = hydrated && initialStep && (
+      initialStepExact && getQuestionById(initialStep) ? initialStep : resumeQuestionId(initialStep, initialAnswers));
+    // An inventory left at the old first question (the company name) before
+    // it chose its factor standard is asked for the standard first.
+    if (resumed === 'A1' && !initialStepExact && !(initialAnswers && 'D1' in initialAnswers)) return getInitialQuestionId();
+    return resumed || getInitialQuestionId();
+  });
   const [answers, setAnswers] = useState(() => (hydrated && initialAnswers) || {});
   const [answerValue, setAnswerValue] = useState('');
   const [history, setHistory] = useState([]);
@@ -3196,8 +3206,10 @@ export function QuestionnaireTab({
     // A1: it also carries the registration details used to pre-fill A1/A2,
     // which a user resuming mid-stage should still get. The reuse offer
     // itself stays limited to a genuinely fresh report.
-    if (!reportId || getQuestionById(currentId)?.stage !== 1) return;
-    const isFreshStart = currentId === 'A1' && Object.keys(answers).length === 0;
+    // Not at D1: the factor standard is the inventory's own answer, asked
+    // first and never copied; the offer comes right after it.
+    if (!reportId || currentId === 'D1' || getQuestionById(currentId)?.stage !== 1) return;
+    const isFreshStart = currentId === 'A1' && Object.keys(answers).every(k => k === 'D1');
     previousProfileCheckedRef.current = true;
     api.getPreviousCompanyProfile(reportId)
       .then(res => res.json())
@@ -3572,6 +3584,12 @@ export function QuestionnaireTab({
   // Keep a ref so the init effect can read the latest answers without being
   // re-triggered on every setAnswers call (which would race with submitAnswer).
   const answersRef = useRef(answers);
+  // "Mix" inventory: the factor standard chosen for each calculating question,
+  // sent with that question's answer (lib/carboniq/factorStandard.js).
+  const [stepStandards, setStepStandards] = useState(() => (
+    (hydrated && initialStepStandards) || storedStepStandards(hydrated && initialAnswers)));
+  const stepStandardsRef = useRef(stepStandards);
+  stepStandardsRef.current = stepStandards;
   // Facilities already registered (sign-up / Settings): 2A-2's per-facility
   // name+country starts from them instead of blank. Sign-up's placeholder
   // names ("Tesis 1") are not offered as a name, only their country.
@@ -3930,8 +3948,17 @@ export function QuestionnaireTab({
   const saveStepToBackend = useCallback(async (questionId, value, rid, confirmed = false) => {
     const rid_ = rid || reportId;
     if (!rid_) return { success: true, data: {} };
+    if (needsStepStandard(questionId, answersRef.current) && !stepStandardsRef.current[questionId]) {
+      // Refused before it is sent (the server refuses it too): an answer of a
+      // "mix" inventory saved without its standard would never be calculated.
+      setSaveSuccess(false);
+      setSaveError(lang === 'tr'
+        ? 'Bu envanter karma standartla hesaplanıyor: önce bu soru için emisyon faktörü standardını seçin.'
+        : 'This inventory is calculated on mixed standards: first choose the emission factor standard for this question.');
+      return { success: false, data: {} };
+    }
     try {
-      const backendData = mapAnswerForBackend(questionId, value);
+      const backendData = withFactorStandard(questionId, mapAnswerForBackend(questionId, value), stepStandardsRef.current);
       const { answered, total, byStage } = computeSurveyProgress({ ...answersRef.current, [questionId]: value });
       // The user already agreed to this change in the soft check (B3's
       // "Is this answer right?"): do not ask a second time.
@@ -4898,6 +4925,7 @@ export function QuestionnaireTab({
     const initId = getInitialQuestionId();
     setCurrentId(initId);
     setAnswers({});
+    setStepStandards({});
     setHistory([]);
     setCompleted(false);
     setAssumptions([]);
@@ -5206,6 +5234,34 @@ export function QuestionnaireTab({
                   <h2 className="mt-1 text-[15px] font-semibold leading-snug text-[#0E2A14] sm:text-[16px]">
                     {stripDocLabels(currentQuestion.text?.[lang] || currentQuestion.text?.en || '')}
                   </h2>
+                </div>
+              )}
+              {needsStepStandard(currentId, answers) && (
+                <div data-testid="step-standard" className="mb-2.5 rounded-lg border border-[#CFE3D3] bg-[#F4FAF5] px-3 py-2">
+                  <label htmlFor="step-standard-select" className="block text-[12px] font-semibold text-[#0E2A14]">
+                    {tr ? 'Bu soru hangi standardın faktörleriyle hesaplansın?' : 'Which standard\u2019s factors should this question be calculated with?'}
+                  </label>
+                  <select
+                    id="step-standard-select"
+                    data-testid="step-standard-select"
+                    value={stepStandards[currentId] || ''}
+                    onChange={(e) => {
+                      const chosen = e.target.value;
+                      setStepStandards(prev => ({ ...prev, [currentId]: chosen }));
+                      setSaveError('');
+                    }}
+                    className="mt-1 w-full rounded-md border border-[#B9D3BF] bg-white px-2 py-1.5 text-[13px] text-[#0E2A14] sm:w-64"
+                  >
+                    <option value="" disabled>{tr ? 'Standart seçin' : 'Select a standard'}</option>
+                    {STEP_STANDARD_OPTIONS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label[lang] || o.label.en}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[11px] leading-snug text-[#175022]/70">
+                    {tr
+                      ? 'Karma envanter: seçim bu sorunun yanıtıyla birlikte kaydedilir. Seçtiğiniz standardın yayımlamadığı kaynaklar hesaplanmaz.'
+                      : 'Mix inventory: the choice is saved with this question\u2019s answer. Sources the chosen standard does not publish are not calculated.'}
+                  </p>
                 </div>
               )}
               {groupBefore.length > 0 && (

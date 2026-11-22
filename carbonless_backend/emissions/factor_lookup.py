@@ -13,6 +13,8 @@ ACTIVITY_TO_SLUG pins each (activity_type, unit) pair to an exact slug, so a
 matching row is guaranteed to be in the same unit — no runtime conversion
 guessing, and no `slug__icontains` fuzzy fallback that could match the wrong row.
 """
+import contextlib
+import contextvars
 from decimal import Decimal, InvalidOperation
 
 from django.db import DataError, transaction
@@ -256,14 +258,34 @@ def turkey_grid_slug(connection):
     return TURKEY_GRID_BY_CONNECTION.get((connection or '').strip())
 
 
-def pick_factor(slug, country=None, year=None):
-    """The active default factor of `slug` (and country) for an inventory
-    year: that year's row, else the latest earlier one, else the earliest —
-    the report states the reference year of a factor of another year."""
-    qs = EmissionFactor.objects.filter(slug=slug, is_active=True, is_default=True)
-    if country:
-        qs = qs.filter(country=country)
-    rows = list(qs.order_by('year', 'pk'))
+# ── Factor standards ─────────────────────────────────────────────────────
+# An inventory is calculated on one factor standard (DEFRA, IPCC, GHG
+# Protocol) or, for a "mix" inventory, on the standard chosen for each
+# question. The standard in force is carried here for the duration of a
+# calculation, so every lookup below (questionnaire, chat, forms) reads the
+# same one without each caller passing it down.
+STANDARDS = ('defra', 'ipcc', 'ghg')
+# In force for a "mix" inventory's question whose standard is not chosen yet:
+# it matches no row, so the amount is "not calculated", never a guess.
+STANDARD_UNSET = 'unset'
+_ACTIVE_STANDARD = contextvars.ContextVar('active_factor_standard', default='')
+
+
+@contextlib.contextmanager
+def use_standard(standard):
+    """Calculate with `standard` ('' = the platform catalogue) inside the block."""
+    token = _ACTIVE_STANDARD.set(standard or '')
+    try:
+        yield
+    finally:
+        _ACTIVE_STANDARD.reset(token)
+
+
+def active_standard():
+    return _ACTIVE_STANDARD.get()
+
+
+def _by_year(rows, year):
     if not rows:
         return None
     try:
@@ -274,6 +296,31 @@ def pick_factor(slug, country=None, year=None):
         return rows[-1]
     earlier = [r for r in rows if r.year <= y]
     return earlier[-1] if earlier else rows[0]
+
+
+def pick_factor(slug, country=None, year=None):
+    """The active default factor of `slug` (and country) for an inventory
+    year: that year's row, else the latest earlier one, else the earliest —
+    the report states the reference year of a factor of another year.
+
+    With a factor standard in force (use_standard) only that standard's rows
+    are used. A source the standard does not publish has no factor — the
+    amount is reported as "not calculated", never taken from another standard
+    — except grid electricity, which no standard publishes for a country
+    other than its own: it keeps the national / platform grid factor."""
+    standard = active_standard()
+    qs = EmissionFactor.objects.filter(slug=slug, is_active=True)
+    if country:
+        qs = qs.filter(country=country)
+    catalogue = _by_year(list(qs.filter(standard='', is_default=True).order_by('year', 'pk')), year)
+    if not standard:
+        return catalogue
+    chosen = _by_year(list(qs.filter(standard=standard).order_by('year', 'pk')), year)
+    if chosen:
+        return chosen
+    if catalogue is not None and catalogue.category == 'electricity':
+        return catalogue
+    return None
 
 
 def facility_grid_missing_message(facility, lang='en', year=None):
@@ -404,7 +451,7 @@ def resolve_factor(activity_type, unit, company=None, facility=None, year=None):
             # else the global grid average — never Turkey's grid.
             candidates = [GRID_BY_COUNTRY.get(foreign), 'eu-grid' if foreign in EU_COUNTRIES else None, 'grid-average']
             for grid in filter(None, candidates):
-                if EmissionFactor.objects.filter(slug=grid, country='global', is_active=True, is_default=True).exists():
+                if EmissionFactor.objects.filter(slug=grid, country='global', is_active=True, is_default=True, standard='').exists():
                     slug = grid
                     break
     elif slug == 'turkey-grid':
@@ -592,8 +639,8 @@ def get_emission_factor_reference():
             parts = []
             for unit, slug in by_activity[activity]:
                 factor = (
-                    EmissionFactor.objects.filter(slug=slug, country='turkey', is_active=True, is_default=True).first()
-                    or EmissionFactor.objects.filter(slug=slug, country='global', is_active=True, is_default=True).first()
+                    EmissionFactor.objects.filter(slug=slug, country='turkey', is_active=True, is_default=True, standard='').first()
+                    or EmissionFactor.objects.filter(slug=slug, country='global', is_active=True, is_default=True, standard='').first()
                 )
                 if factor:
                     parts.append(f'{unit}={factor.factor_kg_co2e}')

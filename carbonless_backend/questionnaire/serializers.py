@@ -187,7 +187,8 @@ class StepC3Serializer(serializers.Serializer):
 
 
 class StepD1Serializer(serializers.Serializer):
-    DATABASES = ['DEFRA', 'DEFRA_TUIK', 'IPCC_AR6', 'EPA', 'custom']
+    DATABASES = ['std_ghg', 'std_ipcc', 'std_defra', 'std_mix',
+                 'DEFRA', 'DEFRA_TUIK', 'IPCC_AR6', 'EPA', 'custom']
     ef_database = serializers.ChoiceField(choices=DATABASES)
     ef_custom_source = serializers.CharField(
         max_length=200, required=False, allow_blank=True, default=''

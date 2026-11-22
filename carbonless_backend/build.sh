@@ -10,6 +10,9 @@ python manage.py seed_factors
 # factor's CO2e between the gases. Without it the ISO report's CH4/N2O/HFC/
 # PFC/SF6 columns are empty and every source falls back to the CO2 column.
 python manage.py seed_gas_splits
+# The DEFRA standard's own factors (one row per published edition), used by
+# inventories that chose DEFRA. Independent of the two seeds above.
+python manage.py seed_defra_factors
 python manage.py create_admin
 # Text only: the calculation description of existing questionnaire entries.
 python manage.py backfill_calc_detail || echo "backfill_calc_detail skipped (non-critical)"

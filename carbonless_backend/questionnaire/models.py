@@ -16,6 +16,13 @@ class CarbonReport(models.Model):
         IPCC_AR6 = 'IPCC_AR6', 'IPCC AR6 2021'
         EPA = 'EPA', 'EPA'
         CUSTOM = 'custom', 'Custom'
+        # Factor standards: these switch the calculation itself to that
+        # standard's factors (questionnaire.step_entries.inventory_standard);
+        # the names above are only recorded in the report.
+        STD_GHG = 'std_ghg', 'GHG Protocol'
+        STD_IPCC = 'std_ipcc', 'IPCC'
+        STD_DEFRA = 'std_defra', 'DEFRA'
+        STD_MIX = 'std_mix', 'Mix (chosen per question)'
 
     class OrgBoundary(models.TextChoices):
         OPERATIONAL = 'operational_control', 'Operational Control'
@@ -47,7 +54,8 @@ class CarbonReport(models.Model):
     # for the two ids longer than 10 chars — 'SCOPE-GROUPING' (14) and
     # '3D-4-zero-decision' (18) — surfacing as a 500 that hard-blocked the
     # questionnaire at Q36 with no way past it.
-    current_step = models.CharField(max_length=50, default='A1')
+    # D1, the factor standard, is the first question of an inventory.
+    current_step = models.CharField(max_length=50, default='D1')
 
     # 1A
     reporting_year = models.IntegerField(null=True, blank=True)

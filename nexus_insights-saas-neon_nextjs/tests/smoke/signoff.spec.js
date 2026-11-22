@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 import { mockDjangoApi, seedAuth } from '../helpers/mock-api.js';
 
 const REPORT = { report_id: 92, title: 'Inventory 2025', status: 'in_progress', reporting_year: 2025, progress: { percent: 90 }, updated_at: '2026-01-01T00:00:00Z', created_by: null };
-const ANSWERS = { A1: { answer: 'x' }, '2A-1': { answer: '1' }, '7C-1': { answer: 'all_complete' } };
+const ANSWERS = { D1: { ef_database: 'DEFRA_TUIK' }, A1: { answer: 'x' }, '2A-1': { answer: '1' }, '7C-1': { answer: 'all_complete' } };
 
 async function mockInventory(page, { answers = ANSWERS, step = '7C-2', onSign, signed = () => null, status = () => 'in_progress' }) {
   const seen = { saved: [] };

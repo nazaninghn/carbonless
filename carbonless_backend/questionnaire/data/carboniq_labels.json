@@ -1,6 +1,34 @@
 {
-  "A1": {
+  "D1": {
     "number": 1,
+    "type": "single_select",
+    "text": {
+      "tr": "Envanteriniz hangi emisyon faktörü standardına göre hesaplansın?",
+      "en": "Which emission factor standard should your inventory be calculated on?"
+    },
+    "loopSource": null,
+    "options": {
+      "std_ghg": {
+        "tr": "GHG Protokolü",
+        "en": "GHG Protocol"
+      },
+      "std_ipcc": {
+        "tr": "IPCC",
+        "en": "IPCC"
+      },
+      "std_defra": {
+        "tr": "DEFRA (Birleşik Krallık dönüşüm faktörleri)",
+        "en": "DEFRA (UK government conversion factors)"
+      },
+      "std_mix": {
+        "tr": "Karma (her soruda ayrı standart seçilir)",
+        "en": "Mix (a standard is chosen on each question)"
+      }
+    },
+    "fields": null
+  },
+  "A1": {
+    "number": 2,
     "type": "text",
     "text": {
       "tr": "Şirketinizin tam ticari unvanı nedir?",
@@ -11,7 +39,7 @@
     "fields": null
   },
   "A2": {
-    "number": 2,
+    "number": 3,
     "type": "text",
     "text": {
       "tr": "Vergi kimlik numaranız nedir?",
@@ -22,7 +50,7 @@
     "fields": null
   },
   "A3": {
-    "number": 3,
+    "number": 4,
     "type": "country_city",
     "text": {
       "tr": "Şirketinizin kayıtlı olduğu ülke ve şehir nedir?",
@@ -54,7 +82,7 @@
     "fields": null
   },
   "A4": {
-    "number": 4,
+    "number": 5,
     "type": "year_select",
     "text": {
       "tr": "Hangi yıla ait rapor hazırlıyoruz?",
@@ -94,7 +122,7 @@
     "fields": null
   },
   "A5": {
-    "number": 5,
+    "number": 6,
     "type": "text",
     "text": {
       "tr": "Raporu hazırlayan kişi veya birimin adı nedir?",
@@ -105,7 +133,7 @@
     "fields": null
   },
   "A6": {
-    "number": 6,
+    "number": 7,
     "type": "multi_select",
     "text": {
       "tr": "Bu raporun kullanım amacı nedir?",
@@ -137,7 +165,7 @@
     "fields": null
   },
   "A7": {
-    "number": 7,
+    "number": 8,
     "type": "single_select",
     "text": {
       "tr": "Daha önce karbon raporu hazırladınız mı?",
@@ -161,7 +189,7 @@
     "fields": null
   },
   "A7a": {
-    "number": "7a",
+    "number": "8a",
     "type": "year_select",
     "text": {
       "tr": "Baz yılınız hangi yıl?",
@@ -217,7 +245,7 @@
     "fields": null
   },
   "A7b": {
-    "number": 8,
+    "number": 9,
     "type": "compound",
     "text": {
       "tr": "Raporda yer alacak kuruluş bilgilerini tamamlayın.",
@@ -285,7 +313,7 @@
     }
   },
   "B1": {
-    "number": 9,
+    "number": 10,
     "type": "single_select",
     "text": {
       "tr": "Şirketinizin ana sektörü nedir?",
@@ -373,7 +401,7 @@
     "fields": null
   },
   "B2": {
-    "number": 10,
+    "number": 11,
     "type": "text",
     "text": {
       "tr": "Şirketinizin ana faaliyetini kısaca tanımlayın.",
@@ -384,7 +412,7 @@
     "fields": null
   },
   "B3": {
-    "number": 11,
+    "number": 12,
     "type": "single_select",
     "text": {
       "tr": "Toplam çalışan sayınız nedir?",
@@ -416,7 +444,7 @@
     "fields": null
   },
   "B4": {
-    "number": 12,
+    "number": 13,
     "type": "text",
     "text": {
       "tr": "Kaç farklı fiziksel lokasyonda faaliyet gösteriyorsunuz?",
@@ -427,7 +455,7 @@
     "fields": null
   },
   "B5": {
-    "number": 13,
+    "number": 14,
     "type": "multi_select",
     "text": {
       "tr": "Bu lokasyonların türleri neler?",
@@ -467,7 +495,7 @@
     "fields": null
   },
   "B6": {
-    "number": 14,
+    "number": 15,
     "type": "single_select",
     "text": {
       "tr": "Yıllık ciro aralığınız nedir? (İsteğe bağlı)",
@@ -503,7 +531,7 @@
     "fields": null
   },
   "C1": {
-    "number": 15,
+    "number": 16,
     "type": "single_select",
     "text": {
       "tr": "Bağlı şirket veya iştirakiniz var mı?",
@@ -523,7 +551,7 @@
     "fields": null
   },
   "C2": {
-    "number": 16,
+    "number": 17,
     "type": "single_select",
     "text": {
       "tr": "Yurt dışında operasyonunuz var mı?",
@@ -543,7 +571,7 @@
     "fields": null
   },
   "C3": {
-    "number": 17,
+    "number": 18,
     "type": "single_select",
     "text": {
       "tr": "Franchise veya ortak girişim (JV) var mı?",
@@ -558,38 +586,6 @@
       "no": {
         "tr": "Hayır",
         "en": "No"
-      }
-    },
-    "fields": null
-  },
-  "D1": {
-    "number": 18,
-    "type": "single_select",
-    "text": {
-      "tr": "Emisyon faktörü veritabanı tercihiniz nedir?",
-      "en": "Which emission factor database would you like to use?"
-    },
-    "loopSource": null,
-    "options": {
-      "DEFRA_TUIK": {
-        "tr": "DEFRA + TÜİK kombinasyonu (Türkiye için önerilen)",
-        "en": "DEFRA + TUIK combination (recommended for Turkey)"
-      },
-      "DEFRA": {
-        "tr": "DEFRA 2023 (UK — çok ülkede kabul görür)",
-        "en": "DEFRA 2023 (UK — widely accepted internationally)"
-      },
-      "IPCC_AR6": {
-        "tr": "IPCC AR6 2021 (Uluslararası — en güncel GWP değerleri)",
-        "en": "IPCC AR6 2021 (International — latest GWP values)"
-      },
-      "EPA": {
-        "tr": "EPA (ABD Çevre Koruma Ajansı)",
-        "en": "EPA (US Environmental Protection Agency)"
-      },
-      "custom": {
-        "tr": "Kullanıcı tanımlı faktör yükle",
-        "en": "Upload user-defined factor"
       }
     },
     "fields": null

@@ -37,7 +37,7 @@ class Command(BaseCommand):
         updated = 0
         scope_fixed = 0
 
-        for factor in EmissionFactor.objects.all():
+        for factor in EmissionFactor.objects.filter(standard=''):     # the platform catalogue only
             save_fields = []
 
             # Set year from source if still default

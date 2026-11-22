@@ -22,7 +22,8 @@ def get_emission_factor(
     - year=N   → closest factor with year <= N, fallback to earliest
     """
     qs = EmissionFactor.objects.filter(
-        slug=slug, country=country, category=category, is_active=True
+        slug=slug, country=country, category=category, is_active=True,
+        standard='',     # the platform catalogue; a standard's rows are chosen in factor_lookup.pick_factor
     )
     if not qs.exists():
         return None

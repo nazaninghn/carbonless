@@ -21,6 +21,7 @@ function QuestionnaireContent({ language }) {
     mode,
     activeInventoryId,
     answers: workflowAnswers,
+    stepStandards: workflowStepStandards,
     currentStep: workflowStep,
     stepExact: workflowStepExact,
     inventoryStatus,
@@ -50,6 +51,7 @@ function QuestionnaireContent({ language }) {
         hydrated
         initialReportId={activeInventoryId}
         initialAnswers={workflowAnswers}
+        initialStepStandards={workflowStepStandards}
         initialStep={workflowStep}
         initialStepExact={workflowStepExact}
         inventoryCompleted={inventoryStatus === 'completed'}
