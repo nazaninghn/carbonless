@@ -3944,6 +3944,45 @@ export function QuestionnaireTab({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]); // only language — not currentId/loopState, those use their own effects
 
+  // ── changeStepStandard ─────────────────────────────────────────────────────
+  // "Mix" inventory. On a question not answered yet the choice only waits for
+  // the answer (it is sent with it). On an ANSWERED question it is saved at
+  // once and the server recalculates that question on the new standard.
+  const [standardSaving, setStandardSaving] = useState(false);
+  const changeStepStandard = useCallback(async (questionId, chosen) => {
+    const previous = stepStandardsRef.current[questionId] || '';
+    setStepStandards(prev => ({ ...prev, [questionId]: chosen }));
+    setSaveError('');
+    if (!reportId || !(questionId in answersRef.current)) return;
+    setStandardSaving(true);
+    try {
+      const res = await api.setStepStandard(reportId, questionId, chosen, lang);
+      const data = await res.json().catch(() => ({}));
+      if (!isMounted.current) return;
+      if (!res.ok || !data.success) {
+        setStepStandards(prev => ({ ...prev, [questionId]: previous }));
+        setSaveError(data?.error || (lang === 'tr'
+          ? 'Standart değiştirilemedi. Lütfen tekrar deneyin.' : 'The standard could not be changed. Please try again.'));
+        return;
+      }
+      setSaveSuccess(true);
+      if (saveSuccessTimerRef.current) clearTimeout(saveSuccessTimerRef.current);
+      saveSuccessTimerRef.current = setTimeout(() => { if (isMounted.current) setSaveSuccess(false); }, 2000);
+      if (Math.abs(Number(data?.calc_feedback?.delta_kg) || 0) > 0) {
+        window.dispatchEvent(new CustomEvent('carbonless:emissions-updated', {
+          detail: { source: 'inventory', year: data?.reporting_year ?? null, inventoryId: reportId ?? null },
+        }));
+      }
+    } catch (e) {
+      if (isMounted.current) {
+        setStepStandards(prev => ({ ...prev, [questionId]: previous }));
+        setSaveError(lang === 'tr' ? 'Standart değiştirilemedi. Lütfen tekrar deneyin.' : 'The standard could not be changed. Please try again.');
+      }
+    } finally {
+      if (isMounted.current) setStandardSaving(false);
+    }
+  }, [reportId, lang]);
+
   // ── saveStepToBackend ──────────────────────────────────────────────────────
   const saveStepToBackend = useCallback(async (questionId, value, rid, confirmed = false) => {
     const rid_ = rid || reportId;
@@ -5245,11 +5284,8 @@ export function QuestionnaireTab({
                     id="step-standard-select"
                     data-testid="step-standard-select"
                     value={stepStandards[currentId] || ''}
-                    onChange={(e) => {
-                      const chosen = e.target.value;
-                      setStepStandards(prev => ({ ...prev, [currentId]: chosen }));
-                      setSaveError('');
-                    }}
+                    onChange={(e) => changeStepStandard(currentId, e.target.value)}
+                    disabled={standardSaving}
                     className="mt-1 w-full rounded-md border border-[#B9D3BF] bg-white px-2 py-1.5 text-[13px] text-[#0E2A14] sm:w-64"
                   >
                     <option value="" disabled>{tr ? 'Standart seçin' : 'Select a standard'}</option>
@@ -5259,8 +5295,8 @@ export function QuestionnaireTab({
                   </select>
                   <p className="mt-1 text-[11px] leading-snug text-[#175022]/70">
                     {tr
-                      ? 'Karma envanter: seçim bu sorunun yanıtıyla birlikte kaydedilir. Seçtiğiniz standardın yayımlamadığı kaynaklar hesaplanmaz.'
-                      : 'Mix inventory: the choice is saved with this question\u2019s answer. Sources the chosen standard does not publish are not calculated.'}
+                      ? 'Karma envanter: seçim bu sorunun yanıtıyla birlikte kaydedilir; yanıtlanmış bir soruda değiştirirseniz hesap hemen yenilenir. Seçtiğiniz standardın yayımlamadığı kaynaklar hesaplanmaz.'
+                      : 'Mix inventory: the choice is saved with this question\u2019s answer; changing it on an answered question recalculates at once. Sources the chosen standard does not publish are not calculated.'}
                   </p>
                 </div>
               )}

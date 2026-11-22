@@ -1185,6 +1185,66 @@ class ReportStatusView(APIView):
         return Response({'deleted_entries': deleted_entries}, status=200)
 
 
+class StepStandardView(APIView):
+    """POST /api/questionnaire/<report_id>/step-standard/ {step, factor_standard, language}
+
+    Changes the factor standard an ANSWERED calculating question of a "mix" inventory is calculated on,
+    without the answer being entered again: the choice stored next to the answer is replaced and the
+    inventory is recalculated at once. (For a question not answered yet the standard travels with its
+    answer, see SubmitStepView.) Same gates as saving an answer: never a signed / completed inventory."""
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
+
+    def post(self, request, report_id):
+        try:
+            report = _company_reports(request.user).get(id=report_id)
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+        from emissions.factor_lookup import STANDARDS
+        from .step_entries import ENTRY_STEPS, inventory_standard
+        from . import immutability, year_guard
+        tr = str(request.data.get('language') or '').lower().startswith('tr')
+        step, chosen = request.data.get('step'), request.data.get('factor_standard')
+
+        def refuse(code, msg_tr, msg_en, status=400):
+            return Response({'success': False, 'step': step, 'code': code, 'error': msg_tr if tr else msg_en,
+                             'error_tr': msg_tr, 'error_en': msg_en}, status=status)
+
+        if step not in ENTRY_STEPS:
+            return refuse('not_a_calculating_step', 'Bu soru bir emisyon hesabı üretmiyor; standardı seçilemez.',
+                          'This question produces no emission calculation; it has no standard to choose.')
+        if chosen not in STANDARDS:
+            return refuse('factor_standard', 'Geçersiz emisyon faktörü standardı. GHG Protokolü, IPCC veya DEFRA seçin.',
+                          'Invalid emission factor standard. Choose GHG Protocol, IPCC or DEFRA.')
+        immutability.check_report(report, step=step, entry_producing=True)       # fail fast; the gate below decides
+        try:
+            with transaction.atomic():
+                immutability.lock_and_check(report, step=step, entry_producing=True)
+                answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
+                if inventory_standard(answers) != 'mix':
+                    return refuse('not_mix', 'Bu envanter tek bir standartla hesaplanıyor; soru bazında standart seçilmez.',
+                                  'This inventory is calculated on one standard; no standard is chosen per question.', 409)
+                stored = answers.get(step)
+                if not isinstance(stored, dict) or 'answer' not in stored:
+                    return refuse('not_answered', 'Bu soru henüz yanıtlanmadı; standardı yanıtla birlikte seçin.',
+                                  'This question is not answered yet; choose its standard with the answer.', 409)
+                before_kg = questionnaire_totals(report)[0]
+                ReportStep.objects.filter(report=report, step_id=step).update(answer={**stored, 'factor_standard': chosen})
+                entries = sync_step_entries(request.user, report.company, report, step)
+                after_kg, approved_kg = questionnaire_totals(report)
+        except year_guard.InventoryYearConflict as conflict:
+            return Response(year_guard.conflict_payload(conflict.others, conflict.year, 'tr' if tr else 'en', step=step), status=409)
+        answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
+        from .step_entries import recorded_connections
+        with recorded_connections(report):
+            notes = [n['tr' if tr else 'en'] for n in uncalculated_notes(answers, report.reporting_year or 2024, report.company, report)
+                     if n['step_id'] == step and n.get('kind') != 'method']
+        return Response({
+            'success': True, 'step': step, 'factor_standard': chosen, 'reporting_year': report.reporting_year,
+            'calc_feedback': {'delta_kg': round(after_kg - before_kg, 2), 'total_kg': round(approved_kg, 2),
+                              'pending': any(e.status == 'submitted' for e in entries), 'notes': notes},
+        })
+
+
 class PendingQuestionView(APIView):
     """POST /api/questionnaire/<report_id>/pending/ {step, pending: true|false, language}
 
