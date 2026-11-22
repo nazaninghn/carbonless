@@ -397,9 +397,9 @@ class WithheldDefraMappingTests(_InventoryCase):
         super().setUp()
         call_command('seed_defra_factors', verbosity=0)
 
-    def test_the_list_is_the_48_reviewed_mappings(self):
+    def test_the_list_of_withheld_rows(self):
         from emissions.withheld import withheld
-        self.assertEqual({k: len(v) for k, v in withheld().items()}, {'defra': 48, 'ipcc': 12, 'ghg': 12})
+        self.assertEqual({k: len(v) for k, v in withheld().items()}, {'defra': 15, 'ipcc': 12, 'ghg': 12})
         for standard, slugs in withheld().items():
             for slug, why in slugs.items():
                 self.assertTrue(why['reason'].strip(), (standard, slug))
@@ -410,14 +410,37 @@ class WithheldDefraMappingTests(_InventoryCase):
         rows = EmissionFactor.objects.filter(standard='defra')
         self.assertFalse(rows.filter(slug__in=slugs, is_active=True).exists())
         self.assertFalse(rows.exclude(slug__in=slugs).filter(is_active=False).exists())
-        self.assertEqual(rows.exclude(slug__in=slugs).values('slug').distinct().count(), 94)   # 48 exact + 46 acceptable
+        self.assertEqual(rows.exclude(slug__in=slugs).values('slug').distinct().count(), 127)
         self.assertFalse(rows.filter(gwp_basis='').exists())
 
     def test_a_withheld_mapping_is_never_selected(self):
         with use_standard('defra'):
-            for slug in ('coal', 'district-heating', 'train', 'flight-domestic', 'transmission-losses', 'truck-freight'):
+            for slug in ('coal', 'district-heating', 'steam', 'train', 'metro', 'flight-domestic', 'transmission-losses', 'tm-08'):
                 self.assertIsNone(pick_factor(slug, 'global', 2025), slug)
             self.assertIsNotNone(pick_factor('natural-gas-m3', 'global', 2025))          # an exact match stays
+
+    def test_flights_ships_and_consumer_waste_use_the_rows_defra_publishes_for_them(self):
+        def value(slug, year=2026):
+            return EmissionFactor.objects.get(standard='defra', slug=slug, year=year, is_active=True)
+        # A flight between non-UK countries: "International, to/from non-UK", by cabin class, with RF.
+        self.assertEqual(value('flight-long-economy').factor_kg_co2e, Decimal('0.109160'))
+        self.assertEqual(value('flight-short-economy').factor_kg_co2e, Decimal('0.109160'))
+        self.assertEqual(value('flight-long-business').factor_kg_co2e, Decimal('0.316560'))
+        self.assertEqual(value('flight-long-first').factor_kg_co2e, Decimal('0.436630'))
+        self.assertIn('International, to/from non-UK', value('flight-long-economy').reference)
+        # Container ships by the size class the item names; municipal / consumer waste as household residual.
+        self.assertEqual(value('tm-04').factor_kg_co2e, Decimal('0.012660'))            # 8000+ TEU
+        self.assertEqual(value('tm-05').factor_kg_co2e, Decimal('0.016810'))            # 5000-7999 TEU
+        self.assertEqual(value('wt-10-landfill').factor_kg_co2e, Decimal('0.497290'))
+        self.assertIn('Household residual waste', value('product-landfill').reference)
+
+    def test_a_row_that_left_the_dataset_is_retired_not_deleted(self):
+        stale = EmissionFactor.objects.create(
+            slug='wt-10-landfill', country='global', year=2014, standard='defra', name='x', scope='scope3', category='waste',
+            unit='kg', factor_kg_co2e=Decimal('0.5'), source='defra', is_active=True, is_default=False)
+        call_command('seed_defra_factors', verbosity=0)
+        stale.refresh_from_db()
+        self.assertFalse(stale.is_active)
 
     def test_reseeding_withholds_rows_that_were_active_before(self):
         EmissionFactor.objects.filter(standard='defra', slug='coal').update(is_active=True)   # as PR #149 loaded them
@@ -456,3 +479,4 @@ class ReportGwpBasisTests(_InventoryCase):
         self.assertTrue(all('DEFRA/DESNZ 2025 edition' in e.emission_factor.gwp_basis for e in used))
         for lang in ('en', 'tr'):
             self.assertTrue(generate_iso_report(self.report, lang, draft=True).startswith(b'%PDF'))
+

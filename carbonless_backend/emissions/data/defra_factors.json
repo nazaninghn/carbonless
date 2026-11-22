@@ -6249,15 +6249,15 @@
 "category": "business_travel",
 "name": "Long-haul flight (>3700 km)",
 "name_tr": "Uzun mesafe uçuş (>3700 km)",
-"factor_kg_co2e": 0.19813,
+"factor_kg_co2e": 0.18116,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.19813,
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18116,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.19709,
+"co2": 0.18014,
 "ch4": 1e-05,
-"n2o": 0.00103
+"n2o": 0.00101
 }
 },
 {
@@ -6268,15 +6268,15 @@
 "category": "business_travel",
 "name": "Long-haul flight (>3700 km)",
 "name_tr": "Uzun mesafe uçuş (>3700 km)",
-"factor_kg_co2e": 0.19162,
+"factor_kg_co2e": 0.17901,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.19162,
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.17901,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.19066,
+"co2": 0.17811,
 "ch4": 1e-05,
-"n2o": 0.00095
+"n2o": 0.00089
 }
 },
 {
@@ -6287,15 +6287,15 @@
 "category": "business_travel",
 "name": "Long-haul flight (>3700 km)",
 "name_tr": "Uzun mesafe uçuş (>3700 km)",
-"factor_kg_co2e": 0.19745,
+"factor_kg_co2e": 0.18026,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.19745,
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18026,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.19646,
+"co2": 0.17936,
 "ch4": 1e-05,
-"n2o": 0.00098
+"n2o": 0.00089
 }
 },
 {
@@ -6306,15 +6306,15 @@
 "category": "business_travel",
 "name": "Long-haul flight (>3700 km)",
 "name_tr": "Uzun mesafe uçuş (>3700 km)",
-"factor_kg_co2e": 0.21256,
+"factor_kg_co2e": 0.18277,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.21256,
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18277,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.2115,
+"co2": 0.18185,
 "ch4": 1e-05,
-"n2o": 0.00105
+"n2o": 0.00091
 }
 },
 {
@@ -6325,15 +6325,15 @@
 "category": "business_travel",
 "name": "Long-haul flight (>3700 km)",
 "name_tr": "Uzun mesafe uçuş (>3700 km)",
-"factor_kg_co2e": 0.19562,
+"factor_kg_co2e": 0.18078,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.19562,
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18078,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.19464,
+"co2": 0.17987,
 "ch4": 1e-05,
-"n2o": 0.00097
+"n2o": 0.0009
 }
 },
 {
@@ -6344,15 +6344,15 @@
 "category": "business_travel",
 "name": "Long-haul flight (>3700 km)",
 "name_tr": "Uzun mesafe uçuş (>3700 km)",
-"factor_kg_co2e": 0.19085,
+"factor_kg_co2e": 0.18181,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.19085,
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18181,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.18989,
+"co2": 0.1809,
 "ch4": 1e-05,
-"n2o": 0.00095
+"n2o": 0.0009
 }
 },
 {
@@ -6363,15 +6363,15 @@
 "category": "business_travel",
 "name": "Long-haul flight (>3700 km)",
 "name_tr": "Uzun mesafe uçuş (>3700 km)",
-"factor_kg_co2e": 0.19309,
+"factor_kg_co2e": 0.18362,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.19309,
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18362,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.19212,
+"co2": 0.1827,
 "ch4": 1e-05,
-"n2o": 0.00096
+"n2o": 0.00091
 }
 },
 {
@@ -6382,15 +6382,15 @@
 "category": "business_travel",
 "name": "Long-haul flight (>3700 km)",
 "name_tr": "Uzun mesafe uçuş (>3700 km)",
-"factor_kg_co2e": 0.19309,
+"factor_kg_co2e": 0.18362,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.19309,
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18362,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.19212,
+"co2": 0.1827,
 "ch4": 1e-05,
-"n2o": 0.00096
+"n2o": 0.00091
 }
 },
 {
@@ -6401,15 +6401,15 @@
 "category": "business_travel",
 "name": "Long-haul flight (>3700 km)",
 "name_tr": "Uzun mesafe uçuş (>3700 km)",
-"factor_kg_co2e": 0.26128063,
+"factor_kg_co2e": 0.17580378,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.26128063,
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.17580378,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.25998,
+"co2": 0.17493,
 "ch4": 1.12e-05,
-"n2o": 0.00128943
+"n2o": 0.00086258
 }
 },
 {
@@ -6420,15 +6420,15 @@
 "category": "business_travel",
 "name": "Long-haul flight (>3700 km)",
 "name_tr": "Uzun mesafe uçuş (>3700 km)",
-"factor_kg_co2e": 0.26128,
+"factor_kg_co2e": 0.1758,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.26128,
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.1758,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.25998,
+"co2": 0.17493,
 "ch4": 1e-05,
-"n2o": 0.00129
+"n2o": 0.00086
 }
 },
 {
@@ -6439,15 +6439,15 @@
 "category": "business_travel",
 "name": "Long-haul flight (>3700 km)",
 "name_tr": "Uzun mesafe uçuş (>3700 km)",
-"factor_kg_co2e": 0.15282,
+"factor_kg_co2e": 0.14253,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.15282,
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.14253,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.15152,
+"co2": 0.14166,
 "ch4": 1e-05,
-"n2o": 0.00129
+"n2o": 0.00086
 }
 },
 {
@@ -6458,15 +6458,15 @@
 "category": "business_travel",
 "name": "Long-haul flight (>3700 km)",
 "name_tr": "Uzun mesafe uçuş (>3700 km)",
-"factor_kg_co2e": 0.15282,
+"factor_kg_co2e": 0.14253,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.15282,
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.14253,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.15152,
+"co2": 0.14166,
 "ch4": 1e-05,
-"n2o": 0.00129
+"n2o": 0.00086
 }
 },
 {
@@ -6477,15 +6477,15 @@
 "category": "business_travel",
 "name": "Flight — Long-haul Business",
 "name_tr": "Uçak — Uzun mesafe Business",
-"factor_kg_co2e": 0.4401,
+"factor_kg_co2e": 0.40241,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Business class | With RF | passenger.km",
-"defra_value": 0.4401,
+"defra_row": "Business travel- air | International, to/from non-UK | Business class | With RF | passenger.km",
+"defra_value": 0.40241,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.43782,
+"co2": 0.40016,
 "ch4": 1e-05,
-"n2o": 0.00227
+"n2o": 0.00224
 }
 },
 {
@@ -6496,15 +6496,15 @@
 "category": "business_travel",
 "name": "Flight — Long-haul Business",
 "name_tr": "Uçak — Uzun mesafe Business",
-"factor_kg_co2e": 0.42565,
+"factor_kg_co2e": 0.39764,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Business class | With RF | passenger.km",
-"defra_value": 0.42565,
+"defra_row": "Business travel- air | International, to/from non-UK | Business class | With RF | passenger.km",
+"defra_value": 0.39764,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.42353,
+"co2": 0.39566,
 "ch4": 1e-05,
-"n2o": 0.00211
+"n2o": 0.00197
 }
 },
 {
@@ -6515,15 +6515,15 @@
 "category": "business_travel",
 "name": "Flight — Long-haul Business",
 "name_tr": "Uçak — Uzun mesafe Business",
-"factor_kg_co2e": 0.43843,
+"factor_kg_co2e": 0.40025,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Business class | With RF | passenger.km",
-"defra_value": 0.43843,
+"defra_row": "Business travel- air | International, to/from non-UK | Business class | With RF | passenger.km",
+"defra_value": 0.40025,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.43624,
-"ch4": 2e-05,
-"n2o": 0.00217
+"co2": 0.39826,
+"ch4": 1e-05,
+"n2o": 0.00198
 }
 },
 {
@@ -6534,15 +6534,15 @@
 "category": "business_travel",
 "name": "Flight — Long-haul Business",
 "name_tr": "Uçak — Uzun mesafe Business",
-"factor_kg_co2e": 0.47208,
+"factor_kg_co2e": 0.4059,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Business class | With RF | passenger.km",
-"defra_value": 0.47208,
+"defra_row": "Business travel- air | International, to/from non-UK | Business class | With RF | passenger.km",
+"defra_value": 0.4059,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.46972,
-"ch4": 2e-05,
-"n2o": 0.00234
+"co2": 0.40388,
+"ch4": 1e-05,
+"n2o": 0.00201
 }
 },
 {
@@ -6553,15 +6553,15 @@
 "category": "business_travel",
 "name": "Flight — Long-haul Business",
 "name_tr": "Uçak — Uzun mesafe Business",
-"factor_kg_co2e": 0.43446,
+"factor_kg_co2e": 0.40149,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Business class | With RF | passenger.km",
-"defra_value": 0.43446,
+"defra_row": "Business travel- air | International, to/from non-UK | Business class | With RF | passenger.km",
+"defra_value": 0.40149,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.43229,
+"co2": 0.39948,
 "ch4": 2e-05,
-"n2o": 0.00215
+"n2o": 0.00199
 }
 },
 {
@@ -6572,15 +6572,15 @@
 "category": "business_travel",
 "name": "Flight — Long-haul Business",
 "name_tr": "Uçak — Uzun mesafe Business",
-"factor_kg_co2e": 0.42385,
+"factor_kg_co2e": 0.40379,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Business class | With RF | passenger.km",
-"defra_value": 0.42385,
+"defra_row": "Business travel- air | International, to/from non-UK | Business class | With RF | passenger.km",
+"defra_value": 0.40379,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.42173,
+"co2": 0.40177,
 "ch4": 2e-05,
-"n2o": 0.0021
+"n2o": 0.002
 }
 },
 {
@@ -6591,15 +6591,15 @@
 "category": "business_travel",
 "name": "Flight — Long-haul Business",
 "name_tr": "Uçak — Uzun mesafe Business",
-"factor_kg_co2e": 0.42882,
+"factor_kg_co2e": 0.40781,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Business class | With RF | passenger.km",
-"defra_value": 0.42882,
+"defra_row": "Business travel- air | International, to/from non-UK | Business class | With RF | passenger.km",
+"defra_value": 0.40781,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.42668,
-"ch4": 2e-05,
-"n2o": 0.00212
+"co2": 0.40578,
+"ch4": 1e-05,
+"n2o": 0.00202
 }
 },
 {
@@ -6610,15 +6610,15 @@
 "category": "business_travel",
 "name": "Flight — Long-haul Business",
 "name_tr": "Uçak — Uzun mesafe Business",
-"factor_kg_co2e": 0.42882,
+"factor_kg_co2e": 0.40781,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Business class | With RF | passenger.km",
-"defra_value": 0.42882,
+"defra_row": "Business travel- air | International, to/from non-UK | Business class | With RF | passenger.km",
+"defra_value": 0.40781,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.42668,
-"ch4": 2e-05,
-"n2o": 0.00212
+"co2": 0.40578,
+"ch4": 1e-05,
+"n2o": 0.00202
 }
 },
 {
@@ -6629,15 +6629,15 @@
 "category": "business_travel",
 "name": "Flight — Long-haul Business",
 "name_tr": "Uçak — Uzun mesafe Business",
-"factor_kg_co2e": 0.58028693,
+"factor_kg_co2e": 0.39044321,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Business class | With RF | passenger.km",
-"defra_value": 0.58028693,
+"defra_row": "Business travel- air | International, to/from non-UK | Business class | With RF | passenger.km",
+"defra_value": 0.39044321,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.57741,
+"co2": 0.3885,
 "ch4": 2.24e-05,
-"n2o": 0.00285453
+"n2o": 0.00192081
 }
 },
 {
@@ -6648,15 +6648,15 @@
 "category": "business_travel",
 "name": "Flight — Long-haul Business",
 "name_tr": "Uçak — Uzun mesafe Business",
-"factor_kg_co2e": 0.58028,
+"factor_kg_co2e": 0.39044,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Business class | With RF | passenger.km",
-"defra_value": 0.58028,
+"defra_row": "Business travel- air | International, to/from non-UK | Business class | With RF | passenger.km",
+"defra_value": 0.39044,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.57741,
+"co2": 0.3885,
 "ch4": 2e-05,
-"n2o": 0.00285
+"n2o": 0.00192
 }
 },
 {
@@ -6667,15 +6667,15 @@
 "category": "business_travel",
 "name": "Flight — Long-haul Business",
 "name_tr": "Uçak — Uzun mesafe Business",
-"factor_kg_co2e": 0.3394,
+"factor_kg_co2e": 0.31656,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Business class | With RF | passenger.km",
-"defra_value": 0.3394,
+"defra_row": "Business travel- air | International, to/from non-UK | Business class | With RF | passenger.km",
+"defra_value": 0.31656,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.33652,
+"co2": 0.31462,
 "ch4": 2e-05,
-"n2o": 0.00285
+"n2o": 0.00192
 }
 },
 {
@@ -6686,15 +6686,15 @@
 "category": "business_travel",
 "name": "Flight — Long-haul Business",
 "name_tr": "Uçak — Uzun mesafe Business",
-"factor_kg_co2e": 0.3394,
+"factor_kg_co2e": 0.31656,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Business class | With RF | passenger.km",
-"defra_value": 0.3394,
+"defra_row": "Business travel- air | International, to/from non-UK | Business class | With RF | passenger.km",
+"defra_value": 0.31656,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.33652,
+"co2": 0.31462,
 "ch4": 2e-05,
-"n2o": 0.00285
+"n2o": 0.00192
 }
 },
 {
@@ -6705,1101 +6705,1101 @@
 "category": "business_travel",
 "name": "Flight — Long-haul Economy (>6h)",
 "name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
-"factor_kg_co2e": 0.15175,
+"factor_kg_co2e": 0.13876,
 "match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.15175,
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.13876,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.15097,
+"co2": 0.13799,
 "ch4": 0.0,
-"n2o": 0.00078
-}
-},
-{
-"slug": "flight-long-economy",
-"year": 2016,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul Economy (>6h)",
-"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
-"factor_kg_co2e": 0.14678,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.14678,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.14604,
-"ch4": 1e-05,
-"n2o": 0.00073
-}
-},
-{
-"slug": "flight-long-economy",
-"year": 2017,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul Economy (>6h)",
-"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
-"factor_kg_co2e": 0.15119,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.15119,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.15043,
-"ch4": 1e-05,
-"n2o": 0.00075
-}
-},
-{
-"slug": "flight-long-economy",
-"year": 2018,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul Economy (>6h)",
-"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
-"factor_kg_co2e": 0.16279,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.16279,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.16197,
-"ch4": 1e-05,
-"n2o": 0.00081
-}
-},
-{
-"slug": "flight-long-economy",
-"year": 2019,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul Economy (>6h)",
-"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
-"factor_kg_co2e": 0.14981,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.14981,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.14906,
-"ch4": 1e-05,
-"n2o": 0.00074
-}
-},
-{
-"slug": "flight-long-economy",
-"year": 2020,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul Economy (>6h)",
-"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
-"factor_kg_co2e": 0.14615,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.14615,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.14542,
-"ch4": 1e-05,
-"n2o": 0.00072
-}
-},
-{
-"slug": "flight-long-economy",
-"year": 2021,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul Economy (>6h)",
-"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
-"factor_kg_co2e": 0.14787,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.14787,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.14713,
-"ch4": 1e-05,
-"n2o": 0.00073
-}
-},
-{
-"slug": "flight-long-economy",
-"year": 2022,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul Economy (>6h)",
-"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
-"factor_kg_co2e": 0.14787,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.14787,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.14713,
-"ch4": 1e-05,
-"n2o": 0.00073
-}
-},
-{
-"slug": "flight-long-economy",
-"year": 2023,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul Economy (>6h)",
-"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
-"factor_kg_co2e": 0.20010828,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.20010828,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.19911,
-"ch4": 1.12e-05,
-"n2o": 0.00098708
-}
-},
-{
-"slug": "flight-long-economy",
-"year": 2024,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul Economy (>6h)",
-"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
-"factor_kg_co2e": 0.20011,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.20011,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.19911,
-"ch4": 1e-05,
-"n2o": 0.00099
-}
-},
-{
-"slug": "flight-long-economy",
-"year": 2025,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul Economy (>6h)",
-"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
-"factor_kg_co2e": 0.11704,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.11704,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.11604,
-"ch4": 1e-05,
-"n2o": 0.00099
-}
-},
-{
-"slug": "flight-long-economy",
-"year": 2026,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul Economy (>6h)",
-"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
-"factor_kg_co2e": 0.11704,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.11704,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.11604,
-"ch4": 1e-05,
-"n2o": 0.00099
-}
-},
-{
-"slug": "flight-long-first",
-"year": 2015,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul First Class",
-"name_tr": "Uçak — Uzun mesafe First Class",
-"factor_kg_co2e": 0.60703,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | First class | With RF | passenger.km",
-"defra_value": 0.60703,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.60388,
-"ch4": 2e-05,
-"n2o": 0.00313
-}
-},
-{
-"slug": "flight-long-first",
-"year": 2016,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul First Class",
-"name_tr": "Uçak — Uzun mesafe First Class",
-"factor_kg_co2e": 0.58711,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | First class | With RF | passenger.km",
-"defra_value": 0.58711,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.58418,
-"ch4": 2e-05,
-"n2o": 0.00291
-}
-},
-{
-"slug": "flight-long-first",
-"year": 2017,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul First Class",
-"name_tr": "Uçak — Uzun mesafe First Class",
-"factor_kg_co2e": 0.60473,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | First class | With RF | passenger.km",
-"defra_value": 0.60473,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.60171,
-"ch4": 2e-05,
-"n2o": 0.003
-}
-},
-{
-"slug": "flight-long-first",
-"year": 2018,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul First Class",
-"name_tr": "Uçak — Uzun mesafe First Class",
-"factor_kg_co2e": 0.65115,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | First class | With RF | passenger.km",
-"defra_value": 0.65115,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.6479,
-"ch4": 2e-05,
-"n2o": 0.00323
-}
-},
-{
-"slug": "flight-long-first",
-"year": 2019,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul First Class",
-"name_tr": "Uçak — Uzun mesafe First Class",
-"factor_kg_co2e": 0.59925,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | First class | With RF | passenger.km",
-"defra_value": 0.59925,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.59626,
-"ch4": 2e-05,
-"n2o": 0.00297
-}
-},
-{
-"slug": "flight-long-first",
-"year": 2020,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul First Class",
-"name_tr": "Uçak — Uzun mesafe First Class",
-"factor_kg_co2e": 0.58462,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | First class | With RF | passenger.km",
-"defra_value": 0.58462,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.5817,
-"ch4": 2e-05,
-"n2o": 0.0029
-}
-},
-{
-"slug": "flight-long-first",
-"year": 2021,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul First Class",
-"name_tr": "Uçak — Uzun mesafe First Class",
-"factor_kg_co2e": 0.59147,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | First class | With RF | passenger.km",
-"defra_value": 0.59147,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.58852,
-"ch4": 2e-05,
-"n2o": 0.00293
-}
-},
-{
-"slug": "flight-long-first",
-"year": 2022,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul First Class",
-"name_tr": "Uçak — Uzun mesafe First Class",
-"factor_kg_co2e": 0.59147,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | First class | With RF | passenger.km",
-"defra_value": 0.59147,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.58852,
-"ch4": 2e-05,
-"n2o": 0.00293
-}
-},
-{
-"slug": "flight-long-first",
-"year": 2023,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul First Class",
-"name_tr": "Uçak — Uzun mesafe First Class",
-"factor_kg_co2e": 0.80040303,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | First class | With RF | passenger.km",
-"defra_value": 0.80040303,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.79643,
-"ch4": 3.36e-05,
-"n2o": 0.00393943
-}
-},
-{
-"slug": "flight-long-first",
-"year": 2024,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul First Class",
-"name_tr": "Uçak — Uzun mesafe First Class",
-"factor_kg_co2e": 0.8004,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | First class | With RF | passenger.km",
-"defra_value": 0.8004,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.79643,
-"ch4": 3e-05,
-"n2o": 0.00394
-}
-},
-{
-"slug": "flight-long-first",
-"year": 2025,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul First Class",
-"name_tr": "Uçak — Uzun mesafe First Class",
-"factor_kg_co2e": 0.46814,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | First class | With RF | passenger.km",
-"defra_value": 0.46814,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.46417,
-"ch4": 3e-05,
-"n2o": 0.00394
-}
-},
-{
-"slug": "flight-long-first",
-"year": 2026,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Long-haul First Class",
-"name_tr": "Uçak — Uzun mesafe First Class",
-"factor_kg_co2e": 0.46814,
-"match": "nearest item",
-"defra_row": "Business travel- air | Long-haul, to/from UK | First class | With RF | passenger.km",
-"defra_value": 0.46814,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.46417,
-"ch4": 3e-05,
-"n2o": 0.00394
-}
-},
-{
-"slug": "flight-medium",
-"year": 2015,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Medium-haul flight (500–3700 km)",
-"name_tr": "Orta mesafe uçuş (500–3700 km)",
-"factor_kg_co2e": 0.16972,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.16972,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.16885,
-"ch4": 0.0,
-"n2o": 0.00087
-}
-},
-{
-"slug": "flight-medium",
-"year": 2016,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Medium-haul flight (500–3700 km)",
-"name_tr": "Orta mesafe uçuş (500–3700 km)",
-"factor_kg_co2e": 0.16844,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.16844,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.1676,
-"ch4": 1e-05,
-"n2o": 0.00083
-}
-},
-{
-"slug": "flight-medium",
-"year": 2017,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Medium-haul flight (500–3700 km)",
-"name_tr": "Orta mesafe uçuş (500–3700 km)",
-"factor_kg_co2e": 0.16103,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.16103,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.16022,
-"ch4": 1e-05,
-"n2o": 0.0008
-}
-},
-{
-"slug": "flight-medium",
-"year": 2018,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Medium-haul flight (500–3700 km)",
-"name_tr": "Orta mesafe uçuş (500–3700 km)",
-"factor_kg_co2e": 0.16236,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.16236,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.16155,
-"ch4": 1e-05,
-"n2o": 0.0008
-}
-},
-{
-"slug": "flight-medium",
-"year": 2019,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Medium-haul flight (500–3700 km)",
-"name_tr": "Orta mesafe uçuş (500–3700 km)",
-"factor_kg_co2e": 0.15832,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.15832,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.15753,
-"ch4": 1e-05,
-"n2o": 0.00078
-}
-},
-{
-"slug": "flight-medium",
-"year": 2020,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Medium-haul flight (500–3700 km)",
-"name_tr": "Orta mesafe uçuş (500–3700 km)",
-"factor_kg_co2e": 0.15553,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.15553,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.15475,
-"ch4": 1e-05,
 "n2o": 0.00077
 }
 },
 {
-"slug": "flight-medium",
-"year": 2021,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Medium-haul flight (500–3700 km)",
-"name_tr": "Orta mesafe uçuş (500–3700 km)",
-"factor_kg_co2e": 0.15353,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.15353,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.15276,
-"ch4": 1e-05,
-"n2o": 0.00076
-}
-},
-{
-"slug": "flight-medium",
-"year": 2022,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Medium-haul flight (500–3700 km)",
-"name_tr": "Orta mesafe uçuş (500–3700 km)",
-"factor_kg_co2e": 0.15353,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.15353,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.15276,
-"ch4": 1e-05,
-"n2o": 0.00076
-}
-},
-{
-"slug": "flight-medium",
-"year": 2023,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Medium-haul flight (500–3700 km)",
-"name_tr": "Orta mesafe uçuş (500–3700 km)",
-"factor_kg_co2e": 0.18591714,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.18591714,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.18499,
-"ch4": 1.12e-05,
-"n2o": 0.00091594
-}
-},
-{
-"slug": "flight-medium",
-"year": 2024,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Medium-haul flight (500–3700 km)",
-"name_tr": "Orta mesafe uçuş (500–3700 km)",
-"factor_kg_co2e": 0.18592,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.18592,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.18499,
-"ch4": 1e-05,
-"n2o": 0.00092
-}
-},
-{
-"slug": "flight-medium",
-"year": 2025,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Medium-haul flight (500–3700 km)",
-"name_tr": "Orta mesafe uçuş (500–3700 km)",
-"factor_kg_co2e": 0.12786,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.12786,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.12693,
-"ch4": 1e-05,
-"n2o": 0.00092
-}
-},
-{
-"slug": "flight-medium",
-"year": 2026,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Medium-haul flight (500–3700 km)",
-"name_tr": "Orta mesafe uçuş (500–3700 km)",
-"factor_kg_co2e": 0.12786,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.12786,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.12693,
-"ch4": 1e-05,
-"n2o": 0.00092
-}
-},
-{
-"slug": "flight-short",
-"year": 2015,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Short-haul flight (<500 km)",
-"name_tr": "Kısa mesafe uçuş (<500 km)",
-"factor_kg_co2e": 0.16972,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.16972,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.16885,
-"ch4": 0.0,
-"n2o": 0.00087
-}
-},
-{
-"slug": "flight-short",
-"year": 2016,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Short-haul flight (<500 km)",
-"name_tr": "Kısa mesafe uçuş (<500 km)",
-"factor_kg_co2e": 0.16844,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.16844,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.1676,
-"ch4": 1e-05,
-"n2o": 0.00083
-}
-},
-{
-"slug": "flight-short",
-"year": 2017,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Short-haul flight (<500 km)",
-"name_tr": "Kısa mesafe uçuş (<500 km)",
-"factor_kg_co2e": 0.16103,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.16103,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.16022,
-"ch4": 1e-05,
-"n2o": 0.0008
-}
-},
-{
-"slug": "flight-short",
-"year": 2018,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Short-haul flight (<500 km)",
-"name_tr": "Kısa mesafe uçuş (<500 km)",
-"factor_kg_co2e": 0.16236,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.16236,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.16155,
-"ch4": 1e-05,
-"n2o": 0.0008
-}
-},
-{
-"slug": "flight-short",
-"year": 2019,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Short-haul flight (<500 km)",
-"name_tr": "Kısa mesafe uçuş (<500 km)",
-"factor_kg_co2e": 0.15832,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.15832,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.15753,
-"ch4": 1e-05,
-"n2o": 0.00078
-}
-},
-{
-"slug": "flight-short",
-"year": 2020,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Short-haul flight (<500 km)",
-"name_tr": "Kısa mesafe uçuş (<500 km)",
-"factor_kg_co2e": 0.15553,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.15553,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.15475,
-"ch4": 1e-05,
-"n2o": 0.00077
-}
-},
-{
-"slug": "flight-short",
-"year": 2021,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Short-haul flight (<500 km)",
-"name_tr": "Kısa mesafe uçuş (<500 km)",
-"factor_kg_co2e": 0.15353,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.15353,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.15276,
-"ch4": 1e-05,
-"n2o": 0.00076
-}
-},
-{
-"slug": "flight-short",
-"year": 2022,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Short-haul flight (<500 km)",
-"name_tr": "Kısa mesafe uçuş (<500 km)",
-"factor_kg_co2e": 0.15353,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.15353,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.15276,
-"ch4": 1e-05,
-"n2o": 0.00076
-}
-},
-{
-"slug": "flight-short",
-"year": 2023,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Short-haul flight (<500 km)",
-"name_tr": "Kısa mesafe uçuş (<500 km)",
-"factor_kg_co2e": 0.18591714,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.18591714,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.18499,
-"ch4": 1.12e-05,
-"n2o": 0.00091594
-}
-},
-{
-"slug": "flight-short",
-"year": 2024,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Short-haul flight (<500 km)",
-"name_tr": "Kısa mesafe uçuş (<500 km)",
-"factor_kg_co2e": 0.18592,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.18592,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.18499,
-"ch4": 1e-05,
-"n2o": 0.00092
-}
-},
-{
-"slug": "flight-short",
-"year": 2025,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Short-haul flight (<500 km)",
-"name_tr": "Kısa mesafe uçuş (<500 km)",
-"factor_kg_co2e": 0.12786,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.12786,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.12693,
-"ch4": 1e-05,
-"n2o": 0.00092
-}
-},
-{
-"slug": "flight-short",
-"year": 2026,
-"unit": "km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Short-haul flight (<500 km)",
-"name_tr": "Kısa mesafe uçuş (<500 km)",
-"factor_kg_co2e": 0.12786,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Average passenger | With RF | passenger.km",
-"defra_value": 0.12786,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.12693,
-"ch4": 1e-05,
-"n2o": 0.00092
-}
-},
-{
-"slug": "flight-short-economy",
-"year": 2015,
-"unit": "person-km",
-"scope": "scope3",
-"category": "business_travel",
-"name": "Flight — Short-haul Economy (<3h)",
-"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
-"factor_kg_co2e": 0.16634,
-"match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.16634,
-"defra_uom": "passenger.km",
-"gas": {
-"co2": 0.16549,
-"ch4": 0.0,
-"n2o": 0.00085
-}
-},
-{
-"slug": "flight-short-economy",
+"slug": "flight-long-economy",
 "year": 2016,
 "unit": "person-km",
 "scope": "scope3",
 "category": "business_travel",
-"name": "Flight — Short-haul Economy (<3h)",
-"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
-"factor_kg_co2e": 0.16508,
+"name": "Flight — Long-haul Economy (>6h)",
+"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
+"factor_kg_co2e": 0.13712481,
 "match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.16508,
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.13712481,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.16425,
-"ch4": 1e-05,
-"n2o": 0.00082
+"co2": 0.13644,
+"ch4": 4.81e-06,
+"n2o": 0.00068
 }
 },
 {
-"slug": "flight-short-economy",
+"slug": "flight-long-economy",
 "year": 2017,
 "unit": "person-km",
 "scope": "scope3",
 "category": "business_travel",
-"name": "Flight — Short-haul Economy (<3h)",
-"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
-"factor_kg_co2e": 0.15845,
+"name": "Flight — Long-haul Economy (>6h)",
+"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
+"factor_kg_co2e": 0.13801473,
 "match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.15845,
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.13801473,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.15765,
-"ch4": 1e-05,
-"n2o": 0.00079
+"co2": 0.13733,
+"ch4": 4.73e-06,
+"n2o": 0.00068
 }
 },
 {
-"slug": "flight-short-economy",
+"slug": "flight-long-economy",
 "year": 2018,
 "unit": "person-km",
 "scope": "scope3",
 "category": "business_travel",
-"name": "Flight — Short-haul Economy (<3h)",
-"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
-"factor_kg_co2e": 0.1597,
+"name": "Flight — Long-haul Economy (>6h)",
+"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
+"factor_kg_co2e": 0.1399647,
 "match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.1597,
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.1399647,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.1589,
-"ch4": 1e-05,
-"n2o": 0.00079
+"co2": 0.13927,
+"ch4": 4.7e-06,
+"n2o": 0.00069
 }
 },
 {
-"slug": "flight-short-economy",
+"slug": "flight-long-economy",
 "year": 2019,
 "unit": "person-km",
 "scope": "scope3",
 "category": "business_travel",
-"name": "Flight — Short-haul Economy (<3h)",
-"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
-"factor_kg_co2e": 0.15573,
+"name": "Flight — Long-haul Economy (>6h)",
+"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
+"factor_kg_co2e": 0.1384453,
 "match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.15573,
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.1384453,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.15495,
-"ch4": 1e-05,
-"n2o": 0.00077
+"co2": 0.13775,
+"ch4": 5.3e-06,
+"n2o": 0.00069
 }
 },
 {
-"slug": "flight-short-economy",
+"slug": "flight-long-economy",
 "year": 2020,
 "unit": "person-km",
 "scope": "scope3",
 "category": "business_travel",
-"name": "Flight — Short-haul Economy (<3h)",
-"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
-"factor_kg_co2e": 0.15298,
+"name": "Flight — Long-haul Economy (>6h)",
+"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
+"factor_kg_co2e": 0.1392452,
 "match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.15298,
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.1392452,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.15221,
-"ch4": 1e-05,
-"n2o": 0.00076
+"co2": 0.13855,
+"ch4": 5.2e-06,
+"n2o": 0.00069
 }
 },
 {
-"slug": "flight-short-economy",
+"slug": "flight-long-economy",
 "year": 2021,
 "unit": "person-km",
 "scope": "scope3",
 "category": "business_travel",
-"name": "Flight — Short-haul Economy (<3h)",
-"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
-"factor_kg_co2e": 0.15102,
+"name": "Flight — Long-haul Economy (>6h)",
+"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
+"factor_kg_co2e": 0.140625,
 "match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.15102,
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.140625,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.15026,
-"ch4": 1e-05,
-"n2o": 0.00075
+"co2": 0.13992,
+"ch4": 5e-06,
+"n2o": 0.0007
 }
 },
 {
-"slug": "flight-short-economy",
+"slug": "flight-long-economy",
 "year": 2022,
 "unit": "person-km",
 "scope": "scope3",
 "category": "business_travel",
-"name": "Flight — Short-haul Economy (<3h)",
-"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
-"factor_kg_co2e": 0.15102,
+"name": "Flight — Long-haul Economy (>6h)",
+"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
+"factor_kg_co2e": 0.140625,
 "match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.15102,
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.140625,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.15026,
-"ch4": 1e-05,
-"n2o": 0.00075
+"co2": 0.13992,
+"ch4": 5e-06,
+"n2o": 0.0007
 }
 },
 {
-"slug": "flight-short-economy",
+"slug": "flight-long-economy",
 "year": 2023,
 "unit": "person-km",
 "scope": "scope3",
 "category": "business_travel",
-"name": "Flight — Short-haul Economy (<3h)",
-"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
-"factor_kg_co2e": 0.18286935,
+"name": "Flight — Long-haul Economy (>6h)",
+"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
+"factor_kg_co2e": 0.13464333,
 "match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.18286935,
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.13464333,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.18196,
-"ch4": 1.12e-05,
-"n2o": 0.00089815
+"co2": 0.13397,
+"ch4": 6.38e-06,
+"n2o": 0.00066695
 }
 },
 {
-"slug": "flight-short-economy",
+"slug": "flight-long-economy",
 "year": 2024,
 "unit": "person-km",
 "scope": "scope3",
 "category": "business_travel",
-"name": "Flight — Short-haul Economy (<3h)",
-"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
-"factor_kg_co2e": 0.18287,
+"name": "Flight — Long-haul Economy (>6h)",
+"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
+"factor_kg_co2e": 0.13465,
 "match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.18287,
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.13465,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.18196,
+"co2": 0.13397,
+"ch4": 1e-05,
+"n2o": 0.00067
+}
+},
+{
+"slug": "flight-long-economy",
+"year": 2025,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Long-haul Economy (>6h)",
+"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
+"factor_kg_co2e": 0.10916,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.10916,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.10849,
+"ch4": 1e-05,
+"n2o": 0.00067
+}
+},
+{
+"slug": "flight-long-economy",
+"year": 2026,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Long-haul Economy (>6h)",
+"name_tr": "Uçak — Uzun mesafe Economy (>6 saat)",
+"factor_kg_co2e": 0.10916,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.10916,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.10849,
+"ch4": 1e-05,
+"n2o": 0.00067
+}
+},
+{
+"slug": "flight-long-first",
+"year": 2015,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Long-haul First Class",
+"name_tr": "Uçak — Uzun mesafe First Class",
+"factor_kg_co2e": 0.55506,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | First class | With RF | passenger.km",
+"defra_value": 0.55506,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.55195,
+"ch4": 2e-05,
+"n2o": 0.00309
+}
+},
+{
+"slug": "flight-long-first",
+"year": 2016,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Long-haul First Class",
+"name_tr": "Uçak — Uzun mesafe First Class",
+"factor_kg_co2e": 0.54846,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | First class | With RF | passenger.km",
+"defra_value": 0.54846,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.54572,
+"ch4": 2e-05,
+"n2o": 0.00272
+}
+},
+{
+"slug": "flight-long-first",
+"year": 2017,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Long-haul First Class",
+"name_tr": "Uçak — Uzun mesafe First Class",
+"factor_kg_co2e": 0.55209,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | First class | With RF | passenger.km",
+"defra_value": 0.55209,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.54933,
+"ch4": 2e-05,
+"n2o": 0.00274
+}
+},
+{
+"slug": "flight-long-first",
+"year": 2018,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Long-haul First Class",
+"name_tr": "Uçak — Uzun mesafe First Class",
+"factor_kg_co2e": 0.55987,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | First class | With RF | passenger.km",
+"defra_value": 0.55987,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.55708,
+"ch4": 2e-05,
+"n2o": 0.00277
+}
+},
+{
+"slug": "flight-long-first",
+"year": 2019,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Long-haul First Class",
+"name_tr": "Uçak — Uzun mesafe First Class",
+"factor_kg_co2e": 0.55376,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | First class | With RF | passenger.km",
+"defra_value": 0.55376,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.551,
+"ch4": 2e-05,
+"n2o": 0.00274
+}
+},
+{
+"slug": "flight-long-first",
+"year": 2020,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Long-haul First Class",
+"name_tr": "Uçak — Uzun mesafe First Class",
+"factor_kg_co2e": 0.55695,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | First class | With RF | passenger.km",
+"defra_value": 0.55695,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.55417,
+"ch4": 2e-05,
+"n2o": 0.00276
+}
+},
+{
+"slug": "flight-long-first",
+"year": 2021,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Long-haul First Class",
+"name_tr": "Uçak — Uzun mesafe First Class",
+"factor_kg_co2e": 0.56251,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | First class | With RF | passenger.km",
+"defra_value": 0.56251,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.5597,
+"ch4": 2e-05,
+"n2o": 0.00279
+}
+},
+{
+"slug": "flight-long-first",
+"year": 2022,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Long-haul First Class",
+"name_tr": "Uçak — Uzun mesafe First Class",
+"factor_kg_co2e": 0.56251,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | First class | With RF | passenger.km",
+"defra_value": 0.56251,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.5597,
+"ch4": 2e-05,
+"n2o": 0.00279
+}
+},
+{
+"slug": "flight-long-first",
+"year": 2023,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Long-haul First Class",
+"name_tr": "Uçak — Uzun mesafe First Class",
+"factor_kg_co2e": 0.5385424,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | First class | With RF | passenger.km",
+"defra_value": 0.5385424,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.53587,
+"ch4": 2.24e-05,
+"n2o": 0.00265
+}
+},
+{
+"slug": "flight-long-first",
+"year": 2024,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Long-haul First Class",
+"name_tr": "Uçak — Uzun mesafe First Class",
+"factor_kg_co2e": 0.53854,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | First class | With RF | passenger.km",
+"defra_value": 0.53854,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.53587,
+"ch4": 2e-05,
+"n2o": 0.00265
+}
+},
+{
+"slug": "flight-long-first",
+"year": 2025,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Long-haul First Class",
+"name_tr": "Uçak — Uzun mesafe First Class",
+"factor_kg_co2e": 0.43663,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | First class | With RF | passenger.km",
+"defra_value": 0.43663,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.43396,
+"ch4": 2e-05,
+"n2o": 0.00265
+}
+},
+{
+"slug": "flight-long-first",
+"year": 2026,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Long-haul First Class",
+"name_tr": "Uçak — Uzun mesafe First Class",
+"factor_kg_co2e": 0.43663,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | First class | With RF | passenger.km",
+"defra_value": 0.43663,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.43396,
+"ch4": 2e-05,
+"n2o": 0.00265
+}
+},
+{
+"slug": "flight-medium",
+"year": 2015,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Medium-haul flight (500–3700 km)",
+"name_tr": "Orta mesafe uçuş (500–3700 km)",
+"factor_kg_co2e": 0.18116,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18116,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.18014,
+"ch4": 1e-05,
+"n2o": 0.00101
+}
+},
+{
+"slug": "flight-medium",
+"year": 2016,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Medium-haul flight (500–3700 km)",
+"name_tr": "Orta mesafe uçuş (500–3700 km)",
+"factor_kg_co2e": 0.17901,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.17901,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.17811,
+"ch4": 1e-05,
+"n2o": 0.00089
+}
+},
+{
+"slug": "flight-medium",
+"year": 2017,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Medium-haul flight (500–3700 km)",
+"name_tr": "Orta mesafe uçuş (500–3700 km)",
+"factor_kg_co2e": 0.18026,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18026,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.17936,
+"ch4": 1e-05,
+"n2o": 0.00089
+}
+},
+{
+"slug": "flight-medium",
+"year": 2018,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Medium-haul flight (500–3700 km)",
+"name_tr": "Orta mesafe uçuş (500–3700 km)",
+"factor_kg_co2e": 0.18277,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18277,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.18185,
+"ch4": 1e-05,
+"n2o": 0.00091
+}
+},
+{
+"slug": "flight-medium",
+"year": 2019,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Medium-haul flight (500–3700 km)",
+"name_tr": "Orta mesafe uçuş (500–3700 km)",
+"factor_kg_co2e": 0.18078,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18078,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.17987,
 "ch4": 1e-05,
 "n2o": 0.0009
 }
 },
 {
+"slug": "flight-medium",
+"year": 2020,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Medium-haul flight (500–3700 km)",
+"name_tr": "Orta mesafe uçuş (500–3700 km)",
+"factor_kg_co2e": 0.18181,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18181,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.1809,
+"ch4": 1e-05,
+"n2o": 0.0009
+}
+},
+{
+"slug": "flight-medium",
+"year": 2021,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Medium-haul flight (500–3700 km)",
+"name_tr": "Orta mesafe uçuş (500–3700 km)",
+"factor_kg_co2e": 0.18362,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18362,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.1827,
+"ch4": 1e-05,
+"n2o": 0.00091
+}
+},
+{
+"slug": "flight-medium",
+"year": 2022,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Medium-haul flight (500–3700 km)",
+"name_tr": "Orta mesafe uçuş (500–3700 km)",
+"factor_kg_co2e": 0.18362,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18362,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.1827,
+"ch4": 1e-05,
+"n2o": 0.00091
+}
+},
+{
+"slug": "flight-medium",
+"year": 2023,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Medium-haul flight (500–3700 km)",
+"name_tr": "Orta mesafe uçuş (500–3700 km)",
+"factor_kg_co2e": 0.17580378,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.17580378,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.17493,
+"ch4": 1.12e-05,
+"n2o": 0.00086258
+}
+},
+{
+"slug": "flight-medium",
+"year": 2024,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Medium-haul flight (500–3700 km)",
+"name_tr": "Orta mesafe uçuş (500–3700 km)",
+"factor_kg_co2e": 0.1758,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.1758,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.17493,
+"ch4": 1e-05,
+"n2o": 0.00086
+}
+},
+{
+"slug": "flight-medium",
+"year": 2025,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Medium-haul flight (500–3700 km)",
+"name_tr": "Orta mesafe uçuş (500–3700 km)",
+"factor_kg_co2e": 0.14253,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.14253,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.14166,
+"ch4": 1e-05,
+"n2o": 0.00086
+}
+},
+{
+"slug": "flight-medium",
+"year": 2026,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Medium-haul flight (500–3700 km)",
+"name_tr": "Orta mesafe uçuş (500–3700 km)",
+"factor_kg_co2e": 0.14253,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.14253,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.14166,
+"ch4": 1e-05,
+"n2o": 0.00086
+}
+},
+{
+"slug": "flight-short",
+"year": 2015,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Short-haul flight (<500 km)",
+"name_tr": "Kısa mesafe uçuş (<500 km)",
+"factor_kg_co2e": 0.18116,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18116,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.18014,
+"ch4": 1e-05,
+"n2o": 0.00101
+}
+},
+{
+"slug": "flight-short",
+"year": 2016,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Short-haul flight (<500 km)",
+"name_tr": "Kısa mesafe uçuş (<500 km)",
+"factor_kg_co2e": 0.17901,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.17901,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.17811,
+"ch4": 1e-05,
+"n2o": 0.00089
+}
+},
+{
+"slug": "flight-short",
+"year": 2017,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Short-haul flight (<500 km)",
+"name_tr": "Kısa mesafe uçuş (<500 km)",
+"factor_kg_co2e": 0.18026,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18026,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.17936,
+"ch4": 1e-05,
+"n2o": 0.00089
+}
+},
+{
+"slug": "flight-short",
+"year": 2018,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Short-haul flight (<500 km)",
+"name_tr": "Kısa mesafe uçuş (<500 km)",
+"factor_kg_co2e": 0.18277,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18277,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.18185,
+"ch4": 1e-05,
+"n2o": 0.00091
+}
+},
+{
+"slug": "flight-short",
+"year": 2019,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Short-haul flight (<500 km)",
+"name_tr": "Kısa mesafe uçuş (<500 km)",
+"factor_kg_co2e": 0.18078,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18078,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.17987,
+"ch4": 1e-05,
+"n2o": 0.0009
+}
+},
+{
+"slug": "flight-short",
+"year": 2020,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Short-haul flight (<500 km)",
+"name_tr": "Kısa mesafe uçuş (<500 km)",
+"factor_kg_co2e": 0.18181,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18181,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.1809,
+"ch4": 1e-05,
+"n2o": 0.0009
+}
+},
+{
+"slug": "flight-short",
+"year": 2021,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Short-haul flight (<500 km)",
+"name_tr": "Kısa mesafe uçuş (<500 km)",
+"factor_kg_co2e": 0.18362,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18362,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.1827,
+"ch4": 1e-05,
+"n2o": 0.00091
+}
+},
+{
+"slug": "flight-short",
+"year": 2022,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Short-haul flight (<500 km)",
+"name_tr": "Kısa mesafe uçuş (<500 km)",
+"factor_kg_co2e": 0.18362,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.18362,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.1827,
+"ch4": 1e-05,
+"n2o": 0.00091
+}
+},
+{
+"slug": "flight-short",
+"year": 2023,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Short-haul flight (<500 km)",
+"name_tr": "Kısa mesafe uçuş (<500 km)",
+"factor_kg_co2e": 0.17580378,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.17580378,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.17493,
+"ch4": 1.12e-05,
+"n2o": 0.00086258
+}
+},
+{
+"slug": "flight-short",
+"year": 2024,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Short-haul flight (<500 km)",
+"name_tr": "Kısa mesafe uçuş (<500 km)",
+"factor_kg_co2e": 0.1758,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.1758,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.17493,
+"ch4": 1e-05,
+"n2o": 0.00086
+}
+},
+{
+"slug": "flight-short",
+"year": 2025,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Short-haul flight (<500 km)",
+"name_tr": "Kısa mesafe uçuş (<500 km)",
+"factor_kg_co2e": 0.14253,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.14253,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.14166,
+"ch4": 1e-05,
+"n2o": 0.00086
+}
+},
+{
+"slug": "flight-short",
+"year": 2026,
+"unit": "km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Short-haul flight (<500 km)",
+"name_tr": "Kısa mesafe uçuş (<500 km)",
+"factor_kg_co2e": 0.14253,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Average passenger | With RF | passenger.km",
+"defra_value": 0.14253,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.14166,
+"ch4": 1e-05,
+"n2o": 0.00086
+}
+},
+{
+"slug": "flight-short-economy",
+"year": 2015,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Short-haul Economy (<3h)",
+"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
+"factor_kg_co2e": 0.13876,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.13876,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.13799,
+"ch4": 0.0,
+"n2o": 0.00077
+}
+},
+{
+"slug": "flight-short-economy",
+"year": 2016,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Short-haul Economy (<3h)",
+"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
+"factor_kg_co2e": 0.13712481,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.13712481,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.13644,
+"ch4": 4.81e-06,
+"n2o": 0.00068
+}
+},
+{
+"slug": "flight-short-economy",
+"year": 2017,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Short-haul Economy (<3h)",
+"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
+"factor_kg_co2e": 0.13801473,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.13801473,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.13733,
+"ch4": 4.73e-06,
+"n2o": 0.00068
+}
+},
+{
+"slug": "flight-short-economy",
+"year": 2018,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Short-haul Economy (<3h)",
+"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
+"factor_kg_co2e": 0.1399647,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.1399647,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.13927,
+"ch4": 4.7e-06,
+"n2o": 0.00069
+}
+},
+{
+"slug": "flight-short-economy",
+"year": 2019,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Short-haul Economy (<3h)",
+"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
+"factor_kg_co2e": 0.1384453,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.1384453,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.13775,
+"ch4": 5.3e-06,
+"n2o": 0.00069
+}
+},
+{
+"slug": "flight-short-economy",
+"year": 2020,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Short-haul Economy (<3h)",
+"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
+"factor_kg_co2e": 0.1392452,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.1392452,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.13855,
+"ch4": 5.2e-06,
+"n2o": 0.00069
+}
+},
+{
+"slug": "flight-short-economy",
+"year": 2021,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Short-haul Economy (<3h)",
+"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
+"factor_kg_co2e": 0.140625,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.140625,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.13992,
+"ch4": 5e-06,
+"n2o": 0.0007
+}
+},
+{
+"slug": "flight-short-economy",
+"year": 2022,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Short-haul Economy (<3h)",
+"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
+"factor_kg_co2e": 0.140625,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.140625,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.13992,
+"ch4": 5e-06,
+"n2o": 0.0007
+}
+},
+{
+"slug": "flight-short-economy",
+"year": 2023,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Short-haul Economy (<3h)",
+"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
+"factor_kg_co2e": 0.13464333,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.13464333,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.13397,
+"ch4": 6.38e-06,
+"n2o": 0.00066695
+}
+},
+{
+"slug": "flight-short-economy",
+"year": 2024,
+"unit": "person-km",
+"scope": "scope3",
+"category": "business_travel",
+"name": "Flight — Short-haul Economy (<3h)",
+"name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
+"factor_kg_co2e": 0.13465,
+"match": "nearest item",
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.13465,
+"defra_uom": "passenger.km",
+"gas": {
+"co2": 0.13397,
+"ch4": 1e-05,
+"n2o": 0.00067
+}
+},
+{
 "slug": "flight-short-economy",
 "year": 2025,
 "unit": "person-km",
@@ -7807,15 +7807,15 @@
 "category": "business_travel",
 "name": "Flight — Short-haul Economy (<3h)",
 "name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
-"factor_kg_co2e": 0.12576,
+"factor_kg_co2e": 0.10916,
 "match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.12576,
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.10916,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.12485,
+"co2": 0.10849,
 "ch4": 1e-05,
-"n2o": 0.0009
+"n2o": 0.00067
 }
 },
 {
@@ -7826,15 +7826,15 @@
 "category": "business_travel",
 "name": "Flight — Short-haul Economy (<3h)",
 "name_tr": "Uçak — Kısa mesafe Economy (<3 saat)",
-"factor_kg_co2e": 0.12576,
+"factor_kg_co2e": 0.10916,
 "match": "nearest item",
-"defra_row": "Business travel- air | Short-haul, to/from UK | Economy class | With RF | passenger.km",
-"defra_value": 0.12576,
+"defra_row": "Business travel- air | International, to/from non-UK | Economy class | With RF | passenger.km",
+"defra_value": 0.10916,
 "defra_uom": "passenger.km",
 "gas": {
-"co2": 0.12485,
+"co2": 0.10849,
 "ch4": 1e-05,
-"n2o": 0.0009
+"n2o": 0.00067
 }
 },
 {
@@ -17120,100 +17120,16 @@
 },
 {
 "slug": "product-landfill",
-"year": 2014,
-"unit": "kg",
-"scope": "scope3",
-"category": "end_of_life",
-"name": "Product landfill",
-"name_tr": "Ürün düzenli depolama",
-"factor_kg_co2e": 0.199,
-"match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 199.0,
-"defra_uom": "tonnes"
-},
-{
-"slug": "product-landfill",
-"year": 2015,
-"unit": "kg",
-"scope": "scope3",
-"category": "end_of_life",
-"name": "Product landfill",
-"name_tr": "Ürün düzenli depolama",
-"factor_kg_co2e": 0.093,
-"match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 93.0,
-"defra_uom": "tonnes"
-},
-{
-"slug": "product-landfill",
-"year": 2016,
-"unit": "kg",
-"scope": "scope3",
-"category": "end_of_life",
-"name": "Product landfill",
-"name_tr": "Ürün düzenli depolama",
-"factor_kg_co2e": 0.199,
-"match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 199.0,
-"defra_uom": "tonnes"
-},
-{
-"slug": "product-landfill",
-"year": 2017,
-"unit": "kg",
-"scope": "scope3",
-"category": "end_of_life",
-"name": "Product landfill",
-"name_tr": "Ürün düzenli depolama",
-"factor_kg_co2e": 0.10007286,
-"match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 100.07286365,
-"defra_uom": "tonnes"
-},
-{
-"slug": "product-landfill",
-"year": 2018,
-"unit": "kg",
-"scope": "scope3",
-"category": "end_of_life",
-"name": "Product landfill",
-"name_tr": "Ürün düzenli depolama",
-"factor_kg_co2e": 0.0997729,
-"match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 99.7729,
-"defra_uom": "tonnes"
-},
-{
-"slug": "product-landfill",
-"year": 2019,
-"unit": "kg",
-"scope": "scope3",
-"category": "end_of_life",
-"name": "Product landfill",
-"name_tr": "Ürün düzenli depolama",
-"factor_kg_co2e": 0.0997592,
-"match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 99.7592,
-"defra_uom": "tonnes"
-},
-{
-"slug": "product-landfill",
 "year": 2020,
 "unit": "kg",
 "scope": "scope3",
 "category": "end_of_life",
 "name": "Product landfill",
 "name_tr": "Ürün düzenli depolama",
-"factor_kg_co2e": 0.4581763,
+"factor_kg_co2e": 0.4373719,
 "match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 458.1763,
+"defra_row": "Waste disposal | Household residual waste | Landfill | tonnes",
+"defra_value": 437.3719,
 "defra_uom": "tonnes"
 },
 {
@@ -17224,10 +17140,10 @@
 "category": "end_of_life",
 "name": "Product landfill",
 "name_tr": "Ürün düzenli depolama",
-"factor_kg_co2e": 0.4670458,
+"factor_kg_co2e": 0.4462415,
 "match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 467.0458,
+"defra_row": "Waste disposal | Household residual waste | Landfill | tonnes",
+"defra_value": 446.2415,
 "defra_uom": "tonnes"
 },
 {
@@ -17238,10 +17154,10 @@
 "category": "end_of_life",
 "name": "Product landfill",
 "name_tr": "Ürün düzenli depolama",
-"factor_kg_co2e": 0.46700838,
+"factor_kg_co2e": 0.44620411,
 "match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 467.00838445,
+"defra_row": "Waste disposal | Household residual waste | Landfill | tonnes",
+"defra_value": 446.20410842,
 "defra_uom": "tonnes"
 },
 {
@@ -17252,10 +17168,10 @@
 "category": "end_of_life",
 "name": "Product landfill",
 "name_tr": "Ürün düzenli depolama",
-"factor_kg_co2e": 0.52033474,
+"factor_kg_co2e": 0.49704471,
 "match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 520.33474346,
+"defra_row": "Waste disposal | Household residual waste | Landfill | tonnes",
+"defra_value": 497.04470653,
 "defra_uom": "tonnes"
 },
 {
@@ -17266,10 +17182,10 @@
 "category": "end_of_life",
 "name": "Product landfill",
 "name_tr": "Ürün düzenli depolama",
-"factor_kg_co2e": 0.5203342,
+"factor_kg_co2e": 0.49704416,
 "match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 520.3342,
+"defra_row": "Waste disposal | Household residual waste | Landfill | tonnes",
+"defra_value": 497.04416,
 "defra_uom": "tonnes"
 },
 {
@@ -17280,10 +17196,10 @@
 "category": "end_of_life",
 "name": "Product landfill",
 "name_tr": "Ürün düzenli depolama",
-"factor_kg_co2e": 0.5205327,
+"factor_kg_co2e": 0.49724244,
 "match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 520.5327,
+"defra_row": "Waste disposal | Household residual waste | Landfill | tonnes",
+"defra_value": 497.24244,
 "defra_uom": "tonnes"
 },
 {
@@ -17294,10 +17210,10 @@
 "category": "end_of_life",
 "name": "Product landfill",
 "name_tr": "Ürün düzenli depolama",
-"factor_kg_co2e": 0.52058023,
+"factor_kg_co2e": 0.49728993,
 "match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 520.58023,
+"defra_row": "Waste disposal | Household residual waste | Landfill | tonnes",
+"defra_value": 497.28993,
 "defra_uom": "tonnes"
 },
 {
@@ -22024,15 +21940,15 @@
 "category": "upstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016047,
+"factor_kg_co2e": 0.0126,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016047,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.0126,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000122
+"co2": 0.0125,
+"ch4": 4e-06,
+"n2o": 9.6e-05
 }
 },
 {
@@ -22043,15 +21959,15 @@
 "category": "upstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016048,
+"factor_kg_co2e": 0.012601,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016048,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012601,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000123
+"co2": 0.0125,
+"ch4": 4e-06,
+"n2o": 9.7e-05
 }
 },
 {
@@ -22062,15 +21978,15 @@
 "category": "upstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016044,
+"factor_kg_co2e": 0.012598,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016044,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012598,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 6e-06,
-"n2o": 0.000118
+"co2": 0.0125,
+"ch4": 5e-06,
+"n2o": 9.3e-05
 }
 },
 {
@@ -22081,15 +21997,15 @@
 "category": "upstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016045,
+"factor_kg_co2e": 0.012598,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016045,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012598,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 6e-06,
-"n2o": 0.000119
+"co2": 0.0125,
+"ch4": 5e-06,
+"n2o": 9.3e-05
 }
 },
 {
@@ -22100,15 +22016,15 @@
 "category": "upstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016143,
+"factor_kg_co2e": 0.012675,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016143,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012675,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000218
+"co2": 0.0125,
+"ch4": 4e-06,
+"n2o": 0.000171
 }
 },
 {
@@ -22119,15 +22035,15 @@
 "category": "upstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.012674,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012674,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000217
+"co2": 0.0125,
+"ch4": 4e-06,
+"n2o": 0.00017
 }
 },
 {
@@ -22138,15 +22054,15 @@
 "category": "upstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.012674,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012674,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000217
+"co2": 0.0125,
+"ch4": 4e-06,
+"n2o": 0.00017
 }
 },
 {
@@ -22157,15 +22073,15 @@
 "category": "upstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.012674,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012674,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000217
+"co2": 0.0125,
+"ch4": 4e-06,
+"n2o": 0.00017
 }
 },
 {
@@ -22176,15 +22092,15 @@
 "category": "upstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.012674,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012674,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000217
+"co2": 0.0125,
+"ch4": 4e-06,
+"n2o": 0.00017
 }
 },
 {
@@ -22195,15 +22111,15 @@
 "category": "upstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.01611857,
+"factor_kg_co2e": 0.01265565,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01611857,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.01265565,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5.6e-06,
-"n2o": 0.00019297
+"co2": 0.0125,
+"ch4": 4.48e-06,
+"n2o": 0.00015117
 }
 },
 {
@@ -22214,15 +22130,15 @@
 "category": "upstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.01612,
+"factor_kg_co2e": 0.01265,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01612,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.01265,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 1e-05,
-"n2o": 0.00019
+"co2": 0.0125,
+"ch4": 4.48e-06,
+"n2o": 0.00015
 }
 },
 {
@@ -22233,15 +22149,15 @@
 "category": "upstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.01612,
+"factor_kg_co2e": 0.01266,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01612,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.01266,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 1e-05,
-"n2o": 0.00019
+"co2": 0.0125,
+"ch4": 4.48e-06,
+"n2o": 0.00015
 }
 },
 {
@@ -22252,15 +22168,15 @@
 "category": "upstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.01612,
+"factor_kg_co2e": 0.01266,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01612,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.01266,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 1e-05,
-"n2o": 0.00019
+"co2": 0.0125,
+"ch4": 4.48e-06,
+"n2o": 0.00015
 }
 },
 {
@@ -22271,15 +22187,15 @@
 "category": "downstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016047,
+"factor_kg_co2e": 0.0126,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016047,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.0126,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000122
+"co2": 0.0125,
+"ch4": 4e-06,
+"n2o": 9.6e-05
 }
 },
 {
@@ -22290,15 +22206,15 @@
 "category": "downstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016048,
+"factor_kg_co2e": 0.012601,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016048,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012601,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000123
+"co2": 0.0125,
+"ch4": 4e-06,
+"n2o": 9.7e-05
 }
 },
 {
@@ -22309,15 +22225,15 @@
 "category": "downstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016044,
+"factor_kg_co2e": 0.012598,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016044,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012598,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 6e-06,
-"n2o": 0.000118
+"co2": 0.0125,
+"ch4": 5e-06,
+"n2o": 9.3e-05
 }
 },
 {
@@ -22328,15 +22244,15 @@
 "category": "downstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016045,
+"factor_kg_co2e": 0.012598,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016045,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012598,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 6e-06,
-"n2o": 0.000119
+"co2": 0.0125,
+"ch4": 5e-06,
+"n2o": 9.3e-05
 }
 },
 {
@@ -22347,15 +22263,15 @@
 "category": "downstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016143,
+"factor_kg_co2e": 0.012675,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016143,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012675,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000218
+"co2": 0.0125,
+"ch4": 4e-06,
+"n2o": 0.000171
 }
 },
 {
@@ -22366,15 +22282,15 @@
 "category": "downstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.012674,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012674,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000217
+"co2": 0.0125,
+"ch4": 4e-06,
+"n2o": 0.00017
 }
 },
 {
@@ -22385,15 +22301,15 @@
 "category": "downstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.012674,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012674,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000217
+"co2": 0.0125,
+"ch4": 4e-06,
+"n2o": 0.00017
 }
 },
 {
@@ -22404,15 +22320,15 @@
 "category": "downstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.012674,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012674,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000217
+"co2": 0.0125,
+"ch4": 4e-06,
+"n2o": 0.00017
 }
 },
 {
@@ -22423,15 +22339,15 @@
 "category": "downstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.012674,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.012674,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000217
+"co2": 0.0125,
+"ch4": 4e-06,
+"n2o": 0.00017
 }
 },
 {
@@ -22442,15 +22358,15 @@
 "category": "downstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.01611857,
+"factor_kg_co2e": 0.01265565,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01611857,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.01265565,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5.6e-06,
-"n2o": 0.00019297
+"co2": 0.0125,
+"ch4": 4.48e-06,
+"n2o": 0.00015117
 }
 },
 {
@@ -22461,15 +22377,15 @@
 "category": "downstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.01612,
+"factor_kg_co2e": 0.01265,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01612,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.01265,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 1e-05,
-"n2o": 0.00019
+"co2": 0.0125,
+"ch4": 4.48e-06,
+"n2o": 0.00015
 }
 },
 {
@@ -22480,15 +22396,15 @@
 "category": "downstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.01612,
+"factor_kg_co2e": 0.01266,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01612,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.01266,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 1e-05,
-"n2o": 0.00019
+"co2": 0.0125,
+"ch4": 4.48e-06,
+"n2o": 0.00015
 }
 },
 {
@@ -22499,15 +22415,15 @@
 "category": "downstream_transport",
 "name": "Sea — Large container (>10,000 TEU)",
 "name_tr": "Denizyolu — Konteyner büyük (>10.000 TEU)",
-"factor_kg_co2e": 0.01612,
+"factor_kg_co2e": 0.01266,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01612,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 8000+ TEU | tonne.km",
+"defra_value": 0.01266,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 1e-05,
-"n2o": 0.00019
+"co2": 0.0125,
+"ch4": 4.48e-06,
+"n2o": 0.00015
 }
 },
 {
@@ -22518,15 +22434,15 @@
 "category": "upstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016047,
+"factor_kg_co2e": 0.016733,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016047,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016733,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 5e-06,
-"n2o": 0.000122
+"n2o": 0.000128
 }
 },
 {
@@ -22537,15 +22453,15 @@
 "category": "upstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016048,
+"factor_kg_co2e": 0.016733,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016048,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016733,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 5e-06,
-"n2o": 0.000123
+"n2o": 0.000128
 }
 },
 {
@@ -22556,15 +22472,15 @@
 "category": "upstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016044,
+"factor_kg_co2e": 0.016729,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016044,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016729,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 6e-06,
-"n2o": 0.000118
+"n2o": 0.000123
 }
 },
 {
@@ -22575,15 +22491,15 @@
 "category": "upstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016045,
+"factor_kg_co2e": 0.01673,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016045,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.01673,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 6e-06,
-"n2o": 0.000119
+"n2o": 0.000124
 }
 },
 {
@@ -22594,15 +22510,15 @@
 "category": "upstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016143,
+"factor_kg_co2e": 0.016833,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016143,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016833,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000218
+"co2": 0.0166,
+"ch4": 6e-06,
+"n2o": 0.000227
 }
 },
 {
@@ -22613,15 +22529,15 @@
 "category": "upstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.016831,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016831,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 5e-06,
-"n2o": 0.000217
+"n2o": 0.000226
 }
 },
 {
@@ -22632,15 +22548,15 @@
 "category": "upstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.016831,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016831,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 5e-06,
-"n2o": 0.000217
+"n2o": 0.000226
 }
 },
 {
@@ -22651,15 +22567,15 @@
 "category": "upstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.016831,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016831,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 5e-06,
-"n2o": 0.000217
+"n2o": 0.000226
 }
 },
 {
@@ -22670,15 +22586,15 @@
 "category": "upstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.016831,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016831,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 5e-06,
-"n2o": 0.000217
+"n2o": 0.000226
 }
 },
 {
@@ -22689,15 +22605,15 @@
 "category": "upstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.01611857,
+"factor_kg_co2e": 0.01680657,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01611857,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.01680657,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 5.6e-06,
-"n2o": 0.00019297
+"n2o": 0.00020097
 }
 },
 {
@@ -22708,15 +22624,15 @@
 "category": "upstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.01612,
+"factor_kg_co2e": 0.01681,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01612,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.01681,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 1e-05,
-"n2o": 0.00019
+"n2o": 0.0002
 }
 },
 {
@@ -22727,15 +22643,15 @@
 "category": "upstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.01612,
+"factor_kg_co2e": 0.01681,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01612,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.01681,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 1e-05,
-"n2o": 0.00019
+"n2o": 0.0002
 }
 },
 {
@@ -22746,15 +22662,15 @@
 "category": "upstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.01612,
+"factor_kg_co2e": 0.01681,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01612,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.01681,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 1e-05,
-"n2o": 0.00019
+"n2o": 0.0002
 }
 },
 {
@@ -22765,15 +22681,15 @@
 "category": "downstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016047,
+"factor_kg_co2e": 0.016733,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016047,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016733,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 5e-06,
-"n2o": 0.000122
+"n2o": 0.000128
 }
 },
 {
@@ -22784,15 +22700,15 @@
 "category": "downstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016048,
+"factor_kg_co2e": 0.016733,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016048,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016733,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 5e-06,
-"n2o": 0.000123
+"n2o": 0.000128
 }
 },
 {
@@ -22803,15 +22719,15 @@
 "category": "downstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016044,
+"factor_kg_co2e": 0.016729,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016044,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016729,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 6e-06,
-"n2o": 0.000118
+"n2o": 0.000123
 }
 },
 {
@@ -22822,15 +22738,15 @@
 "category": "downstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016045,
+"factor_kg_co2e": 0.01673,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016045,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.01673,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 6e-06,
-"n2o": 0.000119
+"n2o": 0.000124
 }
 },
 {
@@ -22841,15 +22757,15 @@
 "category": "downstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016143,
+"factor_kg_co2e": 0.016833,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016143,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016833,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
-"ch4": 5e-06,
-"n2o": 0.000218
+"co2": 0.0166,
+"ch4": 6e-06,
+"n2o": 0.000227
 }
 },
 {
@@ -22860,15 +22776,15 @@
 "category": "downstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.016831,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016831,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 5e-06,
-"n2o": 0.000217
+"n2o": 0.000226
 }
 },
 {
@@ -22879,15 +22795,15 @@
 "category": "downstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.016831,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016831,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 5e-06,
-"n2o": 0.000217
+"n2o": 0.000226
 }
 },
 {
@@ -22898,15 +22814,15 @@
 "category": "downstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.016831,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016831,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 5e-06,
-"n2o": 0.000217
+"n2o": 0.000226
 }
 },
 {
@@ -22917,15 +22833,15 @@
 "category": "downstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.016142,
+"factor_kg_co2e": 0.016831,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.016142,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.016831,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 5e-06,
-"n2o": 0.000217
+"n2o": 0.000226
 }
 },
 {
@@ -22936,15 +22852,15 @@
 "category": "downstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.01611857,
+"factor_kg_co2e": 0.01680657,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01611857,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.01680657,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 5.6e-06,
-"n2o": 0.00019297
+"n2o": 0.00020097
 }
 },
 {
@@ -22955,15 +22871,15 @@
 "category": "downstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.01612,
+"factor_kg_co2e": 0.01681,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01612,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.01681,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 1e-05,
-"n2o": 0.00019
+"n2o": 0.0002
 }
 },
 {
@@ -22974,15 +22890,15 @@
 "category": "downstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.01612,
+"factor_kg_co2e": 0.01681,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01612,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.01681,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 1e-05,
-"n2o": 0.00019
+"n2o": 0.0002
 }
 },
 {
@@ -22993,15 +22909,15 @@
 "category": "downstream_transport",
 "name": "Sea — Medium container (3,000–8,000 TEU)",
 "name_tr": "Denizyolu — Konteyner orta (3.000–8.000 TEU)",
-"factor_kg_co2e": 0.01612,
+"factor_kg_co2e": 0.01681,
 "match": "nearest item",
-"defra_row": "Freighting goods | Cargo ship | Container ship | Average | tonne.km",
-"defra_value": 0.01612,
+"defra_row": "Freighting goods | Cargo ship | Container ship | 5000–7999 TEU | tonne.km",
+"defra_value": 0.01681,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 0.01592,
+"co2": 0.0166,
 "ch4": 1e-05,
-"n2o": 0.00019
+"n2o": 0.0002
 }
 },
 {
@@ -23508,7 +23424,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.27944,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.27944,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23527,7 +23443,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.41112,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.41112,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23546,7 +23462,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.45648,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.45648,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23565,7 +23481,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.23205,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.23205,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23584,7 +23500,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.13174,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.13174,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23603,7 +23519,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.13382,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.13382,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23622,7 +23538,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.0189,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.0189,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23641,7 +23557,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.0189,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.0189,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23660,7 +23576,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.0990316,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.0990316,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23679,7 +23595,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.09904,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.09904,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23698,7 +23614,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 0.89939,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 0.89939,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23717,7 +23633,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 0.89939,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 0.89939,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23736,7 +23652,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.27944,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.27944,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23755,7 +23671,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.41112,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.41112,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23774,7 +23690,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.45648,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.45648,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23793,7 +23709,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.23205,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.23205,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23812,7 +23728,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.13174,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.13174,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23831,7 +23747,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.13382,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.13382,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23850,7 +23766,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.0189,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.0189,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23869,7 +23785,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.0189,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.0189,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23888,7 +23804,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.0990316,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.0990316,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23907,7 +23823,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 1.09904,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 1.09904,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23926,7 +23842,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 0.89939,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 0.89939,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23945,7 +23861,7 @@
 "name_tr": "Havayolu — Kargo uzun mesafe",
 "factor_kg_co2e": 0.89939,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Long-haul, to/from UK | With RF | tonne.km",
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
 "defra_value": 0.89939,
 "defra_uom": "tonne.km",
 "gas": {
@@ -23962,15 +23878,15 @@
 "category": "upstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 2.31277,
+"factor_kg_co2e": 1.27944,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 2.31277,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.27944,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 2.30079,
-"ch4": 6e-05,
-"n2o": 0.01192
+"co2": 1.27281,
+"ch4": 3e-05,
+"n2o": 0.0066
 }
 },
 {
@@ -23981,15 +23897,15 @@
 "category": "upstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 2.18966,
+"factor_kg_co2e": 1.41112,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 2.18966,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.41112,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 2.17873,
-"ch4": 8e-05,
-"n2o": 0.01085
+"co2": 1.40408,
+"ch4": 5e-05,
+"n2o": 0.00699
 }
 },
 {
@@ -24000,15 +23916,15 @@
 "category": "upstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 1.99837,
+"factor_kg_co2e": 1.45648,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 1.99837,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.45648,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 1.9884,
-"ch4": 7e-05,
-"n2o": 0.0099
+"co2": 1.44921,
+"ch4": 5e-05,
+"n2o": 0.00722
 }
 },
 {
@@ -24019,15 +23935,15 @@
 "category": "upstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 1.9469,
+"factor_kg_co2e": 1.23205,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 1.9469,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.23205,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 1.93718,
-"ch4": 7e-05,
-"n2o": 0.00965
+"co2": 1.22591,
+"ch4": 4e-05,
+"n2o": 0.0061
 }
 },
 {
@@ -24038,15 +23954,15 @@
 "category": "upstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 2.37968,
+"factor_kg_co2e": 1.13174,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 2.37968,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.13174,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 2.3678,
-"ch4": 9e-05,
-"n2o": 0.01179
+"co2": 1.12609,
+"ch4": 4e-05,
+"n2o": 0.00561
 }
 },
 {
@@ -24057,15 +23973,15 @@
 "category": "upstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 2.20946,
+"factor_kg_co2e": 1.13382,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 2.20946,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.13382,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 2.19843,
-"ch4": 8e-05,
-"n2o": 0.01095
+"co2": 1.12816,
+"ch4": 4e-05,
+"n2o": 0.00562
 }
 },
 {
@@ -24076,15 +23992,15 @@
 "category": "upstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 2.30229,
+"factor_kg_co2e": 1.0189,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 2.30229,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.0189,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 2.2908,
-"ch4": 8e-05,
-"n2o": 0.01141
+"co2": 1.01381,
+"ch4": 4e-05,
+"n2o": 0.00505
 }
 },
 {
@@ -24095,15 +24011,15 @@
 "category": "upstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 2.30229,
+"factor_kg_co2e": 1.0189,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 2.30229,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.0189,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 2.2908,
-"ch4": 8e-05,
-"n2o": 0.01141
+"co2": 1.01381,
+"ch4": 4e-05,
+"n2o": 0.00505
 }
 },
 {
@@ -24114,15 +24030,15 @@
 "category": "upstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 1.66815518,
+"factor_kg_co2e": 1.0990316,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 1.66815518,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.0990316,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 1.65986,
-"ch4": 7.84e-05,
-"n2o": 0.00821678
+"co2": 1.09356,
+"ch4": 5.6e-05,
+"n2o": 0.0054156
 }
 },
 {
@@ -24133,15 +24049,15 @@
 "category": "upstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 1.66816,
+"factor_kg_co2e": 1.09904,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 1.66816,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.09904,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 1.65986,
-"ch4": 8e-05,
-"n2o": 0.00822
+"co2": 1.09356,
+"ch4": 6e-05,
+"n2o": 0.00542
 }
 },
 {
@@ -24152,15 +24068,15 @@
 "category": "upstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 1.27835,
+"factor_kg_co2e": 0.89939,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 1.27835,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 0.89939,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 1.27005,
-"ch4": 8e-05,
-"n2o": 0.00822
+"co2": 0.89392,
+"ch4": 6e-05,
+"n2o": 0.00542
 }
 },
 {
@@ -24171,15 +24087,15 @@
 "category": "upstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 1.27835,
+"factor_kg_co2e": 0.89939,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 1.27835,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 0.89939,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 1.27005,
-"ch4": 8e-05,
-"n2o": 0.00822
+"co2": 0.89392,
+"ch4": 6e-05,
+"n2o": 0.00542
 }
 },
 {
@@ -24190,15 +24106,15 @@
 "category": "downstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 2.31277,
+"factor_kg_co2e": 1.27944,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 2.31277,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.27944,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 2.30079,
-"ch4": 6e-05,
-"n2o": 0.01192
+"co2": 1.27281,
+"ch4": 3e-05,
+"n2o": 0.0066
 }
 },
 {
@@ -24209,15 +24125,15 @@
 "category": "downstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 2.18966,
+"factor_kg_co2e": 1.41112,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 2.18966,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.41112,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 2.17873,
-"ch4": 8e-05,
-"n2o": 0.01085
+"co2": 1.40408,
+"ch4": 5e-05,
+"n2o": 0.00699
 }
 },
 {
@@ -24228,15 +24144,15 @@
 "category": "downstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 1.99837,
+"factor_kg_co2e": 1.45648,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 1.99837,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.45648,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 1.9884,
-"ch4": 7e-05,
-"n2o": 0.0099
+"co2": 1.44921,
+"ch4": 5e-05,
+"n2o": 0.00722
 }
 },
 {
@@ -24247,15 +24163,15 @@
 "category": "downstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 1.9469,
+"factor_kg_co2e": 1.23205,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 1.9469,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.23205,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 1.93718,
-"ch4": 7e-05,
-"n2o": 0.00965
+"co2": 1.22591,
+"ch4": 4e-05,
+"n2o": 0.0061
 }
 },
 {
@@ -24266,15 +24182,15 @@
 "category": "downstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 2.37968,
+"factor_kg_co2e": 1.13174,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 2.37968,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.13174,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 2.3678,
-"ch4": 9e-05,
-"n2o": 0.01179
+"co2": 1.12609,
+"ch4": 4e-05,
+"n2o": 0.00561
 }
 },
 {
@@ -24285,15 +24201,15 @@
 "category": "downstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 2.20946,
+"factor_kg_co2e": 1.13382,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 2.20946,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.13382,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 2.19843,
-"ch4": 8e-05,
-"n2o": 0.01095
+"co2": 1.12816,
+"ch4": 4e-05,
+"n2o": 0.00562
 }
 },
 {
@@ -24304,15 +24220,15 @@
 "category": "downstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 2.30229,
+"factor_kg_co2e": 1.0189,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 2.30229,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.0189,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 2.2908,
-"ch4": 8e-05,
-"n2o": 0.01141
+"co2": 1.01381,
+"ch4": 4e-05,
+"n2o": 0.00505
 }
 },
 {
@@ -24323,15 +24239,15 @@
 "category": "downstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 2.30229,
+"factor_kg_co2e": 1.0189,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 2.30229,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.0189,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 2.2908,
-"ch4": 8e-05,
-"n2o": 0.01141
+"co2": 1.01381,
+"ch4": 4e-05,
+"n2o": 0.00505
 }
 },
 {
@@ -24342,15 +24258,15 @@
 "category": "downstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 1.66815518,
+"factor_kg_co2e": 1.0990316,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 1.66815518,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.0990316,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 1.65986,
-"ch4": 7.84e-05,
-"n2o": 0.00821678
+"co2": 1.09356,
+"ch4": 5.6e-05,
+"n2o": 0.0054156
 }
 },
 {
@@ -24361,15 +24277,15 @@
 "category": "downstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 1.66816,
+"factor_kg_co2e": 1.09904,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 1.66816,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 1.09904,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 1.65986,
-"ch4": 8e-05,
-"n2o": 0.00822
+"co2": 1.09356,
+"ch4": 6e-05,
+"n2o": 0.00542
 }
 },
 {
@@ -24380,15 +24296,15 @@
 "category": "downstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 1.27835,
+"factor_kg_co2e": 0.89939,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 1.27835,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 0.89939,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 1.27005,
-"ch4": 8e-05,
-"n2o": 0.00822
+"co2": 0.89392,
+"ch4": 6e-05,
+"n2o": 0.00542
 }
 },
 {
@@ -24399,15 +24315,15 @@
 "category": "downstream_transport",
 "name": "Air — Cargo (short/medium haul)",
 "name_tr": "Havayolu — Kargo kısa/orta mesafe",
-"factor_kg_co2e": 1.27835,
+"factor_kg_co2e": 0.89939,
 "match": "nearest item",
-"defra_row": "Freighting goods | Freight flights | Short-haul, to/from UK | With RF | tonne.km",
-"defra_value": 1.27835,
+"defra_row": "Freighting goods | Freight flights | International, to/from non-UK | With RF | tonne.km",
+"defra_value": 0.89939,
 "defra_uom": "tonne.km",
 "gas": {
-"co2": 1.27005,
-"ch4": 8e-05,
-"n2o": 0.00822
+"co2": 0.89392,
+"ch4": 6e-05,
+"n2o": 0.00542
 }
 },
 {
@@ -29089,100 +29005,16 @@
 },
 {
 "slug": "wt-10-landfill",
-"year": 2014,
-"unit": "kg",
-"scope": "scope3",
-"category": "waste",
-"name": "Mixed municipal waste — landfill (blended)",
-"name_tr": "Karma belediye atığı — depolama (karma)",
-"factor_kg_co2e": 0.199,
-"match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 199.0,
-"defra_uom": "tonnes"
-},
-{
-"slug": "wt-10-landfill",
-"year": 2015,
-"unit": "kg",
-"scope": "scope3",
-"category": "waste",
-"name": "Mixed municipal waste — landfill (blended)",
-"name_tr": "Karma belediye atığı — depolama (karma)",
-"factor_kg_co2e": 0.093,
-"match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 93.0,
-"defra_uom": "tonnes"
-},
-{
-"slug": "wt-10-landfill",
-"year": 2016,
-"unit": "kg",
-"scope": "scope3",
-"category": "waste",
-"name": "Mixed municipal waste — landfill (blended)",
-"name_tr": "Karma belediye atığı — depolama (karma)",
-"factor_kg_co2e": 0.199,
-"match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 199.0,
-"defra_uom": "tonnes"
-},
-{
-"slug": "wt-10-landfill",
-"year": 2017,
-"unit": "kg",
-"scope": "scope3",
-"category": "waste",
-"name": "Mixed municipal waste — landfill (blended)",
-"name_tr": "Karma belediye atığı — depolama (karma)",
-"factor_kg_co2e": 0.10007286,
-"match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 100.07286365,
-"defra_uom": "tonnes"
-},
-{
-"slug": "wt-10-landfill",
-"year": 2018,
-"unit": "kg",
-"scope": "scope3",
-"category": "waste",
-"name": "Mixed municipal waste — landfill (blended)",
-"name_tr": "Karma belediye atığı — depolama (karma)",
-"factor_kg_co2e": 0.0997729,
-"match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 99.7729,
-"defra_uom": "tonnes"
-},
-{
-"slug": "wt-10-landfill",
-"year": 2019,
-"unit": "kg",
-"scope": "scope3",
-"category": "waste",
-"name": "Mixed municipal waste — landfill (blended)",
-"name_tr": "Karma belediye atığı — depolama (karma)",
-"factor_kg_co2e": 0.0997592,
-"match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 99.7592,
-"defra_uom": "tonnes"
-},
-{
-"slug": "wt-10-landfill",
 "year": 2020,
 "unit": "kg",
 "scope": "scope3",
 "category": "waste",
 "name": "Mixed municipal waste — landfill (blended)",
 "name_tr": "Karma belediye atığı — depolama (karma)",
-"factor_kg_co2e": 0.4581763,
+"factor_kg_co2e": 0.4373719,
 "match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 458.1763,
+"defra_row": "Waste disposal | Household residual waste | Landfill | tonnes",
+"defra_value": 437.3719,
 "defra_uom": "tonnes"
 },
 {
@@ -29193,10 +29025,10 @@
 "category": "waste",
 "name": "Mixed municipal waste — landfill (blended)",
 "name_tr": "Karma belediye atığı — depolama (karma)",
-"factor_kg_co2e": 0.4670458,
+"factor_kg_co2e": 0.4462415,
 "match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 467.0458,
+"defra_row": "Waste disposal | Household residual waste | Landfill | tonnes",
+"defra_value": 446.2415,
 "defra_uom": "tonnes"
 },
 {
@@ -29207,10 +29039,10 @@
 "category": "waste",
 "name": "Mixed municipal waste — landfill (blended)",
 "name_tr": "Karma belediye atığı — depolama (karma)",
-"factor_kg_co2e": 0.46700838,
+"factor_kg_co2e": 0.44620411,
 "match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 467.00838445,
+"defra_row": "Waste disposal | Household residual waste | Landfill | tonnes",
+"defra_value": 446.20410842,
 "defra_uom": "tonnes"
 },
 {
@@ -29221,10 +29053,10 @@
 "category": "waste",
 "name": "Mixed municipal waste — landfill (blended)",
 "name_tr": "Karma belediye atığı — depolama (karma)",
-"factor_kg_co2e": 0.52033474,
+"factor_kg_co2e": 0.49704471,
 "match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 520.33474346,
+"defra_row": "Waste disposal | Household residual waste | Landfill | tonnes",
+"defra_value": 497.04470653,
 "defra_uom": "tonnes"
 },
 {
@@ -29235,10 +29067,10 @@
 "category": "waste",
 "name": "Mixed municipal waste — landfill (blended)",
 "name_tr": "Karma belediye atığı — depolama (karma)",
-"factor_kg_co2e": 0.5203342,
+"factor_kg_co2e": 0.49704416,
 "match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 520.3342,
+"defra_row": "Waste disposal | Household residual waste | Landfill | tonnes",
+"defra_value": 497.04416,
 "defra_uom": "tonnes"
 },
 {
@@ -29249,10 +29081,10 @@
 "category": "waste",
 "name": "Mixed municipal waste — landfill (blended)",
 "name_tr": "Karma belediye atığı — depolama (karma)",
-"factor_kg_co2e": 0.5205327,
+"factor_kg_co2e": 0.49724244,
 "match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 520.5327,
+"defra_row": "Waste disposal | Household residual waste | Landfill | tonnes",
+"defra_value": 497.24244,
 "defra_uom": "tonnes"
 },
 {
@@ -29263,10 +29095,10 @@
 "category": "waste",
 "name": "Mixed municipal waste — landfill (blended)",
 "name_tr": "Karma belediye atığı — depolama (karma)",
-"factor_kg_co2e": 0.52058023,
+"factor_kg_co2e": 0.49728993,
 "match": "nearest item",
-"defra_row": "Waste disposal | Commercial and industrial waste | Landfill | tonnes",
-"defra_value": 520.58023,
+"defra_row": "Waste disposal | Household residual waste | Landfill | tonnes",
+"defra_value": 497.28993,
 "defra_uom": "tonnes"
 }
 ]

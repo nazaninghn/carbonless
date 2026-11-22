@@ -29,6 +29,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         payload = json.loads(DATA.read_text(encoding='utf-8'))
         created = updated = 0
+        kept = []
         with transaction.atomic():
             for row in payload['factors']:
                 value = Decimal(str(row['factor_kg_co2e'])).quantize(Q)
@@ -58,8 +59,12 @@ class Command(BaseCommand):
                         gas_split_basis='published',
                         gas_split_reference=f"UK Government GHG Conversion Factors {row['year']} — CO2, CH4, N2O rows of the same factor",
                     )
-                _obj, was_created = EmissionFactor.objects.update_or_create(
+                obj, was_created = EmissionFactor.objects.update_or_create(
                     slug=row['slug'], country='global', year=row['year'], standard='defra', defaults=data)
+                kept.append(obj.pk)
                 created += was_created
                 updated += not was_created
-        self.stdout.write(self.style.SUCCESS(f'DEFRA factors: {created} created, {updated} updated.'))
+            # A row no longer in the dataset (its slug was re-mapped to a DEFRA row that an edition does not
+            # have) is never selected again; it is kept, inactive, because entries may still reference it.
+            retired = EmissionFactor.objects.filter(standard='defra', is_active=True).exclude(pk__in=kept).update(is_active=False)
+        self.stdout.write(self.style.SUCCESS(f'DEFRA factors: {created} created, {updated} updated, {retired} retired.'))
