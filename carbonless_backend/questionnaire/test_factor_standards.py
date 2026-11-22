@@ -261,12 +261,23 @@ class IpccGhgFactorTests(_InventoryCase):
         for standard in ('ipcc', 'ghg'):
             self.assertTrue(EmissionFactor.objects.get(standard=standard, slug='natural-gas').is_active)      # per GJ
             self.assertTrue(EmissionFactor.objects.get(standard=standard, slug='coal').is_active)             # per kg, IPCC NCV
-            self.assertFalse(EmissionFactor.objects.get(standard=standard, slug='natural-gas-m3').is_active)
             self.assertFalse(EmissionFactor.objects.get(standard=standard, slug='diesel').is_active)
             with use_standard(standard):
                 self.assertIsNotNone(pick_factor('natural-gas', 'global', 2025))
-                self.assertIsNone(pick_factor('natural-gas-m3', 'global', 2025))
-        self.assertEqual(EmissionFactor.objects.filter(standard__in=('ipcc', 'ghg'), is_active=False).count(), 24)
+                self.assertIsNone(pick_factor('diesel', 'global', 2025))
+        self.assertEqual(EmissionFactor.objects.filter(standard__in=('ipcc', 'ghg'), is_active=False).count(), 22)
+
+    def test_natural_gas_per_m3_uses_the_national_calorific_value(self):
+        """IPCC default factors per TJ x the national NCV of natural gas, 34.54 TJ/10^6 m3 (TUR_NID_2024, Annex 4)."""
+        ipcc = EmissionFactor.objects.get(standard='ipcc', slug='natural-gas-m3')
+        ghg = EmissionFactor.objects.get(standard='ghg', slug='natural-gas-m3')
+        self.assertTrue(ipcc.is_active and ghg.is_active)
+        self.assertEqual(ipcc.factor_co2_kg_co2e, Decimal('1.937694'))        # 56 100 kg CO2/TJ x 34.54e-6 TJ/m3
+        self.assertEqual(ipcc.factor_kg_co2e, Decimal('1.939576'))
+        self.assertEqual(ghg.factor_kg_co2e, Decimal('1.939570'))
+        self.assertIn('TUR_NID_2024', ipcc.reference)
+        with use_standard('ipcc'):
+            self.assertEqual(pick_factor('natural-gas-m3', 'global', 2025).pk, ipcc.pk)
 
     def test_an_ipcc_inventory_reports_volume_fuel_as_under_review_and_keeps_national_electricity(self):
         from questionnaire.step_entries import uncalculated_notes
@@ -275,13 +286,14 @@ class IpccGhgFactorTests(_InventoryCase):
             ReportStep.objects.filter(report=self.report).delete()
             self.choose(choice)
             post_scenario(self.client, self.report)                          # gas in m3, diesel in litres
-            self.assertEqual(self.gas_kg(), [])                              # never a number from an unapproved density
+            # 10,000 m3 x the IPCC factor on the national calorific value (TUR_NID_2024); never a UK density.
+            self.assertEqual(self.gas_kg(), [Decimal('19395.7600') if choice == 'std_ipcc' else Decimal('19395.7000')])
             self.assertFalse(EmissionEntry.objects.filter(inventory=self.report, emission_factor__slug='diesel').exists())
             kwh = EmissionEntry.objects.filter(inventory=self.report, emission_factor__category='electricity')
             self.assertEqual([e.calculated_co2e_kg for e in kwh], [Decimal('20995.0000')])
             answers = dict(ReportStep.objects.filter(report=self.report).values_list('step_id', 'answer'))
             notes = [n for n in uncalculated_notes(answers, 2025, self.company, self.report) if n['step_id'] == '3A-5']
-            self.assertEqual(len(notes), 2)                                  # one per fuel, nothing dropped silently
+            self.assertEqual(len(notes), 1)                                  # the diesel in litres, not dropped silently
             for n in notes:
                 self.assertIn(f'the {name} factor for this source is under review', n['en'])
                 self.assertIn('faktörü incelemede', n['tr'])
@@ -341,7 +353,7 @@ class MixNotesAndStandardChangeTests(_InventoryCase):
         self.assertEqual(self.gas_kg(), [Decimal('20667.2000')])             # DEFRA 2025
         self.assertEqual(r.data['calc_feedback']['delta_kg'], 20667.2)
         r = self.change('3A-5', 'ipcc')
-        self.assertEqual(self.gas_kg(), [])                                  # IPCC per m3 is withheld: not calculated
+        self.assertEqual(self.gas_kg(), [Decimal('19395.7600')])             # IPCC on the national calorific value
         self.assertEqual(ReportStep.objects.get(report=self.report, step_id='3A-5').answer['factor_standard'], 'ipcc')
         self.assertEqual(ReportStep.objects.get(report=self.report, step_id='3A-5').answer['answer']['natural_gas'], '10000 m³')
 
@@ -378,9 +390,8 @@ class ChatEntryStandardTests(_InventoryCase):
         self.choose('std_ipcc')                                              # IPCC rows are not seeded here
         entry, err = self.create(self.report)
         self.assertIsNone(entry)
-        self.assertIn('The IPCC factor', err)                                # natural gas per m3 is a withheld row
-        self.assertIn('under review', err)
-        self.assertIn('incelemede', err)
+        self.assertIn('(IPCC) publishes no factor', err)
+        self.assertIn('faktör yayımlamıyor', err)
 
     def test_a_mix_inventory_sends_the_amount_to_the_questionnaire(self):
         self.choose('std_mix')
@@ -399,7 +410,7 @@ class WithheldDefraMappingTests(_InventoryCase):
 
     def test_the_list_of_withheld_rows(self):
         from emissions.withheld import withheld
-        self.assertEqual({k: len(v) for k, v in withheld().items()}, {'defra': 15, 'ipcc': 12, 'ghg': 12})
+        self.assertEqual({k: len(v) for k, v in withheld().items()}, {'defra': 15, 'ipcc': 11, 'ghg': 11})
         for standard, slugs in withheld().items():
             for slug, why in slugs.items():
                 self.assertTrue(why['reason'].strip(), (standard, slug))

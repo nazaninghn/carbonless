@@ -27,13 +27,13 @@
    "category": "stationary_combustion",
    "name": "Natural Gas (m³)",
    "name_tr": "Doğal Gaz (m³)",
-   "factor_kg_co2e": "2.027939",
+   "factor_kg_co2e": "1.939576",
    "gas": {
-    "co2": "2.025971",
-    "ch4": "0.001011",
-    "n2o": "0.000957"
+    "co2": "1.937694",
+    "ch4": "0.000967",
+    "n2o": "0.000915"
    },
-   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Natural Gas: 56100 kg CO2, 1 kg CH4, 0.1 kg N2O per TJ (net); per m3 with the energy content of \"Natural Gas\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 44.695 GJ/tonne x density 0.808 kg/m3) — the IPCC Guidelines give no density; AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Natural Gas: 56100 kg CO2, 1 kg CH4, 0.1 kg N2O per TJ (net); per m3 with the national net calorific value of natural gas, 34.54 TJ/10^6 m3 (Türkiye National Inventory Document 1990-2022, TUR_NID_2024, Annex 4, \"NCV of Fuels\", p. 484); AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
   },
   {
    "standard": "ipcc",
@@ -617,13 +617,13 @@
    "category": "stationary_combustion",
    "name": "Natural Gas (m³)",
    "name_tr": "Doğal Gaz (m³)",
-   "factor_kg_co2e": "2.027932",
+   "factor_kg_co2e": "1.939570",
    "gas": {
-    "co2": "2.025971",
-    "ch4": "0.000975",
-    "n2o": "0.000986"
+    "co2": "1.937694",
+    "ch4": "0.000933",
+    "n2o": "0.000943"
    },
-   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Natural Gas: 56100 kg CO2, 1 kg CH4, 0.1 kg N2O per TJ (net); per m3 with the energy content of \"Natural Gas\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 44.695 GJ/tonne x density 0.808 kg/m3) — the IPCC Guidelines give no density; AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Natural Gas: 56100 kg CO2, 1 kg CH4, 0.1 kg N2O per TJ (net); per m3 with the national net calorific value of natural gas, 34.54 TJ/10^6 m3 (Türkiye National Inventory Document 1990-2022, TUR_NID_2024, Annex 4, \"NCV of Fuels\", p. 484); AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
   },
   {
    "standard": "ghg",

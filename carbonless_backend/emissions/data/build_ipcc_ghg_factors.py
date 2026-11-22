@@ -57,10 +57,21 @@ FUEL_NAME = {'natural_gas': 'Natural Gas', 'gas_diesel_oil': 'Gas/Diesel Oil', '
 
 # ── Energy content per volume ────────────────────────────────────────────────────────────────────────────
 # The IPCC Guidelines give calorific values per mass only. A factor per litre or per m3 needs the fuel's
-# energy per volume: net CV (GJ/tonne) x density (kg/m3) of the SAME row of the UK Government GHG
-# Conversion Factors 2026, "Fuel properties" sheet — the only one of the supplied sources that states both.
+# energy per volume.
+#
+# Natural gas: the national net calorific value per volume, Türkiye National Inventory Document 1990-2022
+# (TUR_NID_2024, submitted to the UNFCCC), Annex 4 "Emission Factors used in the Energy Sector — NCV of
+# Fuels", p. 484: Natural gas 34.54 TJ/10^6 m3 (= 8 250 kcal/m3 x 4.1868, the value of the national energy
+# balance). The document states no density for any other fuel the platform measures by volume.
+NATIONAL_VOLUME = {   # GJ per m3, source
+    'natural_gas_m3': (D('0.03454'), 'the national net calorific value of natural gas, 34.54 TJ/10^6 m3 '
+                       '(Türkiye National Inventory Document 1990-2022, TUR_NID_2024, Annex 4, '
+                       '"NCV of Fuels", p. 484)'),
+}
+# Liquid fuels: net CV (GJ/tonne) x density (kg/m3) of the SAME row of the UK Government GHG Conversion
+# Factors 2026, "Fuel properties" sheet. These are UK values with no approved applicability, so every row
+# built from them is withheld (withheld_factors.json) until a supported density exists.
 VOLUME = {       # name of the row: (net CV GJ/tonne, density kg/m3)
-    'natural_gas_m3': ('Natural Gas', D('44.695'), D('0.808')),
     'diesel_litre': ('Diesel (100% mineral diesel)', D('43.031'), D('830.565')),
     'gas_oil_litre': ('Gas Oil', D('42.569'), D('853.971')),
     'petrol_litre': ('Petrol (100% mineral petrol)', D('44.593'), D('746.269')),
@@ -143,10 +154,12 @@ def energy_per_unit(fuel, basis):
         return D('1'), ''
     if basis == 'kg':
         return NCV[fuel] / 1000, f'; per kg with the IPCC default NCV {NCV[fuel]} TJ/Gg (Table 1.2)'
+    if basis in NATIONAL_VOLUME:
+        per, source = NATIONAL_VOLUME[basis]
+        return per, f'; per m3 with {source}'
     row, ncv, density = VOLUME[basis]
-    unit = 'm3' if basis.endswith('_m3') else 'litre'
-    per = ncv * density / 1000 / (1 if unit == 'm3' else 1000)
-    return per, (f'; per {unit} with the energy content of "{row}" in the UK Government GHG Conversion '
+    per = ncv * density / 1000 / 1000
+    return per, (f'; per litre with the energy content of "{row}" in the UK Government GHG Conversion '
                  f'Factors 2026, Fuel properties (net CV {ncv} GJ/tonne x density {density} kg/m3) — '
                  f'the IPCC Guidelines give no density')
 
