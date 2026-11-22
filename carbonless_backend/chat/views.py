@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import os
 import re
@@ -1934,7 +1935,28 @@ def _bind_inventory(session, inventory, user_msg):
     return int(state.get('history_from') or 0)
 
 
+@contextlib.contextmanager
+def _chat_standard(request, data):
+    """Everything the assistant calculates in this request (previews, cards,
+    saved entries) uses the factor standard of the inventory the client named;
+    with none named, the platform catalogue."""
+    from companies.utils import get_current_company as _current_company
+    from emissions.factor_lookup import inventory_standard_scope
+    from emissions.inventory_link import explicit_inventory_id, resolve_inventory
+    try:
+        inventory = resolve_inventory(_current_company(request.user), explicit_inventory_id(data))
+    except Exception:        # an invalid selection is reported by the view itself
+        inventory = None
+    with inventory_standard_scope(inventory):
+        yield
+
+
 def _send_message(request, session_id):
+    with _chat_standard(request, request.data):
+        return _send_message_on_standard(request, session_id)
+
+
+def _send_message_on_standard(request, session_id):
     try:
         session = _my_sessions(request.user).get(id=session_id)
     except ChatSession.DoesNotExist:
@@ -2316,6 +2338,11 @@ def _send_message(request, session_id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, NotAuditorForWrites])
 def confirm_entry(request):
+    with _chat_standard(request, request.data):
+        return _confirm_entry_on_standard(request)
+
+
+def _confirm_entry_on_standard(request):
     """
     Save a pending emission entry that was calculated but not yet saved.
     Frontend sends the pending_entry data after user confirms.

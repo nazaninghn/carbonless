@@ -490,6 +490,11 @@ export const api = {
     method: 'PATCH',
     body: JSON.stringify({ step, data, language, progress, ...extra }),
   }),
+  // "Mix" inventory: change the factor standard of an ANSWERED calculating question; it is recalculated at once.
+  setStepStandard: (reportId, step, factorStandard, language) => request(`/questionnaire/${reportId}/step-standard/`, {
+    method: 'POST',
+    body: JSON.stringify({ step, factor_standard: factorStandard, language }),
+  }),
   saveReportDraft: (reportId, data) => request(`/questionnaire/${reportId}/draft/`, {
     method: 'PATCH',
     body: JSON.stringify(data),

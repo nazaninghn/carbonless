@@ -285,6 +285,44 @@ def active_standard():
     return _ACTIVE_STANDARD.get()
 
 
+@contextlib.contextmanager
+def inventory_standard_scope(inventory):
+    """Calculate inside the block on the factor standard of `inventory` (a
+    CarbonReport, or None for a company-level entry: the platform catalogue).
+    For entries made outside the questionnaire (AI chat, forms). A "mix"
+    inventory chooses its standard on each questionnaire question, which such
+    an entry does not have: nothing is calculated for it here (the caller is
+    told to enter the amount in the questionnaire)."""
+    standard = ''
+    if inventory is not None:
+        from questionnaire.models import ReportStep
+        from questionnaire.step_entries import inventory_standard
+        stored = ReportStep.objects.filter(report=inventory, step_id='D1').values_list('answer', flat=True).first()
+        standard = inventory_standard({'D1': stored})
+        if standard == 'mix':
+            standard = STANDARD_UNSET
+    with use_standard(standard):
+        yield
+
+
+_STANDARD_LABEL = {'defra': 'DEFRA', 'ipcc': 'IPCC', 'ghg': 'GHG Protocol'}
+
+
+def standard_gap_message(activity_type, unit):
+    """Why an activity the catalogue can calculate has no factor under the
+    standard in force, in English and Turkish."""
+    standard = active_standard()
+    if standard == STANDARD_UNSET:
+        return ('This inventory is calculated on mixed standards, chosen on each questionnaire question: '
+                'enter this amount in the questionnaire so its standard can be chosen. / '
+                'Bu envanter, her anket sorusunda seçilen karma standartlarla hesaplanıyor: standardının '
+                'seçilebilmesi için bu miktarı ankette girin.')
+    label = _STANDARD_LABEL.get(standard, standard)
+    return (f"The standard chosen for this inventory ({label}) publishes no factor for '{activity_type}' ({unit}) "
+            f"— not calculated. / Bu envanter için seçilen standart ({label}) '{activity_type}' ({unit}) için "
+            f"faktör yayımlamıyor — hesaplanmadı.")
+
+
 def _by_year(rows, year):
     if not rows:
         return None
@@ -462,6 +500,11 @@ def resolve_factor(activity_type, unit, company=None, facility=None, year=None):
         if factor:
             break
     if not factor:
+        if active_standard():
+            with use_standard(''):
+                in_catalogue = any(pick_factor(slug, country, year) for country in countries)
+            if in_catalogue:
+                return None, norm_unit, None, standard_gap_message(activity_type, unit)
         return None, norm_unit, None, f"No active emission factor found for '{activity_type}' ({unit})."
     return factor, norm_unit, multiplier, None
 
@@ -575,7 +618,9 @@ def create_entry_from_activity(user, company, activity_type, quantity, unit, yea
     if not company:
         return None, 'No company found. Please create a company first.'
 
-    factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit, company, facility, year)
+    # On the standard of the inventory the entry joins (the catalogue for a company-level entry).
+    with inventory_standard_scope(inventory):
+        factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit, company, facility, year)
     if error:
         if error == FACILITY_GRID_MISSING:
             return None, facility_grid_missing_message(facility, year=year)

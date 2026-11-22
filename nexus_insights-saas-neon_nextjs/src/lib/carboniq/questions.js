@@ -215,6 +215,14 @@ export const CARBONIQ_QUESTIONS = [
         tr: 'Hesaplamalar, envanter yılınıza ait DEFRA baskısının faktörleriyle yapılır (o yılın baskısı yoksa bir önceki baskı). Şebeke elektriği, tesisin bulunduğu ülkenin ulusal faktörüyle hesaplanır. DEFRA\'nın yayımlamadığı kaynaklar "hesaplanmadı" olarak gösterilir.',
         en: 'Calculations use the factors of the DEFRA edition of your inventory year (the previous edition when that year has none). Grid electricity is calculated with the national factor of the facility\'s country. Sources DEFRA does not publish are shown as "not calculated".',
       },
+      std_ipcc: {
+        tr: 'Hesaplamalar IPCC 2006 varsayılan emisyon faktörleri ve AR5 küresel ısınma potansiyelleri ile yapılır. IPCC yakıt yanması (sabit ve hareketli) ile soğutucu ve diğer kaçak gazlar için faktör yayımlar; şebeke elektriği ülkenin ulusal faktörüyle hesaplanır. Kapsam 3 kategorileri için IPCC faktörü yoktur: bunlar "hesaplanmadı" olarak gösterilir.',
+        en: 'Calculations use the IPCC 2006 default emission factors with the AR5 global warming potentials. IPCC publishes factors for fuel combustion (stationary and mobile) and for refrigerants and other fugitive gases; grid electricity is calculated with the country\'s national factor. There are no IPCC factors for the Scope 3 categories: they are shown as "not calculated".',
+      },
+      std_ghg: {
+        tr: 'Hesaplamalar IPCC 2006 varsayılan emisyon faktörleri ve GHG Protokolü\'nün önerdiği AR6 küresel ısınma potansiyelleri ile yapılır. Yakıt yanması (sabit ve hareketli) ile soğutucu ve diğer kaçak gazlar hesaplanır; şebeke elektriği ülkenin ulusal faktörüyle hesaplanır. Kapsam 3 kategorileri için bu standartta faktör yoktur: bunlar "hesaplanmadı" olarak gösterilir.',
+        en: 'Calculations use the IPCC 2006 default emission factors with the AR6 global warming potentials the GHG Protocol recommends. Fuel combustion (stationary and mobile) and refrigerants and other fugitive gases are calculated; grid electricity is calculated with the country\'s national factor. This standard has no factors for the Scope 3 categories: they are shown as "not calculated".',
+      },
       std_mix: {
         tr: 'Hesaplama yapılan her soruda o soru için standardı seçmeniz istenecek. Standardı seçilmemiş bir soru hesaplanmaz.',
         en: 'On each question that is calculated you will be asked for its standard. A question whose standard is not chosen is not calculated.',

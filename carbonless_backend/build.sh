@@ -13,6 +13,8 @@ python manage.py seed_gas_splits
 # The DEFRA standard's own factors (one row per published edition), used by
 # inventories that chose DEFRA. Independent of the two seeds above.
 python manage.py seed_defra_factors
+# The IPCC and GHG Protocol standards' factors (IPCC 2006 defaults x AR5 / AR6 GWPs).
+python manage.py seed_ipcc_ghg_factors
 python manage.py create_admin
 # Text only: the calculation description of existing questionnaire entries.
 python manage.py backfill_calc_detail || echo "backfill_calc_detail skipped (non-critical)"

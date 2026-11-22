@@ -1,0 +1,1185 @@
+{
+ "source": "Builds ipcc_ghg_factors.json: the factor rows of the IPCC and GHG Protocol standards.",
+ "factors": [
+  {
+   "standard": "ipcc",
+   "slug": "natural-gas",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Natural Gas",
+   "name_tr": "Doğal Gaz",
+   "factor_kg_co2e": "56.154500",
+   "gas": {
+    "co2": "56.100000",
+    "ch4": "0.028000",
+    "n2o": "0.026500"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Natural Gas: 56100 kg CO2, 1 kg CH4, 0.1 kg N2O per TJ (net); AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "natural-gas-m3",
+   "year": 2006,
+   "unit": "m3",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Natural Gas (m³)",
+   "name_tr": "Doğal Gaz (m³)",
+   "factor_kg_co2e": "2.027939",
+   "gas": {
+    "co2": "2.025971",
+    "ch4": "0.001011",
+    "n2o": "0.000957"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Natural Gas: 56100 kg CO2, 1 kg CH4, 0.1 kg N2O per TJ (net); per m3 with the energy content of \"Natural Gas\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 44.695 GJ/tonne x density 0.808 kg/m3) — the IPCC Guidelines give no density; AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "diesel",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Diesel (volume)",
+   "name_tr": "Motorin (hacim)",
+   "factor_kg_co2e": "2.657022",
+   "gas": {
+    "co2": "2.648337",
+    "ch4": "0.003002",
+    "n2o": "0.005683"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Gas/Diesel Oil: 74100 kg CO2, 3 kg CH4, 0.6 kg N2O per TJ (net); per litre with the energy content of \"Diesel (100% mineral diesel)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 43.031 GJ/tonne x density 830.565 kg/m3) — the IPCC Guidelines give no density; AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "gas-diesel-oil-energy",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Gas/Diesel Oil (energy basis)",
+   "name_tr": "Motorin (enerji bazlı)",
+   "factor_kg_co2e": "74.343000",
+   "gas": {
+    "co2": "74.100000",
+    "ch4": "0.084000",
+    "n2o": "0.159000"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Gas/Diesel Oil: 74100 kg CO2, 3 kg CH4, 0.6 kg N2O per TJ (net); AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "motor-gasoline",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Motor Gasoline",
+   "name_tr": "Benzin",
+   "factor_kg_co2e": "69.543000",
+   "gas": {
+    "co2": "69.300000",
+    "ch4": "0.084000",
+    "n2o": "0.159000"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Motor Gasoline: 69300 kg CO2, 3 kg CH4, 0.6 kg N2O per TJ (net); AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "fuel-oil",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Fuel Oil (volume)",
+   "name_tr": "Fuel Oil (hacim)",
+   "factor_kg_co2e": "3.111216",
+   "gas": {
+    "co2": "3.101479",
+    "ch4": "0.003366",
+    "n2o": "0.006371"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Residual Fuel Oil: 77400 kg CO2, 3 kg CH4, 0.6 kg N2O per TJ (net); per litre with the energy content of \"Fuel Oil\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 40.752 GJ/tonne x density 983.284 kg/m3) — the IPCC Guidelines give no density; AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "lpg",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "LPG",
+   "name_tr": "LPG",
+   "factor_kg_co2e": "1.537104",
+   "gas": {
+    "co2": "1.535778",
+    "ch4": "0.000681",
+    "n2o": "0.000645"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Liquefied Petroleum Gases: 63100 kg CO2, 1 kg CH4, 0.1 kg N2O per TJ (net); per litre with the energy content of \"LPG\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 45.944 GJ/tonne x density 529.749 kg/m3) — the IPCC Guidelines give no density; AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "propane",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Propane (mass)",
+   "name_tr": "Propan (kütle)",
+   "factor_kg_co2e": "2.987208",
+   "gas": {
+    "co2": "2.984630",
+    "ch4": "0.001324",
+    "n2o": "0.001253"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Liquefied Petroleum Gases: 63100 kg CO2, 1 kg CH4, 0.1 kg N2O per TJ (net); per kg with the IPCC default NCV 47.3 TJ/Gg (Table 1.2); AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "coal",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Coal",
+   "name_tr": "Kömür",
+   "factor_kg_co2e": "2.458160",
+   "gas": {
+    "co2": "2.440680",
+    "ch4": "0.007224",
+    "n2o": "0.010256"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Other Bituminous Coal: 94600 kg CO2, 10 kg CH4, 1.5 kg N2O per TJ (net); per kg with the IPCC default NCV 25.8 TJ/Gg (Table 1.2); AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "coal-industrial",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Coal (industrial)",
+   "name_tr": "Kömür (sanayi)",
+   "factor_kg_co2e": "2.458160",
+   "gas": {
+    "co2": "2.440680",
+    "ch4": "0.007224",
+    "n2o": "0.010256"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Other Bituminous Coal: 94600 kg CO2, 10 kg CH4, 1.5 kg N2O per TJ (net); per kg with the IPCC default NCV 25.8 TJ/Gg (Table 1.2); AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "on-road-diesel",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "On-Road Diesel",
+   "name_tr": "Karayolu Motorin",
+   "factor_kg_co2e": "75.242700",
+   "gas": {
+    "co2": "74.100000",
+    "ch4": "0.109200",
+    "n2o": "1.033500"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Gas/Diesel Oil: 74100 kg CO2, 3.9 kg CH4, 3.9 kg N2O per TJ (net); AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "on-road-gasoline",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "On-Road Gasoline",
+   "name_tr": "Karayolu Benzin",
+   "factor_kg_co2e": "70.916900",
+   "gas": {
+    "co2": "69.300000",
+    "ch4": "0.106400",
+    "n2o": "1.510500"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Motor Gasoline: 69300 kg CO2, 3.8 kg CH4, 5.7 kg N2O per TJ (net); AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "on-road-natural-gas",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "On-Road Natural Gas",
+   "name_tr": "Karayolu Doğal Gaz",
+   "factor_kg_co2e": "59.471000",
+   "gas": {
+    "co2": "56.100000",
+    "ch4": "2.576000",
+    "n2o": "0.795000"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Natural Gas: 56100 kg CO2, 92 kg CH4, 3 kg N2O per TJ (net); AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "on-road-lpg",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "On-Road LPG",
+   "name_tr": "Karayolu LPG",
+   "factor_kg_co2e": "64.889000",
+   "gas": {
+    "co2": "63.100000",
+    "ch4": "1.736000",
+    "n2o": "0.053000"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Liquefied Petroleum Gases: 63100 kg CO2, 62 kg CH4, 0.2 kg N2O per TJ (net); AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "motorin-mobile",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "Diesel – mobile",
+   "name_tr": "Motorin – hareketli",
+   "factor_kg_co2e": "2.689177",
+   "gas": {
+    "co2": "2.648337",
+    "ch4": "0.003903",
+    "n2o": "0.036937"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Gas/Diesel Oil: 74100 kg CO2, 3.9 kg CH4, 3.9 kg N2O per TJ (net); per litre with the energy content of \"Diesel (100% mineral diesel)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 43.031 GJ/tonne x density 830.565 kg/m3) — the IPCC Guidelines give no density; AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "diesel-generic",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "Diesel (road)",
+   "name_tr": "Motorin (karayolu)",
+   "factor_kg_co2e": "2.689177",
+   "gas": {
+    "co2": "2.648337",
+    "ch4": "0.003903",
+    "n2o": "0.036937"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Gas/Diesel Oil: 74100 kg CO2, 3.9 kg CH4, 3.9 kg N2O per TJ (net); per litre with the energy content of \"Diesel (100% mineral diesel)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 43.031 GJ/tonne x density 830.565 kg/m3) — the IPCC Guidelines give no density; AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "on-road-diesel-desnz",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "On-Road Diesel",
+   "name_tr": "Karayolu Motorin",
+   "factor_kg_co2e": "2.689177",
+   "gas": {
+    "co2": "2.648337",
+    "ch4": "0.003903",
+    "n2o": "0.036937"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Gas/Diesel Oil: 74100 kg CO2, 3.9 kg CH4, 3.9 kg N2O per TJ (net); per litre with the energy content of \"Diesel (100% mineral diesel)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 43.031 GJ/tonne x density 830.565 kg/m3) — the IPCC Guidelines give no density; AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "gasoline-generic",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "Gasoline (road)",
+   "name_tr": "Benzin (karayolu)",
+   "factor_kg_co2e": "2.359999",
+   "gas": {
+    "co2": "2.306191",
+    "ch4": "0.003541",
+    "n2o": "0.050267"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Motor Gasoline: 69300 kg CO2, 3.8 kg CH4, 5.7 kg N2O per TJ (net); per litre with the energy content of \"Petrol (100% mineral petrol)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 44.593 GJ/tonne x density 746.269 kg/m3) — the IPCC Guidelines give no density; AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "on-road-petrol-desnz",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "On-Road Petrol",
+   "name_tr": "Karayolu Benzin",
+   "factor_kg_co2e": "2.359999",
+   "gas": {
+    "co2": "2.306191",
+    "ch4": "0.003541",
+    "n2o": "0.050267"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Motor Gasoline: 69300 kg CO2, 3.8 kg CH4, 5.7 kg N2O per TJ (net); per litre with the energy content of \"Petrol (100% mineral petrol)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 44.593 GJ/tonne x density 746.269 kg/m3) — the IPCC Guidelines give no density; AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "cng",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "CNG",
+   "name_tr": "CNG",
+   "factor_kg_co2e": "2.854608",
+   "gas": {
+    "co2": "2.692800",
+    "ch4": "0.123648",
+    "n2o": "0.038160"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Natural Gas: 56100 kg CO2, 92 kg CH4, 3 kg N2O per TJ (net); per kg with the IPCC default NCV 48.0 TJ/Gg (Table 1.2); AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "off-road-ipcc",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "Off-Road Diesel (energy basis)",
+   "name_tr": "Arazi Motorin (enerji bazlı)",
+   "factor_kg_co2e": "81.795200",
+   "gas": {
+    "co2": "74.100000",
+    "ch4": "0.116200",
+    "n2o": "7.579000"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 3.3.1 (off-road, industry), Gas/Diesel Oil: 74100 kg CO2, 4.15 kg CH4, 28.6 kg N2O per TJ (net); AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "off-road-diesel-desnz",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "Off-Road Diesel",
+   "name_tr": "Arazi Motorin",
+   "factor_kg_co2e": "2.973476",
+   "gas": {
+    "co2": "2.693734",
+    "ch4": "0.004224",
+    "n2o": "0.275517"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 3.3.1 (off-road, industry), Gas/Diesel Oil: 74100 kg CO2, 4.15 kg CH4, 28.6 kg N2O per TJ (net); per litre with the energy content of \"Gas Oil\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 42.569 GJ/tonne x density 853.971 kg/m3) — the IPCC Guidelines give no density; AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "off-road-gasoline-desnz",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "Off-Road Gasoline",
+   "name_tr": "Arazi Benzin",
+   "factor_kg_co2e": "2.370419",
+   "gas": {
+    "co2": "2.306191",
+    "ch4": "0.046590",
+    "n2o": "0.017638"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 3.3.1 (off-road, industry), Motor Gasoline: 69300 kg CO2, 50 kg CH4, 2 kg N2O per TJ (net); per litre with the energy content of \"Petrol (100% mineral petrol)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 44.593 GJ/tonne x density 746.269 kg/m3) — the IPCC Guidelines give no density; AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "product-gas-use",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope3",
+   "category": "use_of_sold",
+   "name": "Product gas use (lifetime)",
+   "name_tr": "Ürün gaz kullanımı (ömür boyu)",
+   "factor_kg_co2e": "56.154500",
+   "gas": {
+    "co2": "56.100000",
+    "ch4": "0.028000",
+    "n2o": "0.026500"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Natural Gas: 56100 kg CO2, 1 kg CH4, 0.1 kg N2O per TJ (net); AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "product-fuel-use",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope3",
+   "category": "use_of_sold",
+   "name": "Product fuel use (lifetime)",
+   "name_tr": "Ürün yakıt kullanımı (ömür boyu)",
+   "factor_kg_co2e": "2.657022",
+   "gas": {
+    "co2": "2.648337",
+    "ch4": "0.003002",
+    "n2o": "0.005683"
+   },
+   "reference": "IPCC standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Gas/Diesel Oil: 74100 kg CO2, 3 kg CH4, 0.6 kg N2O per TJ (net); per litre with the energy content of \"Diesel (100% mineral diesel)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 43.031 GJ/tonne x density 830.565 kg/m3) — the IPCC Guidelines give no density; AR5 GWP100 CH4 28, N2O 265 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "r410a",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "R-410A",
+   "name_tr": "R-410A",
+   "factor_kg_co2e": "1923.500000",
+   "gas": {
+    "hfc": "1923.500000"
+   },
+   "reference": "IPCC standard: AR5 GWP100 of R-410A = 50% HFC-32 (677) + 50% HFC-125 (3170) (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "r404a",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "R-404A",
+   "name_tr": "R-404A",
+   "factor_kg_co2e": "3942.800000",
+   "gas": {
+    "hfc": "3942.800000"
+   },
+   "reference": "IPCC standard: AR5 GWP100 of R-404A = 44% HFC-125 (3170) + 52% HFC-143a (4800) + 4% HFC-134a (1300) (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "r407c",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "R-407C",
+   "name_tr": "R-407C",
+   "factor_kg_co2e": "1624.210000",
+   "gas": {
+    "hfc": "1624.210000"
+   },
+   "reference": "IPCC standard: AR5 GWP100 of R-407C = 23% HFC-32 (677) + 25% HFC-125 (3170) + 52% HFC-134a (1300) (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "r134a",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "R-134a (HFC-134a)",
+   "name_tr": "R-134a (HFC-134a)",
+   "factor_kg_co2e": "1300.000000",
+   "gas": {
+    "hfc": "1300.000000"
+   },
+   "reference": "IPCC standard: AR5 GWP100 of HFC-134a (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "r32",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "R-32",
+   "name_tr": "R-32",
+   "factor_kg_co2e": "677.000000",
+   "gas": {
+    "hfc": "677.000000"
+   },
+   "reference": "IPCC standard: AR5 GWP100 of HFC-32 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "hfc-227ea",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "HFC-227ea",
+   "name_tr": "HFC-227ea",
+   "factor_kg_co2e": "3350.000000",
+   "gas": {
+    "hfc": "3350.000000"
+   },
+   "reference": "IPCC standard: AR5 GWP100 of HFC-227ea (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "r22",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "HCFC-22 / R-22",
+   "name_tr": "HCFC-22 / R-22",
+   "factor_kg_co2e": "1760.000000",
+   "gas": {
+    "hfc": "1760.000000"
+   },
+   "reference": "IPCC standard: AR5 GWP100 of HCFC-22 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "sf6",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "SF6 (Sulphur hexafluoride)",
+   "name_tr": "SF6 (Kükürt hekzaflorür)",
+   "factor_kg_co2e": "23500.000000",
+   "gas": {
+    "sf6": "23500.000000"
+   },
+   "reference": "IPCC standard: AR5 GWP100 of SF6 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "methane",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "Methane (CH4)",
+   "name_tr": "Metan (CH4)",
+   "factor_kg_co2e": "30.000000",
+   "gas": {
+    "ch4": "30.000000"
+   },
+   "reference": "IPCC standard: AR5 GWP100 of CH4_fossil (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "n2o",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "Nitrous Oxide (N2O)",
+   "name_tr": "Diazot monoksit (N2O)",
+   "factor_kg_co2e": "265.000000",
+   "gas": {
+    "n2o": "265.000000"
+   },
+   "reference": "IPCC standard: AR5 GWP100 of N2O (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ipcc",
+   "slug": "co2-fire-suppression",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "CO2 fire suppression",
+   "name_tr": "CO2 yangın söndürme",
+   "factor_kg_co2e": "1.000000",
+   "gas": {
+    "co2": "1.000000"
+   },
+   "reference": "IPCC standard: AR5 GWP100 of CO2 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "natural-gas",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Natural Gas",
+   "name_tr": "Doğal Gaz",
+   "factor_kg_co2e": "56.154300",
+   "gas": {
+    "co2": "56.100000",
+    "ch4": "0.027000",
+    "n2o": "0.027300"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Natural Gas: 56100 kg CO2, 1 kg CH4, 0.1 kg N2O per TJ (net); AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "natural-gas-m3",
+   "year": 2006,
+   "unit": "m3",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Natural Gas (m³)",
+   "name_tr": "Doğal Gaz (m³)",
+   "factor_kg_co2e": "2.027932",
+   "gas": {
+    "co2": "2.025971",
+    "ch4": "0.000975",
+    "n2o": "0.000986"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Natural Gas: 56100 kg CO2, 1 kg CH4, 0.1 kg N2O per TJ (net); per m3 with the energy content of \"Natural Gas\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 44.695 GJ/tonne x density 0.808 kg/m3) — the IPCC Guidelines give no density; AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "diesel",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Diesel (volume)",
+   "name_tr": "Motorin (hacim)",
+   "factor_kg_co2e": "2.657086",
+   "gas": {
+    "co2": "2.648337",
+    "ch4": "0.002895",
+    "n2o": "0.005854"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Gas/Diesel Oil: 74100 kg CO2, 3 kg CH4, 0.6 kg N2O per TJ (net); per litre with the energy content of \"Diesel (100% mineral diesel)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 43.031 GJ/tonne x density 830.565 kg/m3) — the IPCC Guidelines give no density; AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "gas-diesel-oil-energy",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Gas/Diesel Oil (energy basis)",
+   "name_tr": "Motorin (enerji bazlı)",
+   "factor_kg_co2e": "74.344800",
+   "gas": {
+    "co2": "74.100000",
+    "ch4": "0.081000",
+    "n2o": "0.163800"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Gas/Diesel Oil: 74100 kg CO2, 3 kg CH4, 0.6 kg N2O per TJ (net); AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "motor-gasoline",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Motor Gasoline",
+   "name_tr": "Benzin",
+   "factor_kg_co2e": "69.544800",
+   "gas": {
+    "co2": "69.300000",
+    "ch4": "0.081000",
+    "n2o": "0.163800"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Motor Gasoline: 69300 kg CO2, 3 kg CH4, 0.6 kg N2O per TJ (net); AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "fuel-oil",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Fuel Oil (volume)",
+   "name_tr": "Fuel Oil (hacim)",
+   "factor_kg_co2e": "3.111288",
+   "gas": {
+    "co2": "3.101479",
+    "ch4": "0.003246",
+    "n2o": "0.006564"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Residual Fuel Oil: 77400 kg CO2, 3 kg CH4, 0.6 kg N2O per TJ (net); per litre with the energy content of \"Fuel Oil\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 40.752 GJ/tonne x density 983.284 kg/m3) — the IPCC Guidelines give no density; AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "lpg",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "LPG",
+   "name_tr": "LPG",
+   "factor_kg_co2e": "1.537099",
+   "gas": {
+    "co2": "1.535778",
+    "ch4": "0.000657",
+    "n2o": "0.000664"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Liquefied Petroleum Gases: 63100 kg CO2, 1 kg CH4, 0.1 kg N2O per TJ (net); per litre with the energy content of \"LPG\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 45.944 GJ/tonne x density 529.749 kg/m3) — the IPCC Guidelines give no density; AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "propane",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Propane (mass)",
+   "name_tr": "Propan (kütle)",
+   "factor_kg_co2e": "2.987198",
+   "gas": {
+    "co2": "2.984630",
+    "ch4": "0.001277",
+    "n2o": "0.001291"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Liquefied Petroleum Gases: 63100 kg CO2, 1 kg CH4, 0.1 kg N2O per TJ (net); per kg with the IPCC default NCV 47.3 TJ/Gg (Table 1.2); AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "coal",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Coal",
+   "name_tr": "Kömür",
+   "factor_kg_co2e": "2.458211",
+   "gas": {
+    "co2": "2.440680",
+    "ch4": "0.006966",
+    "n2o": "0.010565"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Other Bituminous Coal: 94600 kg CO2, 10 kg CH4, 1.5 kg N2O per TJ (net); per kg with the IPCC default NCV 25.8 TJ/Gg (Table 1.2); AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "coal-industrial",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "stationary_combustion",
+   "name": "Coal (industrial)",
+   "name_tr": "Kömür (sanayi)",
+   "factor_kg_co2e": "2.458211",
+   "gas": {
+    "co2": "2.440680",
+    "ch4": "0.006966",
+    "n2o": "0.010565"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Other Bituminous Coal: 94600 kg CO2, 10 kg CH4, 1.5 kg N2O per TJ (net); per kg with the IPCC default NCV 25.8 TJ/Gg (Table 1.2); AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "on-road-diesel",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "On-Road Diesel",
+   "name_tr": "Karayolu Motorin",
+   "factor_kg_co2e": "75.270000",
+   "gas": {
+    "co2": "74.100000",
+    "ch4": "0.105300",
+    "n2o": "1.064700"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Gas/Diesel Oil: 74100 kg CO2, 3.9 kg CH4, 3.9 kg N2O per TJ (net); AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "on-road-gasoline",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "On-Road Gasoline",
+   "name_tr": "Karayolu Benzin",
+   "factor_kg_co2e": "70.958700",
+   "gas": {
+    "co2": "69.300000",
+    "ch4": "0.102600",
+    "n2o": "1.556100"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Motor Gasoline: 69300 kg CO2, 3.8 kg CH4, 5.7 kg N2O per TJ (net); AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "on-road-natural-gas",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "On-Road Natural Gas",
+   "name_tr": "Karayolu Doğal Gaz",
+   "factor_kg_co2e": "59.403000",
+   "gas": {
+    "co2": "56.100000",
+    "ch4": "2.484000",
+    "n2o": "0.819000"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Natural Gas: 56100 kg CO2, 92 kg CH4, 3 kg N2O per TJ (net); AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "on-road-lpg",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "On-Road LPG",
+   "name_tr": "Karayolu LPG",
+   "factor_kg_co2e": "64.828600",
+   "gas": {
+    "co2": "63.100000",
+    "ch4": "1.674000",
+    "n2o": "0.054600"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Liquefied Petroleum Gases: 63100 kg CO2, 62 kg CH4, 0.2 kg N2O per TJ (net); AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "motorin-mobile",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "Diesel – mobile",
+   "name_tr": "Motorin – hareketli",
+   "factor_kg_co2e": "2.690153",
+   "gas": {
+    "co2": "2.648337",
+    "ch4": "0.003763",
+    "n2o": "0.038052"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Gas/Diesel Oil: 74100 kg CO2, 3.9 kg CH4, 3.9 kg N2O per TJ (net); per litre with the energy content of \"Diesel (100% mineral diesel)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 43.031 GJ/tonne x density 830.565 kg/m3) — the IPCC Guidelines give no density; AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "diesel-generic",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "Diesel (road)",
+   "name_tr": "Motorin (karayolu)",
+   "factor_kg_co2e": "2.690153",
+   "gas": {
+    "co2": "2.648337",
+    "ch4": "0.003763",
+    "n2o": "0.038052"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Gas/Diesel Oil: 74100 kg CO2, 3.9 kg CH4, 3.9 kg N2O per TJ (net); per litre with the energy content of \"Diesel (100% mineral diesel)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 43.031 GJ/tonne x density 830.565 kg/m3) — the IPCC Guidelines give no density; AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "on-road-diesel-desnz",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "On-Road Diesel",
+   "name_tr": "Karayolu Motorin",
+   "factor_kg_co2e": "2.690153",
+   "gas": {
+    "co2": "2.648337",
+    "ch4": "0.003763",
+    "n2o": "0.038052"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Gas/Diesel Oil: 74100 kg CO2, 3.9 kg CH4, 3.9 kg N2O per TJ (net); per litre with the energy content of \"Diesel (100% mineral diesel)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 43.031 GJ/tonne x density 830.565 kg/m3) — the IPCC Guidelines give no density; AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "gasoline-generic",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "Gasoline (road)",
+   "name_tr": "Benzin (karayolu)",
+   "factor_kg_co2e": "2.361390",
+   "gas": {
+    "co2": "2.306191",
+    "ch4": "0.003414",
+    "n2o": "0.051784"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Motor Gasoline: 69300 kg CO2, 3.8 kg CH4, 5.7 kg N2O per TJ (net); per litre with the energy content of \"Petrol (100% mineral petrol)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 44.593 GJ/tonne x density 746.269 kg/m3) — the IPCC Guidelines give no density; AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "on-road-petrol-desnz",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "On-Road Petrol",
+   "name_tr": "Karayolu Benzin",
+   "factor_kg_co2e": "2.361390",
+   "gas": {
+    "co2": "2.306191",
+    "ch4": "0.003414",
+    "n2o": "0.051784"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Motor Gasoline: 69300 kg CO2, 3.8 kg CH4, 5.7 kg N2O per TJ (net); per litre with the energy content of \"Petrol (100% mineral petrol)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 44.593 GJ/tonne x density 746.269 kg/m3) — the IPCC Guidelines give no density; AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "cng",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "CNG",
+   "name_tr": "CNG",
+   "factor_kg_co2e": "2.851344",
+   "gas": {
+    "co2": "2.692800",
+    "ch4": "0.119232",
+    "n2o": "0.039312"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Tables 3.2.1 and 3.2.2 (road transport), Natural Gas: 56100 kg CO2, 92 kg CH4, 3 kg N2O per TJ (net); per kg with the IPCC default NCV 48.0 TJ/Gg (Table 1.2); AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "off-road-ipcc",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "Off-Road Diesel (energy basis)",
+   "name_tr": "Arazi Motorin (enerji bazlı)",
+   "factor_kg_co2e": "82.019850",
+   "gas": {
+    "co2": "74.100000",
+    "ch4": "0.112050",
+    "n2o": "7.807800"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 3.3.1 (off-road, industry), Gas/Diesel Oil: 74100 kg CO2, 4.15 kg CH4, 28.6 kg N2O per TJ (net); AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "off-road-diesel-desnz",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "Off-Road Diesel",
+   "name_tr": "Arazi Motorin",
+   "factor_kg_co2e": "2.981642",
+   "gas": {
+    "co2": "2.693734",
+    "ch4": "0.004073",
+    "n2o": "0.283835"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 3.3.1 (off-road, industry), Gas/Diesel Oil: 74100 kg CO2, 4.15 kg CH4, 28.6 kg N2O per TJ (net); per litre with the energy content of \"Gas Oil\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 42.569 GJ/tonne x density 853.971 kg/m3) — the IPCC Guidelines give no density; AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "off-road-gasoline-desnz",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope1",
+   "category": "mobile_combustion",
+   "name": "Off-Road Gasoline",
+   "name_tr": "Arazi Benzin",
+   "factor_kg_co2e": "2.369287",
+   "gas": {
+    "co2": "2.306191",
+    "ch4": "0.044926",
+    "n2o": "0.018170"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 3.3.1 (off-road, industry), Motor Gasoline: 69300 kg CO2, 50 kg CH4, 2 kg N2O per TJ (net); per litre with the energy content of \"Petrol (100% mineral petrol)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 44.593 GJ/tonne x density 746.269 kg/m3) — the IPCC Guidelines give no density; AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "product-gas-use",
+   "year": 2006,
+   "unit": "gj",
+   "scope": "scope3",
+   "category": "use_of_sold",
+   "name": "Product gas use (lifetime)",
+   "name_tr": "Ürün gaz kullanımı (ömür boyu)",
+   "factor_kg_co2e": "56.154300",
+   "gas": {
+    "co2": "56.100000",
+    "ch4": "0.027000",
+    "n2o": "0.027300"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Natural Gas: 56100 kg CO2, 1 kg CH4, 0.1 kg N2O per TJ (net); AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "product-fuel-use",
+   "year": 2006,
+   "unit": "liters",
+   "scope": "scope3",
+   "category": "use_of_sold",
+   "name": "Product fuel use (lifetime)",
+   "name_tr": "Ürün yakıt kullanımı (ömür boyu)",
+   "factor_kg_co2e": "2.657086",
+   "gas": {
+    "co2": "2.648337",
+    "ch4": "0.002895",
+    "n2o": "0.005854"
+   },
+   "reference": "GHG Protocol standard: 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Table 2.3 (manufacturing industries and construction), Gas/Diesel Oil: 74100 kg CO2, 3 kg CH4, 0.6 kg N2O per TJ (net); per litre with the energy content of \"Diesel (100% mineral diesel)\" in the UK Government GHG Conversion Factors 2026, Fuel properties (net CV 43.031 GJ/tonne x density 830.565 kg/m3) — the IPCC Guidelines give no density; AR6 GWP100 CH4 27.0, N2O 273 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "r410a",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "R-410A",
+   "name_tr": "R-410A",
+   "factor_kg_co2e": "2255.500000",
+   "gas": {
+    "hfc": "2255.500000"
+   },
+   "reference": "GHG Protocol standard: AR6 GWP100 of R-410A = 50% HFC-32 (771) + 50% HFC-125 (3740) (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "r404a",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "R-404A",
+   "name_tr": "R-404A",
+   "factor_kg_co2e": "4728.000000",
+   "gas": {
+    "hfc": "4728.000000"
+   },
+   "reference": "GHG Protocol standard: AR6 GWP100 of R-404A = 44% HFC-125 (3740) + 52% HFC-143a (5810) + 4% HFC-134a (1530) (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "r407c",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "R-407C",
+   "name_tr": "R-407C",
+   "factor_kg_co2e": "1907.930000",
+   "gas": {
+    "hfc": "1907.930000"
+   },
+   "reference": "GHG Protocol standard: AR6 GWP100 of R-407C = 23% HFC-32 (771) + 25% HFC-125 (3740) + 52% HFC-134a (1530) (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "r134a",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "R-134a (HFC-134a)",
+   "name_tr": "R-134a (HFC-134a)",
+   "factor_kg_co2e": "1530.000000",
+   "gas": {
+    "hfc": "1530.000000"
+   },
+   "reference": "GHG Protocol standard: AR6 GWP100 of HFC-134a (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "r32",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "R-32",
+   "name_tr": "R-32",
+   "factor_kg_co2e": "771.000000",
+   "gas": {
+    "hfc": "771.000000"
+   },
+   "reference": "GHG Protocol standard: AR6 GWP100 of HFC-32 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "hfc-227ea",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "HFC-227ea",
+   "name_tr": "HFC-227ea",
+   "factor_kg_co2e": "3600.000000",
+   "gas": {
+    "hfc": "3600.000000"
+   },
+   "reference": "GHG Protocol standard: AR6 GWP100 of HFC-227ea (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "r22",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "HCFC-22 / R-22",
+   "name_tr": "HCFC-22 / R-22",
+   "factor_kg_co2e": "1960.000000",
+   "gas": {
+    "hfc": "1960.000000"
+   },
+   "reference": "GHG Protocol standard: AR6 GWP100 of HCFC-22 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "sf6",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "SF6 (Sulphur hexafluoride)",
+   "name_tr": "SF6 (Kükürt hekzaflorür)",
+   "factor_kg_co2e": "24300.000000",
+   "gas": {
+    "sf6": "24300.000000"
+   },
+   "reference": "GHG Protocol standard: AR6 GWP100 of SF6 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "methane",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "Methane (CH4)",
+   "name_tr": "Metan (CH4)",
+   "factor_kg_co2e": "29.800000",
+   "gas": {
+    "ch4": "29.800000"
+   },
+   "reference": "GHG Protocol standard: AR6 GWP100 of CH4_fossil (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "n2o",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "Nitrous Oxide (N2O)",
+   "name_tr": "Diazot monoksit (N2O)",
+   "factor_kg_co2e": "273.000000",
+   "gas": {
+    "n2o": "273.000000"
+   },
+   "reference": "GHG Protocol standard: AR6 GWP100 of N2O (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  },
+  {
+   "standard": "ghg",
+   "slug": "co2-fire-suppression",
+   "year": 2006,
+   "unit": "kg",
+   "scope": "scope1",
+   "category": "fugitive_emissions",
+   "name": "CO2 fire suppression",
+   "name_tr": "CO2 yangın söndürme",
+   "factor_kg_co2e": "1.000000",
+   "gas": {
+    "co2": "1.000000"
+   },
+   "reference": "GHG Protocol standard: AR6 GWP100 of CO2 (GHG Protocol, IPCC Global Warming Potential Values v2.0 (Aug 2024))."
+  }
+ ]
+}

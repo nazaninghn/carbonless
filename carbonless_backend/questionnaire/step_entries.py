@@ -414,6 +414,68 @@ def answers_standard(answers):
 
 
 @contextlib.contextmanager
+def _step_scope(step_id):
+    """Look factors up inside the block on the standard `step_id` is calculated
+    on: its own in a "mix" inventory, else the inventory's."""
+    from emissions.factor_lookup import use_standard, active_standard
+    per_step = _STEP_STANDARDS.get()
+    with use_standard(per_step[step_id] if per_step and step_id in per_step else active_standard()):
+        yield
+
+
+def _catalogue_factor(slug, year=None):
+    """The platform-catalogue factor of `slug`, whatever standard is in force:
+    "is there a factor for this at all?" — whether the chosen standard also
+    publishes it is told apart afterwards (see _standard_notes)."""
+    from emissions.factor_lookup import use_standard
+    with use_standard(''):
+        return _factor_by_slug(slug, year)
+
+
+STANDARD_NAMES = {'defra': {'tr': 'DEFRA', 'en': 'DEFRA'}, 'ipcc': {'tr': 'IPCC', 'en': 'IPCC'},
+                  'ghg': {'tr': 'GHG Protokolü', 'en': 'GHG Protocol'}}
+
+
+def _standard_notes(answers, year, company, note):
+    """A source the catalogue can calculate but the standard in force cannot:
+    said for each one, so an amount left out by the standard is never taken
+    for zero. In a "mix" inventory each question is read on its own standard,
+    and a question whose standard is not chosen yet says so."""
+    from emissions.factor_lookup import use_standard, active_standard, STANDARD_UNSET
+    per_step = _STEP_STANDARDS.get()
+    if not per_step and not active_standard():
+        return
+    groups = activities_for_report(answers, year, company)
+    facility_of = _facility_lookup(company) if company else None
+    for step in ENTRY_STEPS:
+        standard = per_step[step] if per_step and step in per_step else active_standard()
+        said = set()
+        for activity in groups.get(step, []):
+            if 'reported_kg' in activity:
+                continue
+            with use_standard(standard):
+                if _resolve(activity, company, facility_of, year):
+                    continue
+            with use_standard(''):
+                catalogue = _resolve(activity, company, facility_of, year)
+            if not catalogue or catalogue[0].slug in said:
+                continue        # not calculable on any basis: the notes above say why
+            said.add(catalogue[0].slug)
+            name_tr, name_en = catalogue[0].name_tr or catalogue[0].name, catalogue[0].name
+            if standard == STANDARD_UNSET:
+                note(step, f'{name_tr}: bu soru için emisyon faktörü standardı seçilmedi — hesaplanmadı.',
+                     f'{name_en}: the emission factor standard of this question is not chosen — not calculated.',
+                     report_tr=f'{name_tr}: bu soru için emisyon faktörü standardı seçilmedi.',
+                     report_en=f'{name_en}: the emission factor standard of this question is not chosen.')
+            else:
+                label = STANDARD_NAMES.get(standard, {'tr': standard, 'en': standard})
+                note(step, f'{name_tr}: seçilen standart ({label["tr"]}) bu kaynak için faktör yayımlamıyor — hesaplanmadı.',
+                     f'{name_en}: the chosen standard ({label["en"]}) publishes no factor for this source — not calculated.',
+                     report_tr=f'{name_tr}: seçilen standart ({label["tr"]}) bu kaynak için faktör yayımlamıyor.',
+                     report_en=f'{name_en}: the chosen standard ({label["en"]}) publishes no factor for this source.')
+
+
+@contextlib.contextmanager
 def report_standard(report):
     """Calculate inside the block on the standard of this inventory."""
     from .models import ReportStep
@@ -982,7 +1044,7 @@ def activities_for_report(answers, year, company=None, factor_exists=None):
     """{step_id: [activity]} for every step of ENTRY_STEPS, from all answers
     of the inventory ({step_id: stored answer})."""
     A = {k: _value(v) for k, v in (answers or {}).items()}
-    factor_exists = factor_exists or (lambda slug: _factor_by_slug(slug) is not None)
+    factor_exists = factor_exists or (lambda slug: _catalogue_factor(slug) is not None)
 
     def own(step):
         return activities_for_step(step, {'answer': A.get(step)})
@@ -1115,7 +1177,8 @@ def supplier_factor_problem(doc_step, doc_answer, answers, year, company=None, l
     for a in activities:
         if 'report_as' in a or 'reported_kg' in a:
             continue
-        r = _resolve(a, company, facility_of, year)
+        with _step_scope(source):
+            r = _resolve(a, company, facility_of, year)
         if r:
             resolved.append(r[0])
     if not resolved:
@@ -1246,9 +1309,7 @@ def _entry_specs(step, activities, A, year, company):
             else:
                 rest.append(a)
         activities = rest
-    from emissions.factor_lookup import use_standard, active_standard
-    per_step = _STEP_STANDARDS.get()
-    with use_standard(per_step[step] if per_step and step in per_step else active_standard()):
+    with _step_scope(step):
         resolved = [(a, r) for a, r in ((a, _resolve(a, company, facility_of, year)) for a in activities) if r]
     # The electricity supplier's factor is market-based: it never replaces
     # the location-based grid factor of 4A-1 (see scope2_market_based).
@@ -2439,7 +2500,7 @@ def uncalculated_notes(answers, year, company=None, inventory=None):
                 if not _number(row.get('quantity_kg')):
                     continue
                 slug = f'{wt.lower()}-{_DISPOSAL_SLUG.get(method, "")}'
-                if not re.fullmatch(r'WT-\d\d', wt) or _factor_by_slug(slug) is None:
+                if not re.fullmatch(r'WT-\d\d', wt) or _catalogue_factor(slug) is None:
                     note('K3C5-2', f'{wt} / {method}: bu atık türü ve bertaraf yöntemi için emisyon faktörü yok.',
                          f'{wt} / {method}: no emission factor for this waste type and disposal method.')
         if level == 'S1' and isinstance(A.get('K3C5-2c'), dict) and _number(A['K3C5-2c'].get('total_tco2e')) \
@@ -2540,7 +2601,7 @@ def uncalculated_notes(answers, year, company=None, inventory=None):
             if not (_number(row.get('units_sold')) and _number(row.get('weight_kg')) and method):
                 continue
             name = str(row.get('product_name') or '').strip()
-            if re.fullmatch(r'WT-\d\d', material) and _factor_by_slug(f'{material.lower()}-{method}') is None:
+            if re.fullmatch(r'WT-\d\d', material) and _catalogue_factor(f'{material.lower()}-{method}') is None:
                 note('K3C12-1', f'{name}: {material} / {row.get("disposal_method")} için emisyon faktörü yok.',
                      f'{name}: no emission factor for {material} / {row.get("disposal_method")}.')
             elif not material and method not in ('landfill', 'recycling', 'incineration'):
@@ -2584,4 +2645,5 @@ def uncalculated_notes(answers, year, company=None, inventory=None):
             elif not (_true(row.get('ghg_report_available')) and _number(row.get('company_emissions_tco2e'))):
                 note('K3C15-1', f'{cls}: şirketin raporlanmış emisyonu olmadan hesaplanmıyor.',
                      f'{cls}: not calculated without the company\'s reported emissions.')
+    _standard_notes(answers, year, company, note)
     return _readable_notes(out)

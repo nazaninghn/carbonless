@@ -25,6 +25,12 @@ async function mockInventoryApi(page, answers, step) {
         advisor_rejected: [], advisor_pending: 0, pending_questions: [] });
     }
     if (url.pathname === `/api/questionnaire/${REPORT.report_id}/previous-profile/`) return json({ available: false });
+    if (url.pathname === `/api/questionnaire/${REPORT.report_id}/step-standard/` && req.method() === 'POST') {
+      const body = JSON.parse(req.postData() || '{}');
+      seen.standards = [...(seen.standards || []), body];
+      return json({ success: true, step: body.step, factor_standard: body.factor_standard,
+        reporting_year: REPORT.reporting_year, calc_feedback: { delta_kg: 12.5, total_kg: 100, pending: false, notes: [] } });
+    }
     if (url.pathname === `/api/questionnaire/${REPORT.report_id}/step/` && req.method() === 'PATCH') {
       const body = JSON.parse(req.postData() || '{}');
       seen.saved.push(body);
@@ -91,12 +97,18 @@ for (const lang of ['en', 'tr']) {
       expect(seen.saved[0].data.factor_standard).toBe('defra');
     });
 
-    test('a saved choice is shown again, and a single-standard inventory has no picker', async ({ page }) => {
+    test('a saved choice is shown again, and changing it on an answered question is saved at once', async ({ page }) => {
       await open(page, lang, 'K3C5-2b');
-      await mockInventoryApi(page, { D1: { ef_database: 'std_mix' }, ...WASTE,
+      const seen = await mockInventoryApi(page, { D1: { ef_database: 'std_mix' }, ...WASTE,
         'K3C5-2b': { answer: '1000', factor_standard: 'ipcc' } }, 'K3C5-2b');
       await page.goto('/dashboard?tab=questionnaire');
-      await expect(page.getByTestId('step-standard-select')).toHaveValue('ipcc');
+      const picker = page.getByTestId('step-standard-select');
+      await expect(picker).toHaveValue('ipcc');
+      await picker.selectOption('defra');
+      await expect.poll(() => (seen.standards || []).length).toBe(1);        // sent without re-entering the answer
+      expect(seen.standards[0]).toMatchObject({ step: 'K3C5-2b', factor_standard: 'defra' });
+      expect(seen.saved.length).toBe(0);                                     // the answer itself was not saved again
+      await expect(picker).toHaveValue('defra');
     });
 
     test('an inventory on one standard shows no picker on its questions', async ({ page }) => {
