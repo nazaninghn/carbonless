@@ -28,9 +28,6 @@
   "metro-commute": {
    "reason": "The DEFRA value is driven by UK-only infrastructure (UK grid electricity or UK heat networks). DEFRA limits its factors to UK operations (methodology 2026, paras 1.4-1.5, 10.1); for a site outside the UK the number can be wrong by a large factor."
   },
-  "flight-domestic": {
-   "reason": "DEFRA publishes domestic flights for UK routes only (\"Domestic, to/from UK\"); it has no row for a domestic flight inside another country."
-  },
   "tm-08": {
    "reason": "Catalogue item is electric rail freight; DEFRA's only freight-train row is the UK average, mostly diesel. Traction does not correspond."
   },
@@ -42,79 +39,8 @@
   },
   "biodiesel": {
    "reason": "DEFRA publishes several biodiesels (ME 0.168 kg/l, HVO 0.036 kg/l). The catalogue item does not say which; the two differ 4.7 times."
-  },
-  "fuel-extraction": {
-   "reason": "One generic \"fuel extraction per litre\" slug is applied to diesel, fuel oil and LPG litres together, but DEFRA publishes a separate well-to-tank row per fuel. The diesel row was mapped; applying it to the other fuels is not what DEFRA publishes."
   }
  },
- "ipcc": {
-  "diesel": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "diesel-generic": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "fuel-oil": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "gasoline-generic": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "lpg": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "motorin-mobile": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "off-road-diesel-desnz": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "off-road-gasoline-desnz": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "on-road-diesel-desnz": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "on-road-petrol-desnz": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "product-fuel-use": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  }
- },
- "ghg": {
-  "diesel": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "diesel-generic": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "fuel-oil": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "gasoline-generic": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "lpg": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "motorin-mobile": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "off-road-diesel-desnz": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "off-road-gasoline-desnz": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "on-road-diesel-desnz": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "on-road-petrol-desnz": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  },
-  "product-fuel-use": {
-   "reason": "Per-litre row built with the DEFRA 2026 fuel density and net CV. The IPCC Guidelines give no density, and a UK density has no supported applicability to Turkish fuel. Needs a density with supported fuel, country, period and unit — TUR_NID_2024 was examined and states none for this fuel."
-  }
- }
+ "ipcc": {},
+ "ghg": {}
 }

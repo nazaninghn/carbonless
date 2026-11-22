@@ -436,6 +436,14 @@ STANDARD_NAMES = {'defra': {'tr': 'DEFRA', 'en': 'DEFRA'}, 'ipcc': {'tr': 'IPCC'
                   'ghg': {'tr': 'GHG Protokolü', 'en': 'GHG Protocol'}}
 
 
+def _standard_of_step(step):
+    """The standard this question is calculated on in the scope in force: its own in a "mix" inventory,
+    else the inventory's ('' = the platform catalogue)."""
+    from emissions.factor_lookup import active_standard
+    per_step = _STEP_STANDARDS.get()
+    return per_step[step] if per_step and step in per_step else active_standard()
+
+
 def _standard_notes(answers, year, company, note):
     """A source the catalogue can calculate but the standard in force cannot:
     said for each one, so an amount left out by the standard is never taken
@@ -593,6 +601,52 @@ def _process(A):
     return out
 
 
+# 3D-4 fugitive gas -> the gas's own factor (kg CO2e per kg released = its GWP).
+# Only the gases the standards publish; R-1234yf, NF3 and "unknown" have no row.
+_FUGITIVE_SLUG = {'R410A': 'r410a', 'R32': 'r32', 'R22': 'r22', 'R134a': 'r134a', 'R404A': 'r404a',
+                  'SF6': 'sf6', 'CH4': 'methane'}
+
+
+def _fugitive_rows(A):
+    """[(key, gas type, refill kg or None, site text)] of 3D-4, one per equipment group. The gas is the
+    group's own (3D-4) or, when it gives none, the equipment's (3D-2)."""
+    refills, equipment = A.get('3D-4'), A.get('3D-2')
+    if not isinstance(refills, dict) or A.get('3D-0') in (None, '', 'none', ['none']):
+        return []
+    equipment = equipment if isinstance(equipment, dict) else {}
+    out = []
+    for key, row in refills.items():
+        if not isinstance(row, dict):
+            continue
+        base = equipment.get(key) if isinstance(equipment.get(key), dict) else equipment.get(str(key).split('#')[0])
+        base = base if isinstance(base, dict) else {}
+        gas = str(row.get('gas_type') or base.get('gas_type') or '').strip()
+        out.append((key, gas, _number(row.get('refill_kg')), str(base.get('site') or '').strip()))
+    return out
+
+
+def _fugitive(A, answers):
+    """3D-4 {equipment group: {refill_kg, gas_type}} -> kg of gas released (the annual refill replaces what
+    leaked) on the gas's factor. Calculated only in an inventory on a factor standard: the standard is what
+    fixes the GWP set. An inventory on the platform catalogue keeps its earlier treatment (not calculated).
+    The entry belongs to the facility named in 3D-2 when that is one of the 2A-2 facilities, else unassigned."""
+    if not inventory_standard(answers):
+        return []
+    sites = A.get('2A-2') if isinstance(A.get('2A-2'), dict) else {}
+    names = {str(v.get('name') or '').strip().casefold(): str(v.get('name')).strip()
+             for v in sites.values() if isinstance(v, dict) and str(v.get('name') or '').strip()}
+    out = []
+    for key, gas, refill, site in _fugitive_rows(A):
+        slug = _FUGITIVE_SLUG.get(gas)
+        if not slug or not refill:
+            continue
+        activity = {'slug': slug, 'quantity': refill, 'label': key}
+        if site.casefold() in names:
+            activity['facility_name'] = names[site.casefold()]
+        out.append(activity)
+    return out
+
+
 _GJ_TO_KWH = 1e9 / 3.6e6  # exact: 1 GJ = 277.78 kWh
 _PURCHASED_ENERGY_SLUG = {'heat': 'district-heating', 'steam': 'steam', 'cooling': 'district-cooling'}
 _ENERGY_NAMES = {'heat': {'tr': 'Isı', 'en': 'Heat'}, 'steam': {'tr': 'Buhar', 'en': 'Steam'},
@@ -732,10 +786,17 @@ def _upstream_energy(A, groups, skip_sites=frozenset(), uk_sites=frozenset(), ye
               if uk_sites and _uk_td_available(year) else 0)
     kwh += sum(a.get('kwh', 0) for a in groups.get('4A-EV', []))
     litres = 0.0
+    by_fuel = {'diesel': 0.0, 'petrol': 0.0, 'fuel_oil': 0.0, 'lpg': 0.0}
     if groups.get('3A-5') and isinstance(A.get('3A-5'), dict):
         for fuel in ('diesel', 'fuel_oil', 'lpg'):
-            litres += _litres(A['3A-5'].get(fuel)) or 0
-    litres += sum(a.get('litres', 0) for a in groups.get('3B-7', []))
+            amount = _litres(A['3A-5'].get(fuel)) or 0
+            litres += amount
+            by_fuel[fuel] += amount
+    for a in groups.get('3B-7', []):
+        amount = a.get('litres', 0)
+        litres += amount
+        slug = str(a.get('slug') or '')
+        by_fuel['lpg' if slug == 'lpg' else 'petrol' if ('petrol' in slug or 'gasoline' in slug) else 'diesel'] += amount
     out = []
     if kwh:
         out.append({'slug': 'upstream-electricity', 'quantity': kwh,
@@ -747,7 +808,17 @@ def _upstream_energy(A, groups, skip_sites=frozenset(), uk_sites=frozenset(), ye
             out.append({'slug': 'uk-transmission-losses', 'quantity': uk_kwh,
                         'label': {'tr': 'İletim ve dağıtım kayıpları (Birleşik Krallık)',
                                   'en': 'Transmission and distribution losses (UK)'}})
-    if litres:
+    if litres and _standard_of_step('K3C3-INFO') == 'defra':
+        # DEFRA publishes the upstream factor per fuel: each fuel's litres go on its own row.
+        for fuel, slug, tr_name, en_name in (('diesel', 'fuel-extraction', 'motorin', 'diesel'),
+                                             ('petrol', 'fuel-extraction-petrol', 'benzin', 'petrol'),
+                                             ('fuel_oil', 'fuel-extraction-fuel-oil', 'fuel oil', 'fuel oil'),
+                                             ('lpg', 'fuel-extraction-lpg', 'LPG', 'LPG')):
+            if by_fuel[fuel]:
+                out.append({'slug': slug, 'quantity': by_fuel[fuel],
+                            'label': {'tr': f'Yakıt üretim zinciri (WTT) — {tr_name}',
+                                      'en': f'Fuel supply chain (WTT) — {en_name}'}})
+    elif litres:
         out.append({'slug': 'fuel-extraction', 'quantity': litres,
                     'label': {'tr': 'Yakıt üretim zinciri (WTT)', 'en': 'Fuel supply chain (WTT)'}})
     return out
@@ -1045,7 +1116,7 @@ _GATES = {
 # Steps whose answers create EmissionEntry rows (the entry description names
 # the step, so a rejected entry points back to the question to fix).
 ENTRY_STEPS = (
-    '3A-5', '3B-7', '3C-2', '4A-1', '4A-EV', '4B-2',
+    '3A-5', '3B-7', '3C-2', '3D-4', '4A-1', '4A-EV', '4B-2',
     'K3C1-2', 'K3C1-3a', 'K3C1-4a', 'K3C3-INFO', 'K3C4-2', 'K3C4-2c',
     'K3C5-2', 'K3C5-2b', 'K3C5-2c', 'K3C5-1', 'K3C6-2', 'K3C6-2c', 'K3C8-1', 'K3C9-1',
     'K3C10-1', 'K3C11-1', 'K3C12-1', 'K3C13-1', 'K3C14-1', 'K3C15-1',
@@ -1071,6 +1142,7 @@ def activities_for_report(answers, year, company=None, factor_exists=None):
             A.get('3A-2')),
         '3B-7': _vehicles(A),
         '3C-2': _process(A),
+        '3D-4': _fugitive(A, answers),
         '4A-1': _named_sites(own('4A-1'), A.get('2A-2')),
         '4A-EV': _ev_charging(A),
         '4B-2': _purchased_energy(A),
@@ -2274,7 +2346,7 @@ def uncalculated_notes(answers, year, company=None, inventory=None):
             note(step,
                  "Bu miktar sayılmadı — ilgili kapsam 'yok' olarak işaretlendi (geçit sorusuna 'hayır').",
                  "This amount was not counted — the scope was marked as not present "
-                 "(answer 'no' to its gate question).")
+                 "(answer 'no' to its gate question).", kind='gate_closed')
 
     if open_('3A-5') and isinstance(A.get('3A-5'), dict):
         given = {f for f, raw in A['3A-5'].items() if _number(_split_amount_unit(raw)[0])}
@@ -2362,8 +2434,24 @@ def uncalculated_notes(answers, year, company=None, inventory=None):
                  f'{", ".join(missing)}: no emission factor for this process.')
 
     if isinstance(A.get('3D-4'), dict) and A['3D-4'] and A.get('3D-0') not in (None, ['none'], 'none'):
-        note('3D-4', 'Soğutucu gaz kaçakları: GWP değerleri AR6 olarak birleştirilene kadar hesaplanmıyor.',
-             'Refrigerant leaks: not calculated until the GWP values are unified to AR6.')
+        if not inventory_standard(answers):
+            note('3D-4', 'Soğutucu gaz kaçakları: GWP değerleri AR6 olarak birleştirilene kadar hesaplanmıyor.',
+                 'Refrigerant leaks: not calculated until the GWP values are unified to AR6.')
+        else:
+            # On a factor standard the refill is calculated on the gas's GWP of that standard. What cannot
+            # be: a gas with no published factor, and a group with no refill amount.
+            for key, gas, refill, _site in _fugitive_rows(A):
+                if not refill:
+                    note('3D-4', f'{key}: yıllık dolum miktarı girilmediği veya 0 olduğu için kaçak hesaplanmadı — '
+                                 f'varsayılan kaçak oranıyla hesaplama yapılmıyor. Dolum miktarını (kg) girin.',
+                         f'{key}: the leak was not calculated — no annual refill amount is given (or it is 0), and '
+                         f'no default leak rate is applied. Enter the refill amount (kg).')
+                elif gas not in _FUGITIVE_SLUG:
+                    shown = gas if gas and gas != 'unknown' else None
+                    note('3D-4', (f'{key}: {shown} gazı için emisyon faktörü yok — hesaplanmadı.' if shown else
+                                  f'{key}: gaz türü belirtilmediği için hesaplanmadı. Gaz türünü seçin.'),
+                         (f'{key}: no emission factor for {shown} — not calculated.' if shown else
+                          f'{key}: not calculated — the gas type is not given. Choose the gas type.'))
 
     if open_('4B-2') and isinstance(A.get('4B-2'), dict):
         for kind, raw in A['4B-2'].items():
@@ -2665,3 +2753,43 @@ def uncalculated_notes(answers, year, company=None, inventory=None):
                      f'{cls}: not calculated without the company\'s reported emissions.')
     _standard_notes(answers, year, company, note)
     return _readable_notes(out)
+
+
+# ── Required calculations (final-report gate) ───────────────────────────────
+# ISO 14064-1 requires direct emissions (Scope 1, questions 3…) and indirect
+# emissions from imported energy (Scope 2, questions 4…) to be quantified; a
+# source left out must be explained. Other indirect emissions (Scope 3) follow
+# the organisation's significance assessment, so an amount not calculated
+# there is disclosed in the report but does not hold the signature back.
+REQUIRED_CALCULATION_PREFIXES = ('3', '4')
+EXCLUSION_JUSTIFICATION_MIN, EXCLUSION_JUSTIFICATION_MAX = 20, 1000
+
+
+def unmet_required_calculations(answers, year, company=None, inventory=None):
+    """[{step_id, label_tr, label_en, items_tr, items_en}] — the questions of
+    direct and energy-indirect emissions that hold an amount the inventory
+    does not calculate, one row per question, in questionnaire order. An
+    inventory with such a row is signed only with a written justification
+    for each (see views.SubmitStepView), and its report prints them."""
+    rows = {}
+    for n in uncalculated_notes(answers, year, company, inventory):
+        if n.get('kind') != 'not_calculated':      # a method note or a scope the user marked absent: not a gap
+            continue
+        step = re.sub(r'bio$', '', str(n['step_id']))
+        if not step.startswith(REQUIRED_CALCULATION_PREFIXES):
+            continue
+        row = rows.setdefault(step, {'step_id': step, 'label_tr': question_label(step, 'tr'),
+                                     'label_en': question_label(step, 'en'), 'items_tr': [], 'items_en': []})
+        row['items_tr'].append(n.get('report_tr') or n['tr'])
+        row['items_en'].append(n.get('report_en') or n['en'])
+    return list(rows.values())
+
+
+def signed_exclusions(answers):
+    """The justified exclusions recorded with the signature (7C-2): what was not
+    calculated when the inventory was signed, and why — as signed, never recomputed."""
+    raw = (answers or {}).get('7C-2')
+    raw = raw.get('answer') if isinstance(raw, dict) and 'answer' in raw else raw
+    rows = raw.get('exclusions') if isinstance(raw, dict) else None
+    return [r for r in rows if isinstance(r, dict) and r.get('step_id') and r.get('justification')] \
+        if isinstance(rows, list) else []

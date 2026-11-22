@@ -433,6 +433,25 @@ def declared_zero_categories(report, by_category):
     return {CAT_VI} if is_zero else set()
 
 
+def unquantified_required(report):
+    """(rows, justified): the questions of direct and energy-indirect emissions that hold an amount this
+    inventory does not calculate. A signed inventory prints the record kept with its signature (what was
+    left out and the signatory's justification); an unsigned one, or one signed before that record existed,
+    prints what is uncalculated now, with no justification."""
+    from .step_entries import recorded_connections, signed_exclusions, unmet_required_calculations
+    if report is None:
+        return [], False
+    answers = _answers(report)
+    kept = signed_exclusions(answers)
+    if kept:
+        return kept, True
+    if report.company is None:
+        return [], False
+    with recorded_connections(report):
+        return unmet_required_calculations(answers, report.reporting_year or datetime.now().year,
+                                           report.company, report), False
+
+
 def declared_unquantified_categories(report, by_category):
     """ISO categories with nothing quantified although the inventory declares a
     source in them that could not be calculated (an outlet count with no
@@ -2088,10 +2107,37 @@ def _section1(E, S, D, report, lang, TBL, FIG):
     E.append(Spacer(1, 2*mm))
     # Each principle says what was *done*, not only what the principle means:
     # a definition list restates the standard, which a verifier already has.
+    # The compliance statement is what the inventory can carry: unqualified only when every amount of direct
+    # and energy-indirect emissions is calculated; with the justified exclusions named when the signatory
+    # recorded them; and not claimed while such an amount is uncalculated with no justification.
+    gaps, justified = unquantified_required(report)
+    if not gaps:
+        compliance_en = ('Quantification and reporting have been carried out in accordance '
+                         'with ISO 14064-1:2018, and the report follows the disclosure '
+                         'requirements of its clause 9.')
+        compliance_tr = ('Nicelendirme ve raporlama ISO 14064-1:2018’e uygun olarak '
+                         'yürütülmüş olup rapor, standardın 9. maddesindeki açıklama '
+                         'gerekliliklerini izler.')
+    elif justified:
+        compliance_en = ('Quantification and reporting have been carried out in accordance with ISO 14064-1:2018, '
+                         'with the exception of the sources of direct and energy-indirect emissions that are not '
+                         'quantified; these are listed in section 3.4 with the justification recorded by the '
+                         'signatory. The report follows the disclosure requirements of clause 9 of the standard.')
+        compliance_tr = ('Nicelendirme ve raporlama, nicelendirilmeyen doğrudan ve enerji kaynaklı dolaylı emisyon '
+                         'kaynakları dışında ISO 14064-1:2018’e uygun olarak yürütülmüştür; bu kaynaklar, imza '
+                         'sahibinin kaydettiği gerekçeyle birlikte 3.4 bölümünde listelenmiştir. Rapor, standardın '
+                         '9. maddesindeki açıklama gerekliliklerini izler.')
+    else:
+        compliance_en = ('Conformity with ISO 14064-1:2018 is not claimed for this inventory as it stands: it holds '
+                         'amounts of direct or energy-indirect emissions that are not quantified and for which no '
+                         'justification is recorded (section 3.4). The standard requires these to be quantified, or '
+                         'their exclusion explained, before a final report is issued.')
+        compliance_tr = ('Bu envanter mevcut hâliyle ISO 14064-1:2018’e uygunluk beyan etmemektedir: nicelendirilmeyen '
+                         've gerekçesi kaydedilmemiş doğrudan veya enerji kaynaklı dolaylı emisyon miktarları '
+                         'içermektedir (bölüm 3.4). Standart, nihai rapor yayımlanmadan önce bunların '
+                         'nicelendirilmesini veya hariç tutulmalarının açıklanmasını gerektirir.')
     principles = ([
-        ('Compliance', 'Quantification and reporting have been carried out in accordance '
-                       'with ISO 14064-1:2018, and the report follows the disclosure '
-                       'requirements of its clause 9.'),
+        ('Compliance', compliance_en),
         ('Relevance', 'The greenhouse gas sources, sinks, reservoirs, data and '
                       'methodologies selected are those appropriate to the needs of the '
                       'intended user, and the emission factors applied are appropriate '
@@ -2114,9 +2160,7 @@ def _section1(E, S, D, report, lang, TBL, FIG):
                          'intended user can make decisions with reasonable confidence '
                          'and an independent party can follow the quantification.'),
     ] if lang == 'en' else [
-        ('Uygunluk', 'Nicelendirme ve raporlama ISO 14064-1:2018’e uygun olarak '
-                     'yürütülmüş olup rapor, standardın 9. maddesindeki açıklama '
-                     'gerekliliklerini izler.'),
+        ('Uygunluk', compliance_tr),
         ('İlgililik', 'Seçilen sera gazı kaynakları, yutakları, rezervuarları, verileri ve '
                       'metodolojileri hedef kullanıcının ihtiyaçlarına uygundur ve '
                       'uygulanan emisyon faktörleri kuruluşun yürüttüğü faaliyetlerle '
@@ -2661,6 +2705,7 @@ def _section3(E, S, D, report, lang, TBL, FIG):
     # (future inclusion plan, optional free text). Rendered as prose rather
     # than the raw option codes those steps store.
     E.append(Paragraph('3.4   ' + t('s3_4', lang), S['h2']))
+    gaps, justified = unquantified_required(report)
     flagged = _raw_answer(A, '6A-1')
     if flagged == 'yes':
         reason_code = _raw_answer(A, '6A-2')
@@ -2722,13 +2767,39 @@ def _section3(E, S, D, report, lang, TBL, FIG):
             E.append(Paragraph(
                 (f'<b>{"Future inclusion plan" if lang == "en" else "Gelecekte dahil etme planı"}'
                  f':</b> {future_plan}'), S['body']))
-    else:
+    elif not gaps:
         E.append(Paragraph(
             'No sources have been excluded from the declared boundary other than those '
             'stated as not applicable to the organisation’s operations.'
             if lang == 'en' else
             'Kuruluşun faaliyetleri için geçerli olmadığı belirtilenler dışında, beyan '
             'edilen sınırdan hariç tutulan kaynak bulunmamaktadır.', S['body']))
+
+    # Amounts of direct and energy-indirect emissions the inventory does not calculate: what they are and,
+    # for a signed inventory, the justification its signatory recorded. Without one, said as that.
+    if gaps:
+        E.append(Spacer(1, 2*mm))
+        E.append(Paragraph(
+            ('<b>Direct and energy-indirect emissions not quantified.</b> The amounts below were entered but are '
+             'not calculated, and are therefore not part of the totals of this report. '
+             + ('The justification is the one recorded by the signatory at sign-off.' if justified else
+                'No justification is recorded for them; this report does not claim conformity with '
+                'ISO 14064-1:2018 until they are quantified or their exclusion is justified at sign-off.'))
+            if lang == 'en' else
+            ('<b>Nicelendirilmeyen doğrudan ve enerji kaynaklı dolaylı emisyonlar.</b> Aşağıdaki miktarlar girilmiş '
+             'ancak hesaplanmamıştır; bu nedenle raporun toplamlarına dâhil değildir. '
+             + ('Gerekçe, imza sahibinin imza sırasında kaydettiği gerekçedir.' if justified else
+                'Bunlar için gerekçe kaydedilmemiştir; nicelendirilene veya hariç tutulmaları imza sırasında '
+                'gerekçelendirilene kadar bu rapor ISO 14064-1:2018’e uygunluk beyan etmez.')), S['body']))
+        lines = []
+        for g in gaps:
+            what = '; '.join(escape(str(x)) for x in g.get('items_tr' if lang == 'tr' else 'items_en') or [])
+            line = f'<b>{escape(str(g.get("label_tr" if lang == "tr" else "label_en") or g["step_id"]))}:</b> {what}'
+            if g.get('justification'):
+                line += (f' — <b>{"Justification" if lang == "en" else "Gerekçe"}:</b> '
+                         f'{escape(str(g["justification"]))}')
+            lines.append(line)
+        E.extend(_bullets(S, lines))
 
     # Which categories carry nothing, stated whether or not the organisation
     # declared an exclusion. An empty category is not self-evidently out of

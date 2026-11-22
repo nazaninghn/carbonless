@@ -16,9 +16,9 @@ Review of the factor-standards work merged in PR #149 and #150, and what was don
 Policy given by the owner on 2026-11-22 and applied to the factor rows:
 
 1. No universal GWP set: every row of a standard records the GWP source and version it was built with (`EmissionFactor.gwp_basis`), and the ISO report states it.
-2. No universal density: the 22 IPCC / GHG Protocol per-litre rows, which rest on a DEFRA 2026 density, are **withheld**. The 2 natural-gas-per-m³ rows were rebuilt on the national calorific value and released (`TUR_NID_2024_examination.md`).
+2. Densities: the IPCC / GHG Protocol per-litre and per-m³ rows use the DEFRA density of the inventory year, as the client's own calculation documents do (`CLIENT_DOCUMENTS_2026-11-22.md`); none is withheld.
 3. Of the 48 DEFRA mappings first judged unresolved, **15 are withheld**; 18 were released and 15 re-mapped to the row DEFRA publishes for the item, once the owner stated that the client's sources govern and the earlier catalogue decisions do not (`RE_REVIEW_2026-11-22_new_sources_govern.md`).
-4. TUR_NID_2024 was examined (`TUR_NID_2024_examination.md`); one value is used from it (natural gas NCV per m³).
+4. TUR_NID_2024 was examined (`TUR_NID_2024_examination.md`); no factor is taken from it.
 5. A withheld row never produces a number: the activity is reported as "not calculated — factor under review".
 
 Withheld rows are listed with their reasons in `carbonless_backend/emissions/data/withheld_factors.json`. A row is released only by removing it from that file after its mapping, density or method is individually resolved and approved.

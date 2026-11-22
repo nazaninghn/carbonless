@@ -687,6 +687,28 @@ def generate_report(user, year, lang='tr', page_offset=0, draft=False, inventory
             'report. No carbon inventory (questionnaire) is completed for this year, so the '
             'organisational boundary and reporting approach have not been declared yet.'
         )
+    # The same honesty as the ISO report: amounts of direct or energy-indirect emissions the inventory does not
+    # calculate are said here too, and without a recorded justification conformity is not claimed.
+    if boundary_text:
+        from questionnaire.iso_report_pdf import unquantified_required
+        _gaps, _justified = unquantified_required(year_inventory)
+        if _gaps and _justified:
+            _body += (' Nicelendirilmeyen doğrudan veya enerji kaynaklı dolaylı emisyon kaynakları, imza sahibinin '
+                      'gerekçesiyle birlikte ISO 14064-1 envanter raporunun 3.4 bölümünde listelenmiştir.'
+                      if tr else
+                      ' The sources of direct or energy-indirect emissions that are not quantified are listed, with '
+                      'the signatory\'s justification, in section 3.4 of the ISO 14064-1 inventory report.')
+        elif _gaps:
+            _body = (
+                'yılına ait sera gazı emisyonları ISO 14064-1:2018 yöntemiyle hesaplanmış ve bu raporda sunulmuştur; '
+                f'envanterde beyan edilen organizasyon sınırı ({boundary_text}) esas alınmıştır. Envanter, '
+                'nicelendirilmeyen ve gerekçesi kaydedilmemiş doğrudan veya enerji kaynaklı dolaylı emisyon miktarları '
+                'içerdiğinden, bu rapor standarda uygunluk beyan etmez.'
+                if tr else
+                'greenhouse gas emissions have been calculated with the method of ISO 14064-1:2018 and are presented '
+                f'in this report, using the organisational boundary declared in the inventory ({boundary_text}). The '
+                'inventory holds amounts of direct or energy-indirect emissions that are not quantified and have no '
+                'recorded justification, so this report does not claim conformity with the standard.')
     _peak = 'En yüksek emisyon ayı' if tr else 'Peak emission month'
 
     # ── Build PDF ───────────────────────────────────
