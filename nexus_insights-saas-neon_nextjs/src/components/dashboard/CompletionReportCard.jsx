@@ -5,6 +5,10 @@ import { FileText, Download, RotateCcw, CheckCircle2, Building2, AlertTriangle, 
 import { api } from '@/lib/utils/api';
 
 const EF_DATABASE_LABELS = {
+  std_ghg: { tr: 'GHG Protokolü', en: 'GHG Protocol' },
+  std_ipcc: 'IPCC',
+  std_defra: 'DEFRA',
+  std_mix: { tr: 'Karma', en: 'Mix' },
   DEFRA: 'DEFRA 2023',
   DEFRA_TUIK: 'DEFRA + TÜİK',
   IPCC_AR6: 'IPCC AR6 2021',

@@ -106,6 +106,8 @@ def _ef_database_label(report, lang):
         return None
     if report.ef_database == 'custom' and lang == 'tr':
         return 'Özel'
+    if lang == 'tr' and report.ef_database in ('std_ghg', 'std_mix'):
+        return {'std_ghg': 'GHG Protokolü', 'std_mix': 'Karma (soru bazında seçilen standart)'}[report.ef_database]
     return report.get_ef_database_display()
 
 

@@ -566,30 +566,26 @@
     "number": 18,
     "type": "single_select",
     "text": {
-      "tr": "Emisyon faktörü veritabanı tercihiniz nedir?",
-      "en": "Which emission factor database would you like to use?"
+      "tr": "Envanteriniz hangi emisyon faktörü standardına göre hesaplansın?",
+      "en": "Which emission factor standard should your inventory be calculated on?"
     },
     "loopSource": null,
     "options": {
-      "DEFRA_TUIK": {
-        "tr": "DEFRA + TÜİK kombinasyonu (Türkiye için önerilen)",
-        "en": "DEFRA + TUIK combination (recommended for Turkey)"
+      "std_ghg": {
+        "tr": "GHG Protokolü",
+        "en": "GHG Protocol"
       },
-      "DEFRA": {
-        "tr": "DEFRA 2023 (UK — çok ülkede kabul görür)",
-        "en": "DEFRA 2023 (UK — widely accepted internationally)"
+      "std_ipcc": {
+        "tr": "IPCC",
+        "en": "IPCC"
       },
-      "IPCC_AR6": {
-        "tr": "IPCC AR6 2021 (Uluslararası — en güncel GWP değerleri)",
-        "en": "IPCC AR6 2021 (International — latest GWP values)"
+      "std_defra": {
+        "tr": "DEFRA (Birleşik Krallık dönüşüm faktörleri)",
+        "en": "DEFRA (UK government conversion factors)"
       },
-      "EPA": {
-        "tr": "EPA (ABD Çevre Koruma Ajansı)",
-        "en": "EPA (US Environmental Protection Agency)"
-      },
-      "custom": {
-        "tr": "Kullanıcı tanımlı faktör yükle",
-        "en": "Upload user-defined factor"
+      "std_mix": {
+        "tr": "Karma (her soruda ayrı standart seçilir)",
+        "en": "Mix (a standard is chosen on each question)"
       }
     },
     "fields": null

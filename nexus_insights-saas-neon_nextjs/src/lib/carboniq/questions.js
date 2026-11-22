@@ -988,39 +988,34 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'report.ef_database',
     text: {
-      tr: 'Emisyon faktörü veritabanı tercihiniz nedir?',
-      en: 'Which emission factor database would you like to use?',
+      tr: 'Envanteriniz hangi emisyon faktörü standardına göre hesaplansın?',
+      en: 'Which emission factor standard should your inventory be calculated on?',
     },
     placeholder: {
-      tr: 'Veritabanı seçin',
-      en: 'Select database',
+      tr: 'Standart seçin',
+      en: 'Select a standard',
     },
     helper: {
-      tr: 'Sistem bulunduğunuz ülkeye göre en uygun veritabanını önerdi. Değiştirmeniz gerekmez ama farklı bir tercih varsa aşağıdan seçebilirsiniz. Seçiminiz raporunuzda belgelenecek.',
-      en: 'The system suggested the most suitable database based on your country. You don\'t need to change it, but you can select below if preferred. Your selection will be documented in the report.',
+      tr: 'Seçtiğiniz standardın faktörleri bu envanterdeki tüm hesaplamalarda kullanılır. "Karma" seçerseniz, hesaplama yapılan her soruda o soru için standardı ayrıca seçersiniz. Seçiminiz raporunuzda belgelenir.',
+      en: 'The factors of the standard you choose are used in every calculation of this inventory. With "Mix", you choose the standard separately on each question that is calculated. Your choice is documented in the report.',
     },
     options: [
-      { value: 'DEFRA_TUIK', label: { tr: 'DEFRA + TÜİK kombinasyonu (Türkiye için önerilen)', en: 'DEFRA + TUIK combination (recommended for Turkey)' }, efSuggestion: 'TR' },
-      { value: 'DEFRA', label: { tr: 'DEFRA 2023 (UK — çok ülkede kabul görür)', en: 'DEFRA 2023 (UK — widely accepted internationally)' }, efSuggestion: 'GB' },
-      { value: 'IPCC_AR6', label: { tr: 'IPCC AR6 2021 (Uluslararası — en güncel GWP değerleri)', en: 'IPCC AR6 2021 (International — latest GWP values)' }, efSuggestion: 'OTHER' },
-      { value: 'EPA', label: { tr: 'EPA (ABD Çevre Koruma Ajansı)', en: 'EPA (US Environmental Protection Agency)' }, efSuggestion: 'US' },
-      { value: 'custom', label: { tr: 'Kullanıcı tanımlı faktör yükle', en: 'Upload user-defined factor' } },
+      { value: 'std_ghg', label: { tr: 'GHG Protokolü', en: 'GHG Protocol' } },
+      { value: 'std_ipcc', label: { tr: 'IPCC', en: 'IPCC' } },
+      { value: 'std_defra', label: { tr: 'DEFRA (Birleşik Krallık dönüşüm faktörleri)', en: 'DEFRA (UK government conversion factors)' } },
+      { value: 'std_mix', label: { tr: 'Karma (her soruda ayrı standart seçilir)', en: 'Mix (a standard is chosen on each question)' } },
     ],
     validate: {
-      requiredMessage: { tr: 'Lütfen bir emisyon faktörü veritabanı seçin.', en: 'Please select an emission factor database.' },
+      requiredMessage: { tr: 'Lütfen bir emisyon faktörü standardı seçin.', en: 'Please select an emission factor standard.' },
     },
     systemMessages: {
-      preload_TR: {
-        tr: 'Türkiye seçiminiz doğrultusunda DEFRA + TÜİK kombinasyonunu önerdik. Bu, ulusal veriler mevcut olduğunda onları, eksik kalemlerde ise DEFRA 2023\'ü kullanır.',
-        en: 'Based on your Turkey selection, we suggested the DEFRA + TUIK combination. This uses national data when available and DEFRA 2023 as fallback.',
+      std_defra: {
+        tr: 'Hesaplamalar, envanter yılınıza ait DEFRA baskısının faktörleriyle yapılır (o yılın baskısı yoksa bir önceki baskı). Şebeke elektriği, tesisin bulunduğu ülkenin ulusal faktörüyle hesaplanır. DEFRA\'nın yayımlamadığı kaynaklar "hesaplanmadı" olarak gösterilir.',
+        en: 'Calculations use the factors of the DEFRA edition of your inventory year (the previous edition when that year has none). Grid electricity is calculated with the national factor of the facility\'s country. Sources DEFRA does not publish are shown as "not calculated".',
       },
-      EPA: {
-        tr: 'EPA veritabanı ABD bazlı faktörler içerir. Türkiye\'deki operasyonlarınız için bazı değerler uygun olmayabilir. DEFRA veya IPCC AR6 daha uygun olabilir.',
-        en: 'EPA database contains US-based factors. Some values may not be suitable for your Turkey operations. DEFRA or IPCC AR6 may be more appropriate.',
-      },
-      custom: {
-        tr: 'Özel emisyon faktörü yükleyeceksiniz. Kullandığınız kaynağı (kurum adı, yayın yılı) ve hangi kategoriler için kullandığınızı belirtmeniz raporunuzun güvenilirliği açısından önemli.',
-        en: 'You will upload a custom emission factor. Specifying the source (institution name, year) and categories is important for the reliability of your report.',
+      std_mix: {
+        tr: 'Hesaplama yapılan her soruda o soru için standardı seçmeniz istenecek. Standardı seçilmemiş bir soru hesaplanmaz.',
+        en: 'On each question that is calculated you will be asked for its standard. A question whose standard is not chosen is not calculated.',
       },
     },
     next: 'D2',

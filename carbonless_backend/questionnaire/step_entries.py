@@ -331,6 +331,75 @@ def _value(stored):
     return stored
 
 
+# ── Factor standard of an inventory ──────────────────────────────────────
+# D1 asks which factor standard the inventory is calculated on. The four
+# values below switch the calculation to that standard's factors; "mix" asks
+# each calculating question for its own standard (stored next to the answer
+# as `factor_standard`). Any other D1 value (the database names offered
+# before, or none) keeps the platform catalogue, so an inventory answered
+# earlier keeps its numbers.
+STANDARD_BY_CHOICE = {'std_defra': 'defra', 'std_ipcc': 'ipcc', 'std_ghg': 'ghg', 'std_mix': 'mix'}
+_STEP_STANDARDS = contextvars.ContextVar('step_factor_standards', default=None)
+
+
+def _d1_choice(stored):
+    for value in (stored, _value(stored)):
+        if isinstance(value, dict) and value.get('ef_database'):
+            return value['ef_database']
+        if isinstance(value, str):
+            return value
+    return ''
+
+
+def inventory_standard(answers):
+    """'defra' / 'ipcc' / 'ghg' / 'mix', or '' for the platform catalogue."""
+    return STANDARD_BY_CHOICE.get(_d1_choice((answers or {}).get('D1')), '')
+
+
+def step_standard(answers, step_id):
+    """The standard one question of a "mix" inventory is calculated on:
+    the one chosen for it, else STANDARD_UNSET (nothing is calculated)."""
+    from emissions.factor_lookup import STANDARDS, STANDARD_UNSET
+    stored = (answers or {}).get(step_id)
+    chosen = stored.get('factor_standard') if isinstance(stored, dict) else None
+    return chosen if chosen in STANDARDS else STANDARD_UNSET
+
+
+@contextlib.contextmanager
+def answers_standard(answers):
+    """Calculate inside the block on the standard these answers chose."""
+    from emissions.factor_lookup import use_standard, STANDARD_UNSET
+    standard = inventory_standard(answers)
+    per_step = None
+    if standard == 'mix':
+        per_step = {step: step_standard(answers, step) for step in ENTRY_STEPS}
+        standard = STANDARD_UNSET
+    token = _STEP_STANDARDS.set(per_step)
+    try:
+        with use_standard(standard):
+            yield
+    finally:
+        _STEP_STANDARDS.reset(token)
+
+
+@contextlib.contextmanager
+def report_standard(report):
+    """Calculate inside the block on the standard of this inventory."""
+    from .models import ReportStep
+    answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
+    with answers_standard(answers):
+        yield
+
+
+def _on_answers_standard(fn):
+    """`fn(answers, …)` runs on the factor standard those answers chose."""
+    @functools.wraps(fn)
+    def wrapper(answers, *args, **kwargs):
+        with answers_standard(answers):
+            return fn(answers, *args, **kwargs)
+    return wrapper
+
+
 # 3B-1 vehicle classes: road vehicles and off-road machines. Ships, aircraft,
 # locomotives and "other" have no registered factor of their own.
 _ROAD_VEHICLES = {f'EQ-3B-{i:02d}' for i in range(1, 11)}
@@ -584,7 +653,7 @@ def _uk_td_available(year):
         y = int(year)
     except (TypeError, ValueError):
         return False
-    return EmissionFactor.objects.filter(slug='uk-transmission-losses', is_active=True, year__lte=y).exists()
+    return EmissionFactor.objects.filter(slug='uk-transmission-losses', is_active=True, standard='', year__lte=y).exists()
 
 
 def _provider_report(A, step, year, scope_category):
@@ -877,6 +946,7 @@ ENTRY_STEPS = (
 )
 
 
+@_on_answers_standard
 def activities_for_report(answers, year, company=None, factor_exists=None):
     """{step_id: [activity]} for every step of ENTRY_STEPS, from all answers
     of the inventory ({step_id: stored answer})."""
@@ -1145,7 +1215,10 @@ def _entry_specs(step, activities, A, year, company):
             else:
                 rest.append(a)
         activities = rest
-    resolved = [(a, r) for a, r in ((a, _resolve(a, company, facility_of, year)) for a in activities) if r]
+    from emissions.factor_lookup import use_standard, active_standard
+    per_step = _STEP_STANDARDS.get()
+    with use_standard(per_step[step] if per_step and step in per_step else active_standard()):
+        resolved = [(a, r) for a, r in ((a, _resolve(a, company, facility_of, year)) for a in activities) if r]
     # The electricity supplier's factor is market-based: it never replaces
     # the location-based grid factor of 4A-1 (see scope2_market_based).
     supplier = _supplier_ef(A, step, year) if step in _EF_DOCUMENT and step != '4A-1' else None
@@ -1287,7 +1360,8 @@ def sync_step_entries(user, company, report, step_id, data=None, as_status=None)
     # and neither is a pre-ownership one (its rows are unassigned; a tagged set would duplicate them).
     check_report(report, entry_producing=True)
     from django.db import transaction
-    with transaction.atomic(), recorded_connections(report):     # one unit: a failure part-way writes nothing
+    # one unit: a failure part-way writes nothing
+    with transaction.atomic(), recorded_connections(report), report_standard(report):
         return _sync_step_entries(user, company, report, step_id, data, as_status)
 
 
@@ -1503,7 +1577,8 @@ def refresh_entry_text(report):
     except InventoryGuardError:
         return
     with recorded_connections(report):
-        _refresh_entry_text(report)
+        with report_standard(report):
+            _refresh_entry_text(report)
 
 
 def _refresh_entry_text(report):
@@ -1738,6 +1813,7 @@ def sites_on_superseded_grid(company, year, inventory=None):
     return out
 
 
+@_on_answers_standard
 def scope2_market_based(answers, year, company=None):
     """The market-based Scope 2 of the purchased electricity (4A-1 sites and
     EV charging counted in 4A-EV) — reported next to, never added to, the
@@ -1952,6 +2028,7 @@ def _readable_notes(notes):
 _UNIT_DISPLAY = {'m3': 'm³', 'kwh': 'kWh', 'liters': 'litre', 'kg': 'kg', 'gj': 'GJ'}
 
 
+@_on_answers_standard
 def uncalculated_notes(answers, year, company=None, inventory=None):
     """[{step_id, tr, en}] for every answered amount that does not reach the
     dashboard and why — shown right after the answer and listed with the

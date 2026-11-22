@@ -16,6 +16,13 @@ class CarbonReport(models.Model):
         IPCC_AR6 = 'IPCC_AR6', 'IPCC AR6 2021'
         EPA = 'EPA', 'EPA'
         CUSTOM = 'custom', 'Custom'
+        # Factor standards: these switch the calculation itself to that
+        # standard's factors (questionnaire.step_entries.inventory_standard);
+        # the names above are only recorded in the report.
+        STD_GHG = 'std_ghg', 'GHG Protocol'
+        STD_IPCC = 'std_ipcc', 'IPCC'
+        STD_DEFRA = 'std_defra', 'DEFRA'
+        STD_MIX = 'std_mix', 'Mix (chosen per question)'
 
     class OrgBoundary(models.TextChoices):
         OPERATIONAL = 'operational_control', 'Operational Control'

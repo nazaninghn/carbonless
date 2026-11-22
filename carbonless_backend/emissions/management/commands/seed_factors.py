@@ -37,7 +37,7 @@ class Command(BaseCommand):
             # total. `seed_gas_splits` re-derives them; the reminder below says so.
             existing = EmissionFactor.objects.filter(
                 slug=data['slug'], country=data.get('country', 'global'),
-                year=data['year']).first()
+                year=data['year'], standard='').first()
             if (existing and existing.gas_split_basis
                     and existing.factor_kg_co2e != Decimal(str(data['factor_kg_co2e']))):
                 data.update({f: None for f in EmissionFactor.GAS_FIELDS.values()})
@@ -51,6 +51,7 @@ class Command(BaseCommand):
                 slug=data['slug'],
                 country=data.get('country', 'global'),
                 year=data['year'],
+                standard='',     # the platform catalogue; a standard's rows have their own seed command
                 defaults=data
             )
             if was_created:

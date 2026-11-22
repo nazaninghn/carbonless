@@ -242,7 +242,7 @@ export default {
    "n": 18,
    "stage": 1,
    "type": "single_select",
-   "text": "Which emission factor database would you like to use?",
+   "text": "Which emission factor standard should your inventory be calculated on?",
    "iso": "ISO 14064-1 §6.1",
    "req": true,
    "next": "D2",

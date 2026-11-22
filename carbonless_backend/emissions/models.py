@@ -61,6 +61,7 @@ class EmissionFactor(models.Model):
 
     SOURCE_CHOICES = [
         ('defra_2024', 'Defra/DESNZ 2024'),
+        ('defra', 'Defra/DESNZ (edition = factor year)'),
         ('desnz_2025', 'DESNZ 2025'),
         ('ipcc_2006', 'IPCC 2006'),
         ('ipcc_2019', 'IPCC 2019 + AR6 GWP'),
@@ -80,9 +81,23 @@ class EmissionFactor(models.Model):
         ('turkey', 'Turkey'),
     ]
 
+    # The factor standard a row belongs to. Blank = the platform catalogue
+    # (used by inventories that chose no standard, and for sources a standard
+    # does not publish, such as a country's grid electricity). A row of a
+    # standard is used only by an inventory, or a question of a "mix"
+    # inventory, that chose it — see emissions.factor_lookup.pick_factor.
+    STANDARD_CHOICES = [
+        ('', 'Platform catalogue'),
+        ('defra', 'DEFRA / DESNZ'),
+        ('ipcc', 'IPCC'),
+        ('ghg', 'GHG Protocol'),
+    ]
+
     name = models.CharField(max_length=255)
     name_tr = models.CharField(max_length=255, blank=True)
     slug = models.CharField(max_length=100, default='', help_text='Unique key e.g. coal-industrial')
+    standard = models.CharField(max_length=10, choices=STANDARD_CHOICES, blank=True, default='', db_default='',
+                                help_text='Factor standard this row belongs to (blank = platform catalogue)')
     scope = models.CharField(max_length=10, choices=SCOPE_CHOICES)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     country = models.CharField(max_length=10, choices=COUNTRY_CHOICES, default='global')
@@ -206,7 +221,7 @@ class EmissionFactor(models.Model):
 
     class Meta:
         ordering = ['scope', 'category', 'name']
-        unique_together = ['slug', 'country', 'year']
+        unique_together = ['slug', 'country', 'year', 'standard']
 
 
 class EmissionEntry(models.Model):

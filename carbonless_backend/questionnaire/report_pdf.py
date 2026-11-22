@@ -54,6 +54,10 @@ except ImportError:
 # CarbonReport/Company (see models.py), not questionnaire branching logic.
 # ═══════════════════════════════════════════════════════
 EF_DATABASE_LABELS = {
+    'std_ghg': {'tr': 'GHG Protokolü', 'en': 'GHG Protocol'},
+    'std_ipcc': 'IPCC',
+    'std_defra': 'DEFRA',
+    'std_mix': {'tr': 'Karma (soru bazında seçilen standart)', 'en': 'Mix (standard chosen per question)'},
     'DEFRA': 'DEFRA 2023',
     'DEFRA_TUIK': 'DEFRA + TÜİK',
     'IPCC_AR6': 'IPCC AR6 2021',

@@ -106,7 +106,7 @@ search does not enumerate the four situations below. They are covered by their o
 | `C1` | 15 | Does your company have any subsidiaries or affiliates? | A · REQUIRED | Subsidiaries decide whether the subsidiary boundary questions (2A-4) apply. |  |
 | `C2` | 16 | Does your company have any international operations? | A · REQUIRED | International operations drive the overseas-site advisor check on later site answers. |  |
 | `C3` | 17 | Does your company have any franchise agreements or joint ventures? | A · REQUIRED | Franchise / joint venture decides whether Scope 3 category 14 (K3C14-0) applies. |  |
-| `D1` | 18 | Which emission factor database would you like to use? | A · REQUIRED | Emission factor database: selects the factor source used by every calculation. |  |
+| `D1` | 18 | Which emission factor standard should your inventory be calculated on? | A · REQUIRED | Emission factor database: selects the factor source used by every calculation. |  |
 | `D2` | 19 | Information about Scope 2 calculation methodology | — info / navigation | Information screen: not a question. |  |
 | `D3` | 20 | Which organizational boundary approach will you use? | A · REQUIRED | Consolidation approach: decides which boundary questions follow and how facilities are included. |  |
 | `D4` | 21 | How would you like to determine the scope of your Scope 3 reporting? | A · REQUIRED | Scope 3 reporting approach: decides the Scope 3 route. |  |

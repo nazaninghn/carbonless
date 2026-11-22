@@ -102,6 +102,17 @@ Read this before editing anything near calculations — it is the whole story.
 5. **Attribution must not change math.** Changing which facility/bucket an entry is attributed to must never change its calculated CO₂e.
 6. **"I don't know — answer later" is decided by what a question does, never by how it looks.** A question that routes the questionnaire (any `nextByValue`), defines loop items, sets the boundary or the method, identifies the inventory or signs off is REQUIRED and cannot be deferred; profile/documentation/data follow-ups are DEFERRABLE; some apply only on certain routes (CONDITIONAL; off the route they are inactive: not pending, not counted). The policy is `questionnaire/deferral_policy.json` (+ the frontend copy `src/lib/carboniq/deferralPolicy.js`), enforced on the server by `questionnaire/deferral.py` (`POST …/pending/`, completion) and mirrored by `src/lib/carboniq/deferral.js`; `deferral_parity.json` keeps both route walks identical. A new question must be classified (tests fail otherwise). Table and reasons: `carbonless_backend/ANSWER_LATER_POLICY.md`.
 
+## Factor standards (owner decision, November 2026)
+
+An inventory is calculated on the factor standard chosen in question **D1**: `std_ghg`, `std_ipcc`, `std_defra` or `std_mix` (a standard chosen on each calculating question, stored next to the answer as `factor_standard`). This was introduced on the owner's instruction, with the factor sources the client supplied; it is the one sanctioned exception to "emission numbers are sacred".
+
+- `EmissionFactor.standard` says which standard a row belongs to. Blank = the platform catalogue (`seed_data.py`), which is still frozen: hard rule 1 applies to it unchanged, and an inventory whose D1 is not one of the four values above (every inventory answered before) is calculated on it with the same numbers as before.
+- A standard's rows are data, loaded by their own command, never hand-edited: DEFRA from `emissions/data/defra_factors.json` (every published edition 2014–2026, generated from the gov.uk flat files) by `manage.py seed_defra_factors`. They are `is_default=False`, so no catalogue query sees them.
+- The standard in force is applied in one place: `emissions/factor_lookup.py :: pick_factor` (`use_standard`). The edition is the inventory year's, else the latest earlier one. A source the standard does not publish is **not calculated** (honest note), never taken from another standard — except grid electricity, which keeps the national factor.
+- `questionnaire/step_entries.py :: inventory_standard / answers_standard / report_standard` read the choice from the answers.
+- IPCC and GHG Protocol have no factor rows yet (the client has not defined their factor sets): an inventory on them calculates only grid electricity until they are loaded.
+- Tests: `questionnaire/test_factor_standards.py`.
+
 ## Calculation & data rules (the DOs and DON'Ts)
 
 These are non-negotiable rules established across the inventory/calculation work. They protect the audit-grade correctness of every number.

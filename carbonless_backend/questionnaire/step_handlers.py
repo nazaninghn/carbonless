@@ -495,9 +495,9 @@ def handle_C3(report, data):
             "ℹ️ Franchise/JV detected — an operational control test will be added in Phase 2."
         )
     bot_messages.append(
-        "Which emission factor database would you like to use?\n\n"
-        "Options: **DEFRA** / **DEFRA_TUIK** / **IPCC_AR6** / **EPA** / **custom**\n\n"
-        f"*(Suggested based on your country: **{report.ef_database or 'IPCC_AR6'}**)*"
+        "Which emission factor standard should your inventory be calculated on?\n\n"
+        "Options: **std_ghg** (GHG Protocol) / **std_ipcc** (IPCC) / **std_defra** (DEFRA) / "
+        "**std_mix** (a standard chosen on each question)"
     )
     return {
         'next_step': 'D1',
