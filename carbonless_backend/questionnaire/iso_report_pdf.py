@@ -3483,6 +3483,18 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         'Kaynak: IPCC Altıncı Değerlendirme Raporu (AR6, 2021), 100 yıllık değerler. '
         'Bu envanterde uygulanan tüm emisyon faktörleri, bu potansiyeller kullanılarak '
         'CO₂ eşdeğeri cinsinden ifade edilmiştir.', S['small']))
+    # An inventory calculated on a factor standard: the factors applied carry their own GWP basis
+    # (EmissionFactor.gwp_basis), which is stated here as recorded, not assumed from the table above.
+    bases = sorted({b for b in D['entries'].exclude(emission_factor__standard='')
+                    .values_list('emission_factor__gwp_basis', flat=True) if b})
+    if bases:
+        E.append(Paragraph(
+            ('<b>GWP basis of the factors applied in this inventory.</b> This inventory is calculated on a factor '
+             'standard. For its factors the table above does not apply; each factor carries the GWP source and '
+             'version stated by its source: ' if lang == 'en' else
+             '<b>Bu envanterde uygulanan faktörlerin KIP dayanağı.</b> Bu envanter bir faktör standardına göre '
+             'hesaplanmıştır. Bu faktörler için yukarıdaki tablo geçerli değildir; her faktör, kaynağının belirttiği '
+             'KIP kaynağını ve sürümünü taşır: ') + '; '.join(bases) + '.', S['small']))
     # The refrigerant factors in the catalog are not all AR6 values; say so rather than let the table above imply it.
     E.append(Paragraph(
         'Note: the refrigerant emission factors applied in this inventory carry the following GWP-100 values, which differ from the '

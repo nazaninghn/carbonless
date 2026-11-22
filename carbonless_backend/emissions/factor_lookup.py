@@ -308,10 +308,16 @@ def inventory_standard_scope(inventory):
 _STANDARD_LABEL = {'defra': 'DEFRA', 'ipcc': 'IPCC', 'ghg': 'GHG Protocol'}
 
 
-def standard_gap_message(activity_type, unit):
+def standard_gap_message(activity_type, unit, slug=None):
     """Why an activity the catalogue can calculate has no factor under the
     standard in force, in English and Turkish."""
+    from .withheld import is_withheld
     standard = active_standard()
+    if slug and is_withheld(standard, slug):
+        label = _STANDARD_LABEL.get(standard, standard)
+        return (f"The {label} factor for '{activity_type}' ({unit}) is under review (its mapping, density or method is "
+                f"not approved yet) — not calculated. / '{activity_type}' ({unit}) için {label} faktörü incelemede "
+                f"(eşleştirme, yoğunluk veya yöntem henüz onaylanmadı) — hesaplanmadı.")
     if standard == STANDARD_UNSET:
         return ('This inventory is calculated on mixed standards, chosen on each questionnaire question: '
                 'enter this amount in the questionnaire so its standard can be chosen. / '
@@ -504,7 +510,7 @@ def resolve_factor(activity_type, unit, company=None, facility=None, year=None):
             with use_standard(''):
                 in_catalogue = any(pick_factor(slug, country, year) for country in countries)
             if in_catalogue:
-                return None, norm_unit, None, standard_gap_message(activity_type, unit)
+                return None, norm_unit, None, standard_gap_message(activity_type, unit, slug)
         return None, norm_unit, None, f"No active emission factor found for '{activity_type}' ({unit})."
     return factor, norm_unit, multiplier, None
 

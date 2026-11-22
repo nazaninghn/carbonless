@@ -256,18 +256,42 @@ class IpccGhgFactorTests(_InventoryCase):
                          (Decimal('1923.5'), Decimal('2255.5')))
         self.assertEqual(get('ghg', 'r134a').factor_hfc_kg_co2e, 1530)
 
-    def test_an_ipcc_and_a_ghg_inventory_calculate_fuel_and_keep_national_electricity(self):
-        for choice, standard, gas_kg in (('std_ipcc', 'ipcc', '20279.3900'), ('std_ghg', 'ghg', '20279.3200')):
+    def test_energy_and_mass_rows_are_selectable_and_volume_rows_are_withheld(self):
+        """Per-litre and per-m3 rows need a density, and none is approved: they are loaded but never selected."""
+        for standard in ('ipcc', 'ghg'):
+            self.assertTrue(EmissionFactor.objects.get(standard=standard, slug='natural-gas').is_active)      # per GJ
+            self.assertTrue(EmissionFactor.objects.get(standard=standard, slug='coal').is_active)             # per kg, IPCC NCV
+            self.assertFalse(EmissionFactor.objects.get(standard=standard, slug='natural-gas-m3').is_active)
+            self.assertFalse(EmissionFactor.objects.get(standard=standard, slug='diesel').is_active)
+            with use_standard(standard):
+                self.assertIsNotNone(pick_factor('natural-gas', 'global', 2025))
+                self.assertIsNone(pick_factor('natural-gas-m3', 'global', 2025))
+        self.assertEqual(EmissionFactor.objects.filter(standard__in=('ipcc', 'ghg'), is_active=False).count(), 24)
+
+    def test_an_ipcc_inventory_reports_volume_fuel_as_under_review_and_keeps_national_electricity(self):
+        from questionnaire.step_entries import uncalculated_notes
+        for choice, name in (('std_ipcc', 'IPCC'), ('std_ghg', 'GHG Protocol')):
             EmissionEntry.objects.filter(inventory=self.report).delete()
             ReportStep.objects.filter(report=self.report).delete()
             self.choose(choice)
-            post_scenario(self.client, self.report)
-            gas = EmissionEntry.objects.get(inventory=self.report, emission_factor__slug='natural-gas-m3')
-            self.assertEqual((gas.emission_factor.standard, gas.calculated_co2e_kg), (standard, Decimal(gas_kg)))
-            diesel = EmissionEntry.objects.get(inventory=self.report, emission_factor__slug='diesel')
-            self.assertEqual(diesel.emission_factor.standard, standard)
+            post_scenario(self.client, self.report)                          # gas in m3, diesel in litres
+            self.assertEqual(self.gas_kg(), [])                              # never a number from an unapproved density
+            self.assertFalse(EmissionEntry.objects.filter(inventory=self.report, emission_factor__slug='diesel').exists())
             kwh = EmissionEntry.objects.filter(inventory=self.report, emission_factor__category='electricity')
             self.assertEqual([e.calculated_co2e_kg for e in kwh], [Decimal('20995.0000')])
+            answers = dict(ReportStep.objects.filter(report=self.report).values_list('step_id', 'answer'))
+            notes = [n for n in uncalculated_notes(answers, 2025, self.company, self.report) if n['step_id'] == '3A-5']
+            self.assertEqual(len(notes), 2)                                  # one per fuel, nothing dropped silently
+            for n in notes:
+                self.assertIn(f'the {name} factor for this source is under review', n['en'])
+                self.assertIn('faktörü incelemede', n['tr'])
+                self.assertNotIn('publishes no factor', n['en'])             # that would be untrue: a row exists
+
+    def test_every_row_records_the_gwp_basis_it_was_built_with(self):
+        self.assertFalse(EmissionFactor.objects.filter(standard__in=('ipcc', 'ghg'), gwp_basis='').exists())
+        self.assertIn('AR5', EmissionFactor.objects.get(standard='ipcc', slug='sf6').gwp_basis)
+        self.assertIn('AR6', EmissionFactor.objects.get(standard='ghg', slug='sf6').gwp_basis)
+        self.assertEqual(EmissionFactor.objects.filter(standard='').exclude(gwp_basis='').count(), 0)   # catalogue untouched
 
     def test_a_source_the_standard_does_not_publish_is_noted_not_dropped_silently(self):
         from questionnaire.step_entries import uncalculated_notes
@@ -303,8 +327,10 @@ class MixNotesAndStandardChangeTests(_InventoryCase):
 
     def test_notes_follow_the_standard_of_each_question(self):
         self.assertTrue(any('standard of this question is not chosen' in n for n in self.notes('3A-5')))
+        self.assertEqual(self.change('3A-5', 'defra').status_code, 200)
+        self.assertFalse(any('m³' in n or 'Natural' in n for n in self.notes('3A-5')))   # gas is calculated: nothing to say
         self.assertEqual(self.change('3A-5', 'ipcc').status_code, 200)
-        self.assertEqual(self.notes('3A-5'), [])                             # calculated: nothing to say
+        self.assertTrue(any('IPCC factor for this source is under review' in n for n in self.notes('3A-5')))
         self.assertTrue(any('standard of this question is not chosen' in n for n in self.notes('K3C4-2')))
         self.assertEqual(self.change('K3C4-2', 'ipcc').status_code, 200)
         self.assertTrue(any('(IPCC) publishes no factor' in n for n in self.notes('K3C4-2')))
@@ -315,7 +341,7 @@ class MixNotesAndStandardChangeTests(_InventoryCase):
         self.assertEqual(self.gas_kg(), [Decimal('20667.2000')])             # DEFRA 2025
         self.assertEqual(r.data['calc_feedback']['delta_kg'], 20667.2)
         r = self.change('3A-5', 'ipcc')
-        self.assertEqual(self.gas_kg(), [Decimal('20279.3900')])             # IPCC, same saved answer
+        self.assertEqual(self.gas_kg(), [])                                  # IPCC per m3 is withheld: not calculated
         self.assertEqual(ReportStep.objects.get(report=self.report, step_id='3A-5').answer['factor_standard'], 'ipcc')
         self.assertEqual(ReportStep.objects.get(report=self.report, step_id='3A-5').answer['answer']['natural_gas'], '10000 m³')
 
@@ -352,8 +378,9 @@ class ChatEntryStandardTests(_InventoryCase):
         self.choose('std_ipcc')                                              # IPCC rows are not seeded here
         entry, err = self.create(self.report)
         self.assertIsNone(entry)
-        self.assertIn('(IPCC) publishes no factor', err)
-        self.assertIn('faktör yayımlamıyor', err)
+        self.assertIn('The IPCC factor', err)                                # natural gas per m3 is a withheld row
+        self.assertIn('under review', err)
+        self.assertIn('incelemede', err)
 
     def test_a_mix_inventory_sends_the_amount_to_the_questionnaire(self):
         self.choose('std_mix')
@@ -361,3 +388,71 @@ class ChatEntryStandardTests(_InventoryCase):
         self.assertIsNone(entry)
         self.assertIn('enter this amount in the questionnaire', err)
         self.assertIn('ankette girin', err)
+
+
+class WithheldDefraMappingTests(_InventoryCase):
+    """The unresolved DEFRA mappings are loaded but never selected (emissions/data/withheld_factors.json)."""
+
+    def setUp(self):
+        super().setUp()
+        call_command('seed_defra_factors', verbosity=0)
+
+    def test_the_list_is_the_48_reviewed_mappings(self):
+        from emissions.withheld import withheld
+        self.assertEqual({k: len(v) for k, v in withheld().items()}, {'defra': 48, 'ipcc': 12, 'ghg': 12})
+        for standard, slugs in withheld().items():
+            for slug, why in slugs.items():
+                self.assertTrue(why['reason'].strip(), (standard, slug))
+
+    def test_withheld_rows_are_inactive_in_every_edition_and_the_rest_stay_active(self):
+        from emissions.withheld import withheld
+        slugs = set(withheld()['defra'])
+        rows = EmissionFactor.objects.filter(standard='defra')
+        self.assertFalse(rows.filter(slug__in=slugs, is_active=True).exists())
+        self.assertFalse(rows.exclude(slug__in=slugs).filter(is_active=False).exists())
+        self.assertEqual(rows.exclude(slug__in=slugs).values('slug').distinct().count(), 94)   # 48 exact + 46 acceptable
+        self.assertFalse(rows.filter(gwp_basis='').exists())
+
+    def test_a_withheld_mapping_is_never_selected(self):
+        with use_standard('defra'):
+            for slug in ('coal', 'district-heating', 'train', 'flight-domestic', 'transmission-losses', 'truck-freight'):
+                self.assertIsNone(pick_factor(slug, 'global', 2025), slug)
+            self.assertIsNotNone(pick_factor('natural-gas-m3', 'global', 2025))          # an exact match stays
+
+    def test_reseeding_withholds_rows_that_were_active_before(self):
+        EmissionFactor.objects.filter(standard='defra', slug='coal').update(is_active=True)   # as PR #149 loaded them
+        call_command('seed_defra_factors', verbosity=0)
+        self.assertFalse(EmissionFactor.objects.filter(standard='defra', slug='coal', is_active=True).exists())
+
+    def test_the_inventory_says_under_review_and_puts_no_number(self):
+        from questionnaire.step_entries import uncalculated_notes
+        EmissionFactor.objects.update_or_create(
+            slug='coal', country='global', year=2024, standard='',
+            defaults=dict(name='Coal', name_tr='Kömür', scope='scope1', category='stationary_combustion', unit='kg',
+                          factor_kg_co2e=Decimal('2.42'), source='test', is_active=True, is_default=True))
+        self.choose('std_defra')
+        r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
+                              {'step': '3A-5', 'data': {'answer': {'coal': '1000 kg', 'natural_gas': '10000 m³'}}}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertFalse(EmissionEntry.objects.filter(inventory=self.report, emission_factor__slug='coal').exists())
+        self.assertEqual(self.gas_kg(), [Decimal('20667.2000')])                          # the exact match is calculated
+        answers = dict(ReportStep.objects.filter(report=self.report).values_list('step_id', 'answer'))
+        notes = [n for n in uncalculated_notes(answers, 2025, self.company, self.report) if n['step_id'] == '3A-5']
+        self.assertEqual(len(notes), 1)
+        self.assertIn('the DEFRA factor for this source is under review', notes[0]['en'])
+        self.assertIn('DEFRA faktörü incelemede', notes[0]['tr'])
+
+
+class ReportGwpBasisTests(_InventoryCase):
+    """The ISO report states the GWP basis the inventory's factors actually carry."""
+
+    def test_a_standard_inventory_report_is_generated_in_both_languages(self):
+        from questionnaire.iso_report_pdf import generate_iso_report
+        call_command('seed_defra_factors', verbosity=0)
+        self.choose('std_defra')
+        post_scenario(self.client, self.report)
+        used = EmissionEntry.objects.filter(inventory=self.report).exclude(emission_factor__standard='')
+        self.assertTrue(used.exists())
+        self.assertTrue(all('DEFRA/DESNZ 2025 edition' in e.emission_factor.gwp_basis for e in used))
+        for lang in ('en', 'tr'):
+            self.assertTrue(generate_iso_report(self.report, lang, draft=True).startswith(b'%PDF'))

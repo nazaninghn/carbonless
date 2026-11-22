@@ -6,9 +6,20 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from emissions.models import EmissionFactor
+from emissions.withheld import is_withheld
 
 DATA = Path(__file__).resolve().parents[2] / 'data' / 'defra_factors.json'
 Q = Decimal('0.000001')
+
+
+def gwp_basis(year):
+    """The GWP basis of a DEFRA edition is fixed by its publisher and is not
+    re-based here. Only the 2026 edition's statement has been read."""
+    if year == 2026:
+        return ('As published in the DEFRA/DESNZ 2026 edition: IPCC AR5 GWP100, with AR4 remnants in some rows '
+                '(methodology paper 2026, Table 1)')
+    return (f'As published in the DEFRA/DESNZ {year} edition; GWP basis fixed by the publisher '
+            f'(see that edition\'s methodology paper)')
 
 
 class Command(BaseCommand):
@@ -24,7 +35,10 @@ class Command(BaseCommand):
                 data = {
                     'name': row['name'], 'name_tr': row.get('name_tr', ''),
                     'scope': row['scope'], 'category': row['category'], 'unit': row['unit'],
-                    'factor_kg_co2e': value, 'source': 'defra', 'is_active': True,
+                    'factor_kg_co2e': value, 'source': 'defra',
+                    # A withheld mapping stays loaded but is never selected (emissions/withheld.py).
+                    'is_active': not is_withheld('defra', row['slug']),
+                    'gwp_basis': gwp_basis(row['year']),
                     # Never offered as a catalogue default: a standard's row is
                     # used only by an inventory that chose the standard.
                     'is_default': False,

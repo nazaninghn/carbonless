@@ -442,6 +442,7 @@ def _standard_notes(answers, year, company, note):
     for zero. In a "mix" inventory each question is read on its own standard,
     and a question whose standard is not chosen yet says so."""
     from emissions.factor_lookup import use_standard, active_standard, STANDARD_UNSET
+    from emissions.withheld import is_withheld
     per_step = _STEP_STANDARDS.get()
     if not per_step and not active_standard():
         return
@@ -467,6 +468,18 @@ def _standard_notes(answers, year, company, note):
                      f'{name_en}: the emission factor standard of this question is not chosen — not calculated.',
                      report_tr=f'{name_tr}: bu soru için emisyon faktörü standardı seçilmedi.',
                      report_en=f'{name_en}: the emission factor standard of this question is not chosen.')
+            elif is_withheld(standard, catalogue[0].slug):
+                # The standard does have a row, but it is withheld: its mapping, density or method
+                # is under review (emissions/withheld.py). Said as that, never as "no factor published".
+                label = STANDARD_NAMES.get(standard, {'tr': standard, 'en': standard})
+                note(step, f'{name_tr}: bu kaynağın {label["tr"]} faktörü incelemede (eşleştirme, yoğunluk veya yöntem '
+                           f'henüz onaylanmadı) — hesaplanmadı.',
+                     f'{name_en}: the {label["en"]} factor for this source is under review (its mapping, density or '
+                     f'method is not approved yet) — not calculated.',
+                     report_tr=f'{name_tr}: bu kaynağın {label["tr"]} faktörü incelemede (eşleştirme, yoğunluk veya '
+                               f'yöntem henüz onaylanmadı).',
+                     report_en=f'{name_en}: the {label["en"]} factor for this source is under review (its mapping, '
+                               f'density or method is not approved yet).')
             else:
                 label = STANDARD_NAMES.get(standard, {'tr': standard, 'en': standard})
                 note(step, f'{name_tr}: seçilen standart ({label["tr"]}) bu kaynak için faktör yayımlamıyor — hesaplanmadı.',
