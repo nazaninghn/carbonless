@@ -15,8 +15,9 @@ TURKEY_GRID_2023 = [
 
 # The same official ETKB factors for data year 2022 (form ETKB-EVÇED-FRM-042
 # Rev.01, calculation period 2022, published 06.12.2024; CO2-equivalent
-# column, tCO2-eq/MWh == kg CO2e/kWh). An inventory of 2022 or earlier is
-# calculated on this edition; 2023 and later keep the 2023 edition.
+# column, tCO2-eq/MWh == kg CO2e/kWh). An inventory is calculated on
+# the edition of its year, else the latest earlier one: 2020 for 2021 and
+# earlier, 2022 for 2022, and 2023 and later keep the 2023 edition.
 # Kept out of EMISSION_FACTORS (the frozen catalogue, compared row by row
 # with its baseline) and seeded with it through EDITION_FACTORS.
 TURKEY_GRID_2022 = [
@@ -441,9 +442,17 @@ EMISSION_FACTORS = [
 ]
 
 
+# The same official ETKB form for data year 2020 (ETKB-EVÇED-FRM-042 Rev.01,
+# calculation period 2020, published 18.03.2024; CO2-equivalent column).
+TURKEY_GRID_2020 = [
+    {'slug': 'turkey-grid-transmission', 'name': 'Turkey grid — transmission connection', 'name_tr': 'Türkiye şebekesi — iletim bağlantısı', 'scope': 'scope2', 'category': 'electricity', 'country': 'turkey', 'unit': 'kwh', 'factor_kg_co2e': 0.427, 'source': 'turkey_grid', 'reference': 'T.C. Enerji ve Tabii Kaynaklar Bakanlığı — elektrik tüketimi emisyon faktörü, iletim (İletim) bağlantısı, 2020 veri yılı (ETKB-EVÇED-FRM-042)', 'year': 2020, 'method': 'location_based'},
+    {'slug': 'turkey-grid-distribution', 'name': 'Turkey grid — distribution connection', 'name_tr': 'Türkiye şebekesi — dağıtım bağlantısı', 'scope': 'scope2', 'category': 'electricity', 'country': 'turkey', 'unit': 'kwh', 'factor_kg_co2e': 0.462, 'source': 'turkey_grid', 'reference': 'T.C. Enerji ve Tabii Kaynaklar Bakanlığı — elektrik tüketimi emisyon faktörü, dağıtım (Dağıtım) bağlantısı, 2020 veri yılı (ETKB-EVÇED-FRM-042)', 'year': 2020, 'method': 'location_based'},
+]
+
 # Further editions of factors the catalogue already holds: same slug, another
 # data year. `seed_factors` loads them after EMISSION_FACTORS; `pick_factor`
 # selects by the inventory year. Nothing here changes a catalogue row.
 EDITION_FACTORS = [
+    *TURKEY_GRID_2020,
     *TURKEY_GRID_2022,
 ]

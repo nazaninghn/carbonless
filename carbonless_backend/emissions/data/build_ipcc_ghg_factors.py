@@ -56,27 +56,40 @@ FUEL_NAME = {'natural_gas': 'Natural Gas', 'gas_diesel_oil': 'Gas/Diesel Oil', '
              'other_bituminous_coal': 'Other Bituminous Coal'}
 
 # ── Energy content per volume ────────────────────────────────────────────────────────────────────────────
-# The IPCC Guidelines give calorific values per mass only. A factor per litre or per m3 needs the fuel's
-# energy per volume.
+# The IPCC Guidelines give calorific values per mass only. A factor per litre or per m3 is built the way the
+# client's own inventories do it (ISO 14064-1 calculation document 2023, sheets "1.1 SBT. YANMA" and
+# "1.2 HAR. YANMA"; inventory report 2024, Tables 8-10):
 #
-# Natural gas: the national net calorific value per volume, Türkiye National Inventory Document 1990-2022
-# (TUR_NID_2024, submitted to the UNFCCC), Annex 4 "Emission Factors used in the Energy Sector — NCV of
-# Fuels", p. 484: Natural gas 34.54 TJ/10^6 m3 (= 8 250 kcal/m3 x 4.1868, the value of the national energy
-# balance). The document states no density for any other fuel the platform measures by volume.
-NATIONAL_VOLUME = {   # GJ per m3, source
-    'natural_gas_m3': (D('0.03454'), 'the national net calorific value of natural gas, 34.54 TJ/10^6 m3 '
-                       '(Türkiye National Inventory Document 1990-2022, TUR_NID_2024, Annex 4, '
-                       '"NCV of Fuels", p. 484)'),
+#     kg per unit = IPCC factor (kg/TJ) x IPCC default NCV (TJ/Gg, Table 1.2) x density (kg/m3)
+#
+# with the density of the "Fuel properties" sheet of the UK Government GHG Conversion Factors of the
+# inventory year. One row per edition year, 2014-2026, so an inventory is calculated with the density
+# published for its own year. Densities are copied from each edition's sheet (kg/m3, rounded to 3 decimals);
+# the 2014 values are those of the "Historic fuel properties" sheet of the 2015 workbook.
+# The national inventory document (TUR_NID_2024, Annex 4) gives another basis for natural gas only
+# (34.54 TJ/10^6 m3); it is not used, so that every fuel follows the one method the client documents.
+DENSITY_FUELS = ('natural_gas', 'diesel', 'gas_oil', 'petrol', 'fuel_oil', 'lpg')
+DENSITY_ROWS = {'natural_gas': 'Natural Gas', 'diesel': 'Diesel (100% mineral diesel)', 'gas_oil': 'Gas Oil',
+                'petrol': 'Petrol (100% mineral petrol)', 'fuel_oil': 'Fuel Oil', 'lpg': 'LPG'}
+DENSITY = {   # edition year: kg/m3 of DENSITY_FUELS, in that order
+    2014: (D('0.746'), D('836.820'), D('854.701'), D('730.994'), D('985.222'), D('510.908')),
+    2015: (D('0.746'), D('838.926'), D('853.242'), D('730.994'), D('986.193'), D('512.913')),
+    2016: (D('0.747'), D('838.926'), D('853.242'), D('730.994'), D('986.193'), D('511.601')),
+    2017: (D('0.745'), D('837.521'), D('851.064'), D('730.460'), D('982.318'), D('512.873')),
+    2018: (D('0.745'), D('837.521'), D('853.971'), D('730.994'), D('984.252'), D('517.157')),
+    2019: (D('0.799'), D('838.223'), D('853.971'), D('734.214'), D('988.142'), D('518.444')),
+    2020: (D('0.799'), D('838.223'), D('853.971'), D('734.214'), D('988.142'), D('529.250')),
+    2021: (D('0.796'), D('843.170'), D('853.971'), D('741.840'), D('983.284'), D('529.749')),
+    2022: (D('0.794'), D('841.043'), D('844.595'), D('741.840'), D('984.252'), D('529.705')),
+    2023: (D('0.795'), D('829.876'), D('842.460'), D('743.494'), D('972.763'), D('531.098')),
+    2024: (D('0.796'), D('830.565'), D('853.971'), D('746.269'), D('983.284'), D('529.749')),
+    2025: (D('0.802'), D('830.565'), D('853.971'), D('741.840'), D('983.284'), D('529.749')),
+    2026: (D('0.808'), D('830.565'), D('853.971'), D('746.269'), D('983.284'), D('529.749')),
 }
-# Liquid fuels: net CV (GJ/tonne) x density (kg/m3) of the SAME row of the UK Government GHG Conversion
-# Factors 2026, "Fuel properties" sheet. These are UK values with no approved applicability, so every row
-# built from them is withheld (withheld_factors.json) until a supported density exists.
-VOLUME = {       # name of the row: (net CV GJ/tonne, density kg/m3)
-    'diesel_litre': ('Diesel (100% mineral diesel)', D('43.031'), D('830.565')),
-    'gas_oil_litre': ('Gas Oil', D('42.569'), D('853.971')),
-    'petrol_litre': ('Petrol (100% mineral petrol)', D('44.593'), D('746.269')),
-    'fuel_oil_litre': ('Fuel Oil', D('40.752'), D('983.284')),
-    'lpg_litre': ('LPG', D('45.944'), D('529.749')),
+# unit basis of a slug: (density fuel, per-m3 or per-litre)
+VOLUME = {
+    'natural_gas_m3': ('natural_gas', 'm3'), 'diesel_litre': ('diesel', 'litre'), 'gas_oil_litre': ('gas_oil', 'litre'),
+    'petrol_litre': ('petrol', 'litre'), 'fuel_oil_litre': ('fuel_oil', 'litre'), 'lpg_litre': ('lpg', 'litre'),
 }
 
 # ── 100-year GWPs: GHG Protocol, "IPCC Global Warming Potential Values" v2.0 (Aug 2024) — (AR5, AR6) ───
@@ -148,20 +161,17 @@ def q(x):
     return str(D(x).quantize(D('0.000001')))
 
 
-def energy_per_unit(fuel, basis):
+def energy_per_unit(fuel, basis, year=None):
     """(GJ per catalogue unit, how it was obtained)."""
     if basis == 'gj':
         return D('1'), ''
     if basis == 'kg':
         return NCV[fuel] / 1000, f'; per kg with the IPCC default NCV {NCV[fuel]} TJ/Gg (Table 1.2)'
-    if basis in NATIONAL_VOLUME:
-        per, source = NATIONAL_VOLUME[basis]
-        return per, f'; per m3 with {source}'
-    row, ncv, density = VOLUME[basis]
-    per = ncv * density / 1000 / 1000
-    return per, (f'; per litre with the energy content of "{row}" in the UK Government GHG Conversion '
-                 f'Factors 2026, Fuel properties (net CV {ncv} GJ/tonne x density {density} kg/m3) — '
-                 f'the IPCC Guidelines give no density')
+    density_fuel, unit = VOLUME[basis]
+    density = DENSITY[year][DENSITY_FUELS.index(density_fuel)]
+    per = NCV[fuel] * density / 1000 / (1 if unit == 'm3' else 1000)
+    return per, (f'; per {unit} with the IPCC default NCV {NCV[fuel]} TJ/Gg (Table 1.2) x density {density} kg/m3 '
+                 f'of "{DENSITY_ROWS[density_fuel]}", UK Government GHG Conversion Factors {year}, Fuel properties')
 
 
 def build():
@@ -170,17 +180,20 @@ def build():
         label = 'IPCC' if standard == 'ipcc' else 'GHG Protocol'
         for slug, (table, fuel, basis, unit, scope, category, name, name_tr) in COMBUSTION.items():
             co2, ch4, n2o = TABLE[table][0][fuel]
-            gj, how = energy_per_unit(fuel, basis)
-            gas = {'co2': D(co2) * gj / 1000, 'ch4': ch4 * GWP['CH4_combustion'][i] * gj / 1000,
-                   'n2o': n2o * GWP['N2O'][i] * gj / 1000}
-            rows.append({
-                'standard': standard, 'slug': slug, 'year': 2006, 'unit': unit, 'scope': scope, 'category': category,
-                'name': name, 'name_tr': name_tr, 'factor_kg_co2e': q(sum(gas.values())),
-                'gas': {k: q(v) for k, v in gas.items()},
-                'reference': (f'{label} standard: {GUIDE}, {TABLE[table][1]}, {FUEL_NAME[fuel]}: '
-                              f'{co2} kg CO2, {ch4} kg CH4, {n2o} kg N2O per TJ (net){how}; '
-                              f'{ar} GWP100 CH4 {GWP["CH4_combustion"][i]}, N2O {GWP["N2O"][i]} ({GWP_DOC}).'),
-            })
+            # A factor per GJ or per kg does not change with the year (edition 2006, the Guidelines'); a factor per
+            # litre or m3 has one row per year of the density it is built with.
+            for year in (sorted(DENSITY) if basis in VOLUME else [2006]):
+                gj, how = energy_per_unit(fuel, basis, year)
+                gas = {'co2': D(co2) * gj / 1000, 'ch4': ch4 * GWP['CH4_combustion'][i] * gj / 1000,
+                       'n2o': n2o * GWP['N2O'][i] * gj / 1000}
+                rows.append({
+                    'standard': standard, 'slug': slug, 'year': year, 'unit': unit, 'scope': scope, 'category': category,
+                    'name': name, 'name_tr': name_tr, 'factor_kg_co2e': q(sum(gas.values())),
+                    'gas': {k: q(v) for k, v in gas.items()},
+                    'reference': (f'{label} standard: {GUIDE}, {TABLE[table][1]}, {FUEL_NAME[fuel]}: '
+                                  f'{co2} kg CO2, {ch4} kg CH4, {n2o} kg N2O per TJ (net){how}; '
+                                  f'{ar} GWP100 CH4 {GWP["CH4_combustion"][i]}, N2O {GWP["N2O"][i]} ({GWP_DOC}).'),
+                })
         for slug, (gas_name, column, name, name_tr) in FUGITIVE.items():
             if gas_name in BLENDS:
                 value = sum(share * GWP[g][i] for g, share in BLENDS[gas_name].items())

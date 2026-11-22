@@ -28,6 +28,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         payload = json.loads(DATA.read_text(encoding='utf-8'))
         created = updated = 0
+        kept = []
         with transaction.atomic():
             for row in payload['factors']:
                 gas = {GAS_FIELD[g]: Decimal(v) for g, v in row['gas'].items()}
@@ -48,6 +49,11 @@ class Command(BaseCommand):
                 }
                 _obj, was_created = EmissionFactor.objects.update_or_create(
                     slug=row['slug'], country='global', year=row['year'], standard=row['standard'], defaults=data)
+                kept.append(_obj.pk)
                 created += was_created
                 updated += not was_created
-        self.stdout.write(self.style.SUCCESS(f'IPCC / GHG Protocol factors: {created} created, {updated} updated.'))
+            # A row the data file no longer holds (a per-litre row once built for one year only) is retired,
+            # not deleted: entries calculated with it keep their factor, and it is never selected again.
+            retired = EmissionFactor.objects.filter(standard__in=('ipcc', 'ghg'), is_active=True).exclude(
+                pk__in=kept).update(is_active=False)
+        self.stdout.write(self.style.SUCCESS(f'IPCC / GHG Protocol factors: {created} created, {updated} updated, {retired} retired.'))

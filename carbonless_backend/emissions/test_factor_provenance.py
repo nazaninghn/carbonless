@@ -258,12 +258,15 @@ class FactorSelectionTests(_Catalog):
         from questionnaire.step_entries import factor_reference_years     # the disclosure used by the ISO report
         self.assertTrue(callable(factor_reference_years))
 
-    def test_the_2022_edition_is_the_ministrys_form_and_serves_inventories_up_to_2022(self):
-        # ETKB-EVCED-FRM-042 Rev.01, period 2022, published 06.12.2024: consumption point, tCO2-eq/MWh.
-        for slug, value_2022, value_2023 in (('turkey-grid-transmission', '0.445', '0.436'),
-                                             ('turkey-grid-distribution', '0.478', '0.469')):
-            self.assertEqual(D(str(self.factor(slug, 'turkey', 2022).factor_kg_co2e)), D(value_2022))
-            for year, expected in ((2020, value_2022), (2022, value_2022), (2023, value_2023), (2025, value_2023)):
+    def test_each_inventory_year_gets_the_ministrys_form_of_that_year_or_the_latest_earlier_one(self):
+        # ETKB-EVCED-FRM-042 Rev.01, consumption point, tCO2-eq/MWh: period 2020 (published 18.03.2024),
+        # period 2022 (published 06.12.2024), period 2023 (the catalogue row).
+        for slug, v2020, v2022, v2023 in (('turkey-grid-transmission', '0.427', '0.445', '0.436'),
+                                          ('turkey-grid-distribution', '0.462', '0.478', '0.469')):
+            self.assertEqual(D(str(self.factor(slug, 'turkey', 2020).factor_kg_co2e)), D(v2020))
+            self.assertEqual(D(str(self.factor(slug, 'turkey', 2022).factor_kg_co2e)), D(v2022))
+            for year, expected in ((2015, v2020), (2020, v2020), (2021, v2020), (2022, v2022),
+                                   (2023, v2023), (2024, v2023), (2026, v2023)):
                 self.assertEqual(D(str(self.pick(slug, 'turkey', year).factor_kg_co2e)), D(expected), (slug, year))
 
     def test_a_facility_abroad_never_gets_turkeys_grid(self):

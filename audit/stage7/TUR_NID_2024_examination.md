@@ -17,6 +17,8 @@ SHA-256 `eec4630c47dfa768d9739df2b2d1e71d8d3cd847bbfd24d9962590a4b191ef04`. Read
 
 ## What it allows
 
+> **Superseded the same day** (`CLIENT_DOCUMENTS_2026-11-22.md`): the client's own inventories build every per-volume factor as IPCC factor × IPCC NCV × DEFRA density of the year, and the platform now does the same for natural gas too. Item 1 below records what was released for a few hours; the national value remains an open question for the client.
+
 1. **Natural gas per m³ under the IPCC and GHG Protocol standards — released.** The IPCC default factors are per TJ (net); the document gives the national net calorific value per volume, 34.54 TJ/10⁶ m³ (= 8 250 kcal/m³ × 4.1868, the constant of the national energy balance). The two rows are now built as IPCC Table 2.3 × 0.03454 GJ/m³:
    `ipcc` 1.939576 and `ghg` 1.939570 kg CO₂e/m³ (CO₂ 1.937694). The DEFRA 2026 UK density is no longer used for them, and they are removed from `withheld_factors.json`.
    Open point: the document does not state the reference conditions of the m³ on that line; elsewhere it counts gas in "million sm3".
