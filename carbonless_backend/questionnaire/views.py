@@ -1378,7 +1378,11 @@ class StepDataSourceView(APIView):
                           'This question produces no emission calculation; it has no data source to choose.')
         given = {k: request.data.get(k) for k in ('data_source', 'data_source_percent', 'data_source_reason', 'data_source_small')
                  if request.data.get(k) not in (None, '')}
-        cleaned, error = unc.clean_source(given, lang)
+        # `data_detail` ('total' / 'itemised') may come alone: how the figure was entered, whatever its source.
+        detail = request.data.get('data_detail')
+        if detail not in (None, '') and detail not in unc.DETAILS:
+            return Response({'success': False, 'step': step, 'code': 'data_detail', 'error': unc.detail_error(lang)}, status=400)
+        cleaned, error = ({}, None) if (not given and detail) else unc.clean_source(given, lang)
         if error:
             return Response({'success': False, 'step': step, 'code': 'data_source', 'error': error}, status=400)
         immutability.check_report(report, step=step, entry_producing=False)
@@ -1392,7 +1396,10 @@ class StepDataSourceView(APIView):
                 why = unc.small_row_refusal(report, step, lang)
                 if why:
                     return Response({'success': False, 'step': step, 'code': 'not_a_small_row', 'error': why}, status=409)
-            kept = {k: v for k, v in stored.items() if not k.startswith('data_source')}
+            # A source change replaces the stored source fields; a detail-only change leaves them as they are.
+            kept = dict(stored) if not cleaned else {k: v for k, v in stored.items() if not k.startswith('data_source')}
+            if detail:
+                kept['data_detail'] = detail
             ReportStep.objects.filter(report=report, step_id=step).update(answer={**kept, **cleaned})
             unc.sync_data_quality_approvals(report)
         return Response({'success': True, 'step': step, **cleaned, **_data_quality_state(report, step, lang)})
@@ -1407,6 +1414,9 @@ def _data_quality_state(report, step, lang):
     percent, source, state = ctx.activity(step)
     return {
         'source_state': state, 'activity_percent': percent, 'warning': unc.source_warning(source, lang, state),
+        'detail': unc.step_detail(ctx.answers, step),
+        'detail_warning': unc.detail_warning(unc.step_detail(ctx.answers, step), lang),
+        'total_entry_share': u['total_entry_share'],
         'small_row': step in u['small_rows'], 'share_percent': u['step_share_percent'].get(step),
         'pending': [a.reason_code for a in unc.pending_data_quality(report) if a.question_id == step],
         'documents': [{'id': d.pk, 'kind': d.kind, 'name': d.original_name}

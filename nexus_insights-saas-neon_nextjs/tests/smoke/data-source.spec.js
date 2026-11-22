@@ -150,6 +150,44 @@ for (const lang of ['en', 'tr']) {
       await expect(page.getByTestId('data-source-select')).toHaveValue('estimate');
     });
 
+    test('a figure can be declared a total: the user is warned and it is sent with the answer', async ({ page }) => {
+      await open(page, lang, 'K3C5-2b');
+      const seen = await mockInventoryApi(page, WASTE, 'K3C5-2b');
+      await page.goto('/dashboard?tab=questionnaire');
+      await expect(page.getByTestId('pinned-question')).toHaveAttribute('data-question-id', 'K3C5-2b');
+      await expect(page.getByTestId('data-detail-warning')).toHaveCount(0);
+      await page.getByTestId('data-detail-total').check();
+      await expect(page.getByTestId('data-detail-warning')).toContainText(lang === 'tr' ? 'sonucun doğruluğu düşer' : 'the result is less accurate');
+      expect(seen.sources.length).toBe(0);                                   // not answered yet: it travels with the answer
+      await page.getByTestId('input-panel').locator('input:not([type="hidden"])').first().fill('1000');
+      await submit(page).click();
+      await expect.poll(() => seen.saved.length).toBe(1);
+      expect(seen.saved[0].data.data_detail).toBe('total');
+    });
+
+    test('on an answered question the declaration is saved at once and shown again', async ({ page }) => {
+      await open(page, lang, 'K3C5-2b');
+      const seen = await mockInventoryApi(page, { ...WASTE, 'K3C5-2b': { answer: '1000', data_source: 'invoice', data_detail: 'total' } }, 'K3C5-2b');
+      await page.goto('/dashboard?tab=questionnaire');
+      await expect(page.getByTestId('data-detail-total')).toBeChecked();
+      await expect(page.getByTestId('data-detail-warning')).toBeVisible();
+      await page.getByTestId('data-detail-total').uncheck();
+      await expect.poll(() => seen.sources.length).toBe(1);
+      expect(seen.sources[0]).toMatchObject({ step: 'K3C5-2b', data_detail: 'itemised' });
+      expect(seen.sources[0].data_source).toBeUndefined();                   // the source itself is not touched
+      await expect(page.getByTestId('data-detail-warning')).toHaveCount(0);
+    });
+
+    test('a stored "other" source comes back with its percentage and reason', async ({ page }) => {
+      await open(page, lang, 'K3C5-2b');
+      await mockInventoryApi(page, { ...WASTE, 'K3C5-2b': { answer: '1000', data_source: 'other', data_source_percent: 12,
+        data_source_reason: 'Allocated from the landlord meter by floor area share.' } }, 'K3C5-2b');
+      await page.goto('/dashboard?tab=questionnaire');
+      await expect(page.getByTestId('data-source-select')).toHaveValue('other');
+      await expect(page.getByTestId('data-source-other-percent')).toHaveValue('12');
+      await expect(page.getByTestId('data-source-other-reason')).toHaveValue('Allocated from the landlord meter by floor area share.');
+    });
+
     test('a question that calculates nothing shows no data source', async ({ page }) => {
       await open(page, lang, 'A1');
       await mockInventoryApi(page, { D1: { ef_database: 'std_defra' } }, 'A1');

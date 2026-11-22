@@ -51,11 +51,31 @@ export function otherExtra(other) {
   return { data_source_percent: percent, data_source_reason: reason };
 }
 
+// { stepId: 'total' } of the questions whose figure was declared as one total for several devices / sites / items.
+export function storedDataDetails(answersMap) {
+  const out = {};
+  Object.entries(answersMap || {}).forEach(([stepId, v]) => {
+    if (v && typeof v === 'object' && !Array.isArray(v) && (v.data_detail === 'total' || v.data_detail === 'itemised')) out[stepId] = v.data_detail;
+  });
+  return out;
+}
+
+// What the user is told when the figure is one total — same wording as the server's detail_warning.
+export function dataDetailWarning(detail, tr) {
+  if (detail !== 'total') return '';
+  return tr
+    ? 'Toplam değer girdiniz: cihaz, tesis veya kalem bazında ayrı değerler olmadan her birinin kendi faktörü uygulanamaz ve sonucun doğruluğu düşer. Ayrı değerleriniz varsa tek tek girin. Bu, raporda belirtilir.'
+    : 'You entered a total: without a separate figure for each device, site or item, the factor of each one cannot be applied and the result is less accurate. Enter them one by one if you have them. The report states this.';
+}
+
 // The payload of a step save, with the source next to the answer.
-export function withDataSource(questionId, backendData, dataSources, others) {
-  const chosen = dataSources?.[questionId];
-  if (!DATA_SOURCE_STEPS.has(questionId) || !DATA_SOURCES.has(chosen)) return backendData;
+export function withDataSource(questionId, backendData, dataSources, others, details) {
+  if (!DATA_SOURCE_STEPS.has(questionId)) return backendData;
   if (!backendData || typeof backendData !== 'object' || !('answer' in backendData)) return backendData;
+  const detail = details?.[questionId];
+  if (detail === 'total' || detail === 'itemised') backendData = { ...backendData, data_detail: detail };
+  const chosen = dataSources?.[questionId];
+  if (!DATA_SOURCES.has(chosen)) return backendData;
   if (chosen === 'other') {
     const extra = otherExtra(others?.[questionId]);
     return extra ? { ...backendData, data_source: chosen, ...extra } : backendData;   // incomplete: nothing is claimed

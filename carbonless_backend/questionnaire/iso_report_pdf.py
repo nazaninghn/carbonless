@@ -3253,6 +3253,17 @@ def _uncertainty_result(E, S, report, lang):
                 if lang == 'en' else
                 (f'{n} soruda (emisyonların %{unspecified}\'i) kuruluş değerin kaynağını belirtmemiştir; bunlar tahmin '
                  f'(±%20) olarak sayılmıştır.'), S['body']))
+        if unc.get('total_entry_steps'):
+            n = len(unc['total_entry_steps'])
+            total_share = _localize_num(f'{unc.get("total_entry_share", 0.0):.0f}', lang == 'tr')
+            E.append(Paragraph(
+                (f'For {n} question{"s" if n != 1 else ""} ({total_share} % of the emissions) the organisation entered one '
+                 f'total instead of a figure for each device, site or item. A total is less precise, because the factor '
+                 f'of each item cannot be applied to it; no percentage is added to the uncertainty above for this.')
+                if lang == 'en' else
+                (f'{n} soruda (emisyonların %{total_share}\'i) kuruluş, her cihaz, tesis veya kalem için ayrı değer yerine '
+                 f'tek bir toplam girmiştir. Toplam değer daha az kesindir; çünkü her kalemin kendi faktörü ona '
+                 f'uygulanamaz. Bunun için yukarıdaki belirsizliğe yüzde eklenmemiştir.'), S['body']))
         not_applied = [r for r in unc['rows'] if r.get('source_state') in ('measurement_no_document', 'rejected')]
         if not_applied:
             n = len({r['step_id'] for r in not_applied})

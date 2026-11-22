@@ -357,3 +357,62 @@ class AdvisorDecidesInTheAdminPanelTests(AdvisorQueueTests):
         self._other()
         reconcile_advisor_approvals(self.report)
         self.assertIn(('4A-1', 'ut04_other_source'), self._items())
+
+
+class TotalInsteadOfItemsTests(UncertaintyTests):
+    """A figure entered as one total for several devices, sites or items: the user is told it is less accurate
+    and the report states it. It changes no number — neither the emission nor the uncertainty."""
+
+    def _detail(self, **body):
+        return self.client.post(f'/api/questionnaire/{self.report.id}/step-data-source/', {'step': '4A-1', **body}, format='json')
+
+    def test_the_declaration_travels_with_the_answer_and_changes_no_number(self):
+        self.assertEqual(self._electricity(data_source='invoice').status_code, 200)
+        before = inventory_uncertainty(self.report)
+        self.assertEqual(self._step('4A-1', {'1': '1000 kWh'}, data_detail='total').status_code, 200)
+        stored = ReportStep.objects.get(report=self.report, step_id='4A-1').answer
+        self.assertEqual((stored['data_detail'], stored['data_source']), ('total', 'invoice'))       # the source is kept
+        after = inventory_uncertainty(self.report)
+        self.assertEqual((after['total_kg'], after['percent'], after['absolute_kg']),
+                         (before['total_kg'], before['percent'], before['absolute_kg']))
+        self.assertEqual((after['total_entry_steps'], after['total_entry_share'], after['rows'][0]['detail']), (['4A-1'], 100.0, 'total'))
+        self.assertEqual(list(EmissionEntry.objects.filter(inventory=self.report).values_list('calculated_co2e_kg', flat=True)),
+                         [Decimal('469.0000')])
+
+    def test_it_can_be_declared_on_an_answered_question_alone_and_withdrawn(self):
+        self.assertEqual(self._electricity(data_source='invoice').status_code, 200)
+        r = self._detail(data_detail='total')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.data['detail'], 'total')
+        self.assertIn('less accurate', r.data['detail_warning'])
+        self.assertEqual(ReportStep.objects.get(report=self.report, step_id='4A-1').answer,
+                         {'answer': {'1': '1000 kWh'}, 'data_source': 'invoice', 'data_detail': 'total'})
+        r = self.client.post(f'/api/questionnaire/{self.report.id}/step-data-source/',
+                             {'step': '4A-1', 'data_detail': 'total', 'language': 'tr'}, format='json')
+        self.assertIn('doğruluğu düşer', r.data['detail_warning'])
+        r = self._detail(data_detail='itemised')
+        self.assertEqual((r.data['detail'], r.data['detail_warning']), ('itemised', ''))
+        self.assertEqual(inventory_uncertainty(self.report)['total_entry_steps'], [])
+
+    def test_an_unknown_form_is_refused(self):
+        self.assertEqual(self._electricity().status_code, 200)
+        r = self._detail(data_detail='roughly')
+        self.assertEqual((r.status_code, r.data['code']), (400, 'data_detail'))
+        r = self._step('4A-1', {'1': '1000 kWh'}, data_detail='roughly')
+        self.assertEqual((r.status_code, r.data['code']), (400, 'data_source'))
+        self.assertNotIn('data_detail', ReportStep.objects.get(report=self.report, step_id='4A-1').answer)
+
+    def test_the_report_states_the_share_entered_as_totals(self):
+        import io
+        from pypdf import PdfReader
+        from .iso_report_pdf import generate_iso_report
+        self.assertEqual(self._electricity('100000 kWh', data_source='invoice', data_detail='total').status_code, 200)
+
+        def text(lang):
+            pdf = generate_iso_report(CarbonReport.objects.get(pk=self.report.pk), lang=lang)
+            return ' '.join(' '.join((p.extract_text() or '').split()) for p in PdfReader(io.BytesIO(pdf)).pages)
+        en, tr = text('en'), text('tr')
+        self.assertIn('entered one total instead of a figure for each device, site or item', en)
+        self.assertIn('100 % of the emissions', en)
+        self.assertIn('tek bir toplam girmiştir', tr)
+        self.assertIn('combined uncertainty of ±16.6 %', en)                      # unchanged by the declaration
