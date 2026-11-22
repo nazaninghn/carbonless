@@ -107,6 +107,13 @@ class EmissionFactor(models.Model):
     is_default = models.BooleanField(default=True, help_text='Default factor for this slug+country+category')
     source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='defra_2024')
     reference = models.TextField(blank=True, help_text='Source reference text')
+    # The GWP source and version this row's CO2e was built with, as its
+    # publisher or build states it. Recorded per row and never assumed from
+    # the standard's name: one standard can carry rows on different bases
+    # (a DEFRA edition mixes AR5 and AR4). Blank for the platform catalogue,
+    # whose basis is described in the report as before.
+    gwp_basis = models.CharField(max_length=255, blank=True, default='', db_default='',
+                                 help_text='GWP source and version of this row (rows of a factor standard)')
     is_active = models.BooleanField(default=True)
     # Scope 2 method the factor is for: a grid average is location-based, a
     # supplier / contractual or residual-mix factor is market-based. Blank
