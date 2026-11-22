@@ -7,7 +7,7 @@
 // Questions whose answer becomes emission entries: in a "mix" inventory each
 // one is calculated on the standard chosen for it.
 export const FACTOR_STANDARD_STEPS = new Set([
-  '3A-5', '3B-7', '3C-2', '4A-1', '4A-EV', '4B-2',
+  '3A-5', '3B-7', '3C-2', '3D-4', '4A-1', '4A-EV', '4B-2',
   'K3C1-2', 'K3C1-3a', 'K3C1-4a', 'K3C3-INFO', 'K3C4-2', 'K3C4-2c',
   'K3C5-2', 'K3C5-2b', 'K3C5-2c', 'K3C5-1', 'K3C6-2', 'K3C6-2c', 'K3C8-1', 'K3C9-1',
   'K3C10-1', 'K3C11-1', 'K3C12-1', 'K3C13-1', 'K3C14-1', 'K3C15-1',

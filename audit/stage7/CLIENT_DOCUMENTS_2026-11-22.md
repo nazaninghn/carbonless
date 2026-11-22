@@ -49,3 +49,9 @@
 | 8 | Paper and board | one "mixed" row | paper 1 339.32 and board 1 193.97 kg/t separately; plastic film 2 910.47 |
 
 Two figures of the 2024 report look like transcription errors and were not used: GWP of FM200 (HFC-227ea) "25,056" (AR6: 3 600) and of N₂O "27" (273).
+
+## Also done the same day, without waiting for the client
+
+* **Grid forms:** the ministry's page (`enerji.gov.tr/evced-cevre-ve-iklim-elektrik-uretim-tuketim-emisyon-faktorleri`) lists the periods 2020, 2022 and 2023 only. All three are in the platform; a 2021 or 2024 form does not exist to add.
+* **Refrigerant and other fugitive gases (question 62)** were never calculated. On a factor standard they now are: refill (kg) × the gas's GWP of that standard, as in the client's 2024 report (Table 12). A catalogue inventory is unchanged.
+* **The emissions report** (`emissions/report_pdf.py`) now states uncalculated Scope 1 / 2 amounts as the ISO report does.

@@ -526,3 +526,85 @@ class GridEditionByInventoryYearTests(_base.TestCase):
             rows = [(e.emission_factor.slug, e.emission_factor.year, e.calculated_co2e_kg)
                     for e in EmissionEntry.objects.filter(inventory=report, emission_factor__category='electricity')]
             self.assertEqual(rows, [('turkey-grid-distribution', data_year, kg)], year)
+
+
+class RefrigerantLeakTests(_InventoryCase):
+    """Fugitive gases (question 62, step 3D-4): the annual refill x the gas's GWP of the inventory's standard.
+    An inventory on the platform catalogue keeps its earlier treatment (not calculated, said so)."""
+
+    def setUp(self):
+        super().setUp()
+        call_command('seed_ipcc_ghg_factors', verbosity=0)
+        defra('r410a', 2025, Decimal('1924'))
+
+    def _post(self, gas='R410A', refill='2', site='Gebze', standard=None):
+        from .test_calc_baseline import SITES
+
+        def step(step_id, answer, **extra):
+            return self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
+                                     {'step': step_id, 'data': {'answer': answer, **extra}}, format='json')
+        for step_id, answer in (('2A-2', SITES), ('3D-0', ['EQ-3D-01']),
+                                ('3D-2', {'EQ-3D-01': {'unit_count': '2', 'site': site, 'gas_type': gas}})):
+            r = step(step_id, answer)
+            self.assertEqual(r.status_code, 200, r.content)
+        extra = {'factor_standard': standard} if standard else {}
+        return step('3D-4', {'EQ-3D-01': {'refill_kg': refill, 'capacity_kg': '8'}}, **extra)
+
+    def _rows(self):
+        return [(e.emission_factor.slug, e.emission_factor.standard, e.calculated_co2e_kg,
+                 e.facility.name if e.facility_id else None)
+                for e in EmissionEntry.objects.filter(inventory=self.report, emission_factor__slug__in=('r410a', 'r32'))]
+
+    def _notes(self):
+        from questionnaire.step_entries import uncalculated_notes
+        answers = dict(ReportStep.objects.filter(report=self.report).values_list('step_id', 'answer'))
+        return [n for n in uncalculated_notes(answers, 2025, self.company, self.report) if n['step_id'] == '3D-4']
+
+    def test_each_standard_applies_its_own_gwp(self):
+        for choice, standard, kg in (('std_ghg', 'ghg', '4511.0000'), ('std_ipcc', 'ipcc', '3847.0000'),
+                                     ('std_defra', 'defra', '3848.0000')):
+            EmissionEntry.objects.filter(inventory=self.report).delete()
+            ReportStep.objects.filter(report=self.report).delete()
+            self.choose(choice)
+            r = self._post()
+            self.assertEqual(r.status_code, 200, r.content)
+            self.assertEqual(self._rows(), [('r410a', standard, Decimal(kg), 'Gebze')], choice)   # 2 kg x GWP
+            self.assertEqual(self._notes(), [])
+
+    def test_the_catalogue_inventory_is_unchanged(self):
+        self.assertEqual(self._post().status_code, 200)
+        self.assertEqual(self._rows(), [])
+        self.assertIn('not calculated until the GWP values are unified', self._notes()[0]['en'])
+
+    def test_a_site_that_is_not_a_facility_stays_unassigned(self):
+        self.choose('std_ghg')
+        self.assertEqual(self._post(site='somewhere else').status_code, 200)
+        self.assertEqual(self._rows(), [('r410a', 'ghg', Decimal('4511.0000'), None)])
+
+    def test_a_gas_without_a_factor_or_a_missing_refill_is_said_not_counted_as_zero(self):
+        self.choose('std_ghg')
+        self.assertEqual(self._post(gas='R1234yf').status_code, 200)
+        self.assertEqual(self._rows(), [])
+        notes = self._notes()
+        self.assertEqual(len(notes), 1)
+        self.assertIn('no emission factor for R1234yf', notes[0]['en'])
+        self.assertIn('R1234yf gazı için emisyon faktörü yok', notes[0]['tr'])
+        self.assertEqual(self._post(gas='R410A', refill='0').status_code, 200)
+        self.assertEqual(self._rows(), [])
+        self.assertIn('no annual refill amount is given', self._notes()[0]['en'])
+        self.assertIn('dolum miktarı girilmediği', self._notes()[0]['tr'])
+
+    def test_a_mix_inventory_needs_the_standard_of_the_question(self):
+        self.choose('std_mix')
+        r = self._post()
+        self.assertEqual((r.status_code, r.data.get('code')), (400, 'factor_standard'))
+        self.assertEqual(self._post(standard='ghg').status_code, 200)
+        self.assertEqual(self._rows(), [('r410a', 'ghg', Decimal('4511.0000'), 'Gebze')])
+
+    def test_changing_the_gas_of_the_equipment_recalculates(self):
+        self.choose('std_ghg')
+        self.assertEqual(self._post().status_code, 200)
+        r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/', {'step': '3D-2', 'data': {'answer': {
+            'EQ-3D-01': {'unit_count': '2', 'site': 'Gebze', 'gas_type': 'R32'}}}}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._rows(), [('r32', 'ghg', Decimal('1542.0000'), 'Gebze')])       # 2 kg x 771
