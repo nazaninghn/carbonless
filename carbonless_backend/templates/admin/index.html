@@ -8,168 +8,180 @@
     {% include "unfold/helpers/site_branding.html" %}
 {% endblock %}
 
-{% block extrahead %}
-    {{ block.super }}
-    {% comment %}
-    Unfold ships a pre-built Tailwind bundle (not a live compiler), so custom
-    colors/animations here are hand-written CSS rather than Tailwind utility
-    classes — those wouldn't exist in the bundle and would silently no-op.
-    {% endcomment %}
-    <style>
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        @media (min-width: 1024px) {
-            .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        }
-        @keyframes kpiFadeUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .kpi-card {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.875rem;
-            padding: 1.25rem;
-            border-radius: 0.75rem;
-            border: 1px solid rgb(228 228 231);
-            background: #fff;
-            text-decoration: none;
-            animation: kpiFadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-        }
-        .kpi-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
-            border-color: var(--kpi-accent, rgb(212 212 216));
-        }
-        html.dark .kpi-card {
-            background: rgb(24 24 27);
-            border-color: rgb(39 39 42);
-        }
-        html.dark .kpi-card:hover {
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
-        }
-        .kpi-icon {
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 2.75rem;
-            height: 2.75rem;
-            border-radius: 0.625rem;
-            background: var(--kpi-accent-bg);
-            color: var(--kpi-accent);
-            transition: transform 0.2s ease;
-        }
-        .kpi-card:hover .kpi-icon { transform: scale(1.08) rotate(-4deg); }
-        .kpi-icon .material-symbols-outlined { font-size: 1.375rem; }
-        .kpi-label {
-            font-size: 0.8125rem;
-            color: rgb(113 113 122);
-            margin: 0 0 0.125rem;
-        }
-        html.dark .kpi-label { color: rgb(161 161 170); }
-        .kpi-value {
-            font-size: 1.75rem;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-            color: rgb(24 24 27);
-            line-height: 1.2;
-        }
-        html.dark .kpi-value { color: rgb(250 250 250); }
-    </style>
-{% endblock %}
+{% comment %}
+The advisor's desk: what waits for a decision, how long, and where to decide it. Data: carbonless_api/admin_dashboard.py.
+Styles: static/css/admin-theme.css (hand-written: Unfold ships a pre-built Tailwind bundle, so utility classes that are not in
+it would silently do nothing).
+{% endcomment %}
 
 {% block content %}
-    {% component "unfold/components/container.html" %}
+{% component "unfold/components/container.html" %}
+<div class="cl-desk" data-testid="advisor-desk">
 
-        <div class="mb-6">
-            {% component "unfold/components/title.html" %}
-                {% blocktranslate with name=request.user.first_name|default:request.user.username %}Welcome back, {{ name }}{% endblocktranslate %}
-            {% endcomponent %}
-            {% component "unfold/components/text.html" with class="text-base-500 dark:text-base-400 mt-1" %}
-                {% blocktranslate %}Here's what's happening across Carbonless in {{ current_year }}.{% endblocktranslate %}
-            {% endcomponent %}
+    <nav class="cl-pills" aria-label="{% translate 'Advisor work' %}">
+        <a class="cl-pill is-current" href="{% url 'admin:index' %}" aria-current="page"><span class="material-symbols-outlined">space_dashboard</span>{% translate "Overview" %}</a>
+        <a class="cl-pill" href="/admin/questionnaire/advisorapproval/?status__exact=pending"><span class="material-symbols-outlined">fact_check</span>{% translate "Approvals" %}{% if approvals_total %}<span class="cl-count">{{ approvals_total }}</span>{% endif %}</a>
+        <a class="cl-pill" href="/admin/emissions/customemissionrequest/?status__exact=pending"><span class="material-symbols-outlined">science</span>{% translate "Own factors" %}{% if own_factors %}<span class="cl-count">{{ own_factors }}</span>{% endif %}</a>
+        <a class="cl-pill" href="/admin/questionnaire/stepdocument/"><span class="material-symbols-outlined">description</span>{% translate "Documents" %}</a>
+        <a class="cl-pill" href="/admin/emissions/emissionfactor/"><span class="material-symbols-outlined">dataset</span>{% translate "Factors" %}</a>
+        <a class="cl-pill" href="/admin/companies/company/"><span class="material-symbols-outlined">apartment</span>{% translate "Companies" %}</a>
+        <a class="cl-pill" href="/admin/support/supportrequest/?status__exact=open"><span class="material-symbols-outlined">support_agent</span>{% translate "Support" %}{% if kpi_open_support_requests %}<span class="cl-count">{{ kpi_open_support_requests }}</span>{% endif %}</a>
+    </nav>
+
+    <header class="cl-head">
+        <div>
+            <p class="cl-date">{{ today|date:"l j F" }}</p>
+            <h1 class="cl-title">{{ greeting }}, {{ request.user.first_name|default:request.user.username }}</h1>
+            <p class="cl-lede" data-testid="desk-status">
+                {% if queue_total %}
+                    <strong>{{ queue_total }}</strong> {% blocktranslate count n=queue_total %}item waits for your decision.{% plural %}items wait for your decision.{% endblocktranslate %}
+                    {% if oldest and oldest.days %}{% blocktranslate with age=oldest.age %}The oldest has waited <strong>{{ age }}</strong>.{% endblocktranslate %}{% endif %}
+                    {% translate "An inventory cannot be signed while its items are open." %}
+                {% else %}
+                    {% translate "Nothing waits for your decision. Every inventory can be signed." %}
+                {% endif %}
+            </p>
         </div>
-
-        <div class="kpi-grid">
-            <div class="kpi-card" style="--kpi-accent:#2563eb; --kpi-accent-bg:rgba(37,99,235,.12); animation-delay:0ms">
-                <span class="kpi-icon"><span class="material-symbols-outlined">group</span></span>
-                <div><p class="kpi-label">{% translate "Users" %}</p><p class="kpi-value" data-countup="{{ kpi_users }}">0</p></div>
-            </div>
-
-            <div class="kpi-card" style="--kpi-accent:#175022; --kpi-accent-bg:rgba(42,189,65,.14); animation-delay:60ms">
-                <span class="kpi-icon"><span class="material-symbols-outlined">apartment</span></span>
-                <div><p class="kpi-label">{% translate "Companies" %}</p><p class="kpi-value" data-countup="{{ kpi_companies }}">0</p></div>
-            </div>
-
-            <div class="kpi-card" style="--kpi-accent:#b45309; --kpi-accent-bg:rgba(234,179,8,.14); animation-delay:120ms">
-                <span class="kpi-icon"><span class="material-symbols-outlined">workspace_premium</span></span>
-                <div><p class="kpi-label">{% translate "Pro subscriptions" %}</p><p class="kpi-value" data-countup="{{ kpi_pro_subscriptions }}">0</p></div>
-            </div>
-
-            <div class="kpi-card" style="--kpi-accent:#dc2626; --kpi-accent-bg:rgba(239,68,68,.12); animation-delay:180ms">
-                <span class="kpi-icon"><span class="material-symbols-outlined">local_fire_department</span></span>
-                <div><p class="kpi-label">{% translate "Emission entries logged" %}</p><p class="kpi-value" data-countup="{{ kpi_emission_entries }}">0</p></div>
-            </div>
-
-            <a class="kpi-card" href="/admin/emissions/customemissionrequest/?status__exact=pending" style="--kpi-accent:#c2410c; --kpi-accent-bg:rgba(249,115,22,.12); animation-delay:240ms">
-                <span class="kpi-icon"><span class="material-symbols-outlined">rule</span></span>
-                <div><p class="kpi-label">{% translate "Pending custom emission requests" %}</p><p class="kpi-value" data-countup="{{ kpi_pending_custom_requests }}">0</p></div>
-            </a>
-
-            <a class="kpi-card" href="/admin/questionnaire/advisorapproval/?status__exact=pending" style="--kpi-accent:#7c3aed; --kpi-accent-bg:rgba(139,92,246,.14); animation-delay:300ms">
-                <span class="kpi-icon"><span class="material-symbols-outlined">fact_check</span></span>
-                <div><p class="kpi-label">{% translate "Pending advisor approvals" %}</p><p class="kpi-value" data-countup="{{ kpi_pending_advisor_approvals }}">0</p></div>
-            </a>
-
-            <a class="kpi-card" href="/admin/support/supportrequest/?status__exact=open" style="--kpi-accent:#0891b2; --kpi-accent-bg:rgba(6,182,212,.14); animation-delay:360ms">
-                <span class="kpi-icon"><span class="material-symbols-outlined">support_agent</span></span>
-                <div><p class="kpi-label">{% translate "Open support requests" %}</p><p class="kpi-value" data-countup="{{ kpi_open_support_requests }}">0</p></div>
-            </a>
-
-            <a class="kpi-card" href="/admin/support/answerfeedback/?helpful__exact=0" style="--kpi-accent:#be123c; --kpi-accent-bg:rgba(244,63,94,.12); animation-delay:420ms">
-                <span class="kpi-icon"><span class="material-symbols-outlined">thumb_down</span></span>
-                <div><p class="kpi-label">{% translate "Unhelpful AI answers (30 days)" %}</p><p class="kpi-value" data-countup="{{ kpi_unhelpful_answers_30d }}">0</p></div>
-            </a>
-
-            <a class="kpi-card" href="/admin/support/supportrequest/?is_gap__exact=1" style="--kpi-accent:#4d7c0f; --kpi-accent-bg:rgba(132,204,22,.14); animation-delay:480ms">
-                <span class="kpi-icon"><span class="material-symbols-outlined">lightbulb</span></span>
-                <div><p class="kpi-label">{% translate "Product gaps to improve" %}</p><p class="kpi-value" data-countup="{{ kpi_product_gaps }}">0</p></div>
-            </a>
+        <div class="cl-actions">
+            <a class="cl-btn" href="/admin/emissions/customemissionrequest/?status__exact=pending"><span class="material-symbols-outlined">science</span>{% translate "Review own factors" %}</a>
+            <a class="cl-btn is-solid" href="/admin/questionnaire/advisorapproval/?status__exact=pending"><span class="material-symbols-outlined">fact_check</span>{% translate "Open the queue" %}</a>
         </div>
+    </header>
 
-        <div class="flex flex-col lg:flex-row lg:gap-8">
-            <div class="grow">
-                {% include "unfold/helpers/app_list_default.html" %}
+    <section class="cl-kpis" aria-label="{% translate 'Work waiting' %}">
+        <a class="cl-kpi is-lead" href="/admin/questionnaire/advisorapproval/?status__exact=pending" data-testid="kpi-queue">
+            <span class="cl-kpi-label"><span class="cl-dot"><span class="material-symbols-outlined">hourglass_top</span></span>{% translate "Waiting for you" %}</span>
+            <span class="cl-kpi-value">{{ queue_total }} <small>{% blocktranslate count n=queue_total %}item{% plural %}items{% endblocktranslate %}</small></span>
+            <span class="cl-kpi-foot">{% if oldest %}<span class="cl-chip is-ink">{{ oldest.age }}</span> {% translate "oldest" %}{% else %}{% translate "All decided" %}{% endif %}</span>
+        </a>
+        <a class="cl-kpi" href="/admin/questionnaire/advisorapproval/?status__exact=pending">
+            <span class="cl-kpi-label"><span class="material-symbols-outlined">fact_check</span>{% translate "Data-quality approvals" %}</span>
+            <span class="cl-kpi-value">{{ approvals_total }}</span>
+            <span class="cl-kpi-foot">{% translate "sources, documents, high uncertainty" %}</span>
+        </a>
+        <a class="cl-kpi" href="/admin/emissions/customemissionrequest/?status__exact=pending">
+            <span class="cl-kpi-label"><span class="material-symbols-outlined">science</span>{% translate "Own emission factors" %}</span>
+            <span class="cl-kpi-value">{{ own_factors }}</span>
+            <span class="cl-kpi-foot">{% if auto_accepted_30d %}<span class="cl-chip">{{ auto_accepted_30d }}</span> {% translate "accepted on a published source, 30 days" %}{% else %}{% translate "with a document, not counted until approved" %}{% endif %}</span>
+        </a>
+        <a class="cl-kpi" href="/admin/questionnaire/questionnairesession/">
+            <span class="cl-kpi-label"><span class="material-symbols-outlined">verified</span>{% translate "Inventories signed" %}</span>
+            <span class="cl-kpi-value">{{ inventories_signed }} <small>{% translate "of" %} {{ inventories }}</small></span>
+            <span class="cl-meter" role="img" aria-label="{{ signed_share }}%"><span style="width: {{ signed_share }}%"></span></span>
+        </a>
+    </section>
+
+    <section class="cl-grid">
+        <article class="cl-card cl-chart" data-testid="entries-chart">
+            <header class="cl-card-head">
+                <div class="cl-card-title"><span class="cl-dot is-lime"><span class="material-symbols-outlined">bar_chart</span></span>
+                    <div><h2>{% translate "Entries recorded" %}</h2><p>{% translate "New emission entries per day, all companies" %}</p></div>
+                </div>
+                <div class="cl-seg" role="group" aria-label="{% translate 'Period' %}">
+                    <button type="button" data-days="7">7d</button>
+                    <button type="button" data-days="14" class="is-on" aria-pressed="true">14d</button>
+                    <button type="button" data-days="30">30d</button>
+                </div>
+            </header>
+            <div class="cl-figures">
+                <div><span>{% translate "Last 7 days" %}</span><b>{{ entries_7d }}</b></div>
+                <div><span>{% translate "Last 30 days" %}</span><b>{{ entries_30d }}</b></div>
+                <div><span>{% translate "Busiest day" %}</span><b>{{ bars_peak }}</b></div>
             </div>
+            <ol class="cl-bars" data-shown="14">
+                {% for bar in bars %}
+                <li class="{% if bar.today %}is-today{% endif %}" title="{{ bar.label }}: {{ bar.count }}">
+                    <span class="cl-bar-track"><span class="cl-bar" style="height: {{ bar.height }}%"></span></span>
+                    <span class="cl-bar-label">{% if bar.today %}{% translate "Today" %}{% else %}{{ bar.day }}{% endif %}</span>
+                    <span class="cl-sr">{{ bar.label }}: {{ bar.count }}</span>
+                </li>
+                {% endfor %}
+            </ol>
+        </article>
 
-            {% include "unfold/helpers/history.html" %}
-        </div>
+        <article class="cl-card is-ink" data-testid="queue-card">
+            <header class="cl-card-head">
+                <div class="cl-card-title"><span class="cl-dot is-lime"><span class="material-symbols-outlined">inbox</span></span>
+                    <div><h2>{% translate "The queue" %}</h2><p>{% translate "What is waiting, by kind" %}</p></div>
+                </div>
+            </header>
+            <p class="cl-big">{{ queue_total }}<small>{% translate "open" %}</small></p>
+            <ul class="cl-rows">
+                {% for row in queue_rows %}
+                <li><a href="{{ row.url }}"><span>{{ row.label }}</span><b class="{% if row.count %}is-on{% endif %}">{{ row.count }}</b></a></li>
+                {% endfor %}
+            </ul>
+        </article>
+    </section>
 
-    {% endcomponent %}
+    <section class="cl-grid">
+        <article class="cl-card" data-testid="waiting-list">
+            <header class="cl-card-head">
+                <div class="cl-card-title"><div><h2>{% translate "Waiting longest" %}</h2><p>{% translate "Oldest first. Open one to see its documents and decide." %}</p></div></div>
+                <a class="cl-btn is-small" href="/admin/questionnaire/advisorapproval/?status__exact=pending">{% translate "All" %}</a>
+            </header>
+            {% if waiting %}
+            <ul class="cl-list">
+                {% for item in waiting %}
+                <li><a href="{{ item.url }}">
+                    <span class="cl-age {% if item.days >= 7 %}is-late{% endif %}">{{ item.age }}</span>
+                    <span class="cl-list-main"><b>{{ item.company }}</b><span>{{ item.what }} · {{ item.detail }}</span></span>
+                    <span class="cl-chip">{{ item.kind }}</span>
+                    <span class="material-symbols-outlined cl-go">chevron_right</span>
+                </a></li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="cl-empty"><span class="material-symbols-outlined">task_alt</span>{% translate "Nothing is waiting." %}</p>
+            {% endif %}
+        </article>
 
-    <script>
-        (function () {
-            var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            document.querySelectorAll('.kpi-value[data-countup]').forEach(function (el) {
-                var target = parseInt(el.getAttribute('data-countup'), 10) || 0;
-                if (reduceMotion || target === 0) { el.textContent = target; return; }
-                var start = null;
-                var duration = 900;
-                function tick(ts) {
-                    if (!start) start = ts;
-                    var progress = Math.min((ts - start) / duration, 1);
-                    var eased = 1 - Math.pow(1 - progress, 3);
-                    el.textContent = Math.round(target * eased);
-                    if (progress < 1) requestAnimationFrame(tick);
-                }
-                requestAnimationFrame(tick);
+        <article class="cl-card" data-testid="standards-card">
+            <header class="cl-card-head">
+                <div class="cl-card-title"><div><h2>{% translate "Factor standards" %}</h2><p>{% translate "Inventories by the standard chosen in question D1" %}</p></div></div>
+                <a class="cl-btn is-small" href="/admin/emissions/emissionfactor/">{% translate "Factors" %}</a>
+            </header>
+            <div class="cl-split" role="img" aria-label="{% translate 'Share of inventories per standard' %}">
+                {% for s in standards %}{% if s.count %}<span class="is-{{ s.key }}" style="flex-grow: {{ s.count }}"></span>{% endif %}{% endfor %}
+            </div>
+            <ul class="cl-legend">
+                {% for s in standards %}
+                <li><i class="is-{{ s.key }}"></i><span>{{ s.label }}</span><b>{{ s.count }}</b></li>
+                {% endfor %}
+            </ul>
+            <div class="cl-tiles">
+                <div><span>{% translate "Rows of the standards" %}</span><b>{{ standard_rows }}</b></div>
+                <a href="/admin/emissions/emissionfactor/?is_active__exact=0"><span>{% translate "Withheld, under review" %}</span><b>{{ withheld_rows }}</b></a>
+                <div><span>{% translate "Inventories open" %}</span><b>{{ inventories_open }}</b></div>
+            </div>
+        </article>
+    </section>
+
+    <section class="cl-platform" aria-label="{% translate 'Platform' %}">
+        {% for p in platform %}
+        <a class="cl-stat" href="{{ p.url }}"><span class="material-symbols-outlined">{{ p.icon }}</span><span>{{ p.label }}</span><b>{{ p.value }}</b></a>
+        {% endfor %}
+    </section>
+
+    <div class="cl-history">
+        {% include "unfold/helpers/history.html" %}
+    </div>
+</div>
+{% endcomponent %}
+
+<script>
+    (function () {
+        var bars = document.querySelector('.cl-bars');
+        if (!bars) return;
+        document.querySelectorAll('.cl-seg button').forEach(function (button) {
+            button.addEventListener('click', function () {
+                bars.setAttribute('data-shown', button.getAttribute('data-days'));
+                document.querySelectorAll('.cl-seg button').forEach(function (other) {
+                    other.classList.toggle('is-on', other === button);
+                    other.setAttribute('aria-pressed', other === button ? 'true' : 'false');
+                });
             });
-        })();
-    </script>
+        });
+    })();
+</script>
 {% endblock %}

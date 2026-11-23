@@ -1,0 +1,272 @@
+/*
+ * Carbonless admin panel — theme.
+ *
+ * Loaded on every admin page through UNFOLD["STYLES"]. Hand-written CSS: Unfold ships a pre-built Tailwind
+ * bundle, so utility classes that are not in it would silently do nothing.
+ *
+ * The look: a quiet grey canvas, white cards with large corners, near-black ink for what you act with,
+ * and one lime accent kept for the thing that needs you. Light and dark follow Unfold's own switch
+ * (html.dark).
+ */
+
+:root {
+    --cl-canvas: #eef0f2;
+    --cl-surface: #ffffff;
+    --cl-soft: #f4f5f6;
+    --cl-line: #e3e6e9;
+    --cl-ink: #14171a;
+    --cl-text: #2a2f35;
+    --cl-muted: #6c737c;
+    --cl-lime: #c9f24d;
+    --cl-lime-ink: #1d2607;
+    --cl-late: #b3261e;
+    --cl-late-bg: #fde8e6;
+    --cl-solid: var(--cl-ink);
+    --cl-solid-text: #ffffff;
+    --cl-radius: 22px;
+    --cl-shadow: 0 1px 2px rgba(20, 23, 26, .04), 0 10px 30px rgba(20, 23, 26, .05);
+}
+
+html.dark {
+    --cl-canvas: #0e1013;
+    --cl-surface: #171a1e;
+    --cl-soft: #1e2227;
+    --cl-line: #2a2f36;
+    --cl-ink: #f4f5f6;
+    --cl-text: #d9dde2;
+    --cl-muted: #9097a1;
+    --cl-late: #ff8f85;
+    --cl-late-bg: #3a1c1a;
+    --cl-solid: var(--cl-lime);
+    --cl-solid-text: var(--cl-lime-ink);
+    --cl-shadow: none;
+}
+
+/* ── The canvas, everywhere ───────────────────────────────────────────────────────────────────────── */
+
+body, #page, #main { background-color: var(--cl-canvas) !important; }
+
+/* ── The desk (admin home) ───────────────────────────────────────────────────────────────────────── */
+
+.cl-desk { color: var(--cl-text); display: grid; gap: 18px; padding-bottom: 32px; }
+.cl-desk a { text-decoration: none; color: inherit; }
+.cl-desk .material-symbols-outlined { font-size: 18px; line-height: 1; }
+.cl-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* pill navigation */
+.cl-pills {
+    display: flex; gap: 4px; padding: 5px; overflow-x: auto; scrollbar-width: none;
+    background: var(--cl-surface); border: 1px solid var(--cl-line); border-radius: 999px; box-shadow: var(--cl-shadow);
+}
+.cl-pills::-webkit-scrollbar { display: none; }
+.cl-pill {
+    display: inline-flex; align-items: center; gap: 7px; flex: none; padding: 8px 14px; border-radius: 999px;
+    font-size: 13px; font-weight: 500; color: var(--cl-muted) !important; transition: background-color .15s, color .15s;
+}
+.cl-pill:hover { background: var(--cl-soft); color: var(--cl-ink) !important; }
+.cl-pill.is-current { background: var(--cl-solid); color: var(--cl-solid-text) !important; }
+.cl-count {
+    min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--cl-lime); color: var(--cl-lime-ink);
+    font-size: 11px; font-weight: 700; line-height: 18px; text-align: center;
+}
+
+/* heading */
+.cl-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 10px 4px 2px; }
+.cl-date { margin: 0; font-size: 14px; color: var(--cl-muted); }
+.cl-title { margin: 2px 0 4px; font-size: clamp(26px, 3vw, 34px); font-weight: 600; letter-spacing: -.03em; line-height: 1.1; color: var(--cl-ink); }
+.cl-lede { margin: 0; max-width: 62ch; font-size: 14px; line-height: 1.5; color: var(--cl-muted); }
+.cl-lede strong { color: var(--cl-ink); font-weight: 600; }
+.cl-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.cl-btn {
+    display: inline-flex; align-items: center; gap: 7px; padding: 10px 16px; border-radius: 999px; font-size: 13px;
+    font-weight: 600; background: var(--cl-surface); border: 1px solid var(--cl-line); color: var(--cl-ink) !important;
+    transition: transform .15s, box-shadow .15s;
+}
+.cl-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(20, 23, 26, .10); }
+.cl-btn.is-solid { background: var(--cl-solid); border-color: var(--cl-solid); color: var(--cl-solid-text) !important; }
+.cl-btn.is-small { padding: 6px 12px; font-size: 12px; }
+.cl-desk a:focus-visible, .cl-seg button:focus-visible { outline: 2px solid var(--cl-ink); outline-offset: 2px; }
+
+/* the four figures */
+.cl-kpis { display: grid; gap: 14px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.cl-kpi {
+    display: flex; flex-direction: column; gap: 10px; min-height: 132px; padding: 18px 20px; border-radius: var(--cl-radius);
+    background: var(--cl-soft); border: 1px solid var(--cl-line); transition: transform .15s, box-shadow .15s;
+}
+.cl-kpi:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(20, 23, 26, .08); }
+.cl-kpi-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--cl-muted); }
+.cl-kpi-value { font-size: 30px; font-weight: 600; letter-spacing: -.03em; line-height: 1; color: var(--cl-ink); font-variant-numeric: tabular-nums; }
+.cl-kpi-value small { font-size: 13px; font-weight: 500; letter-spacing: 0; color: var(--cl-muted); }
+.cl-kpi-foot { margin-top: auto; font-size: 12px; color: var(--cl-muted); }
+.cl-kpi.is-lead { background: var(--cl-lime); border-color: var(--cl-lime); }
+.cl-kpi.is-lead, .cl-kpi.is-lead .cl-kpi-label, .cl-kpi.is-lead .cl-kpi-value, .cl-kpi.is-lead .cl-kpi-value small,
+.cl-kpi.is-lead .cl-kpi-foot { color: var(--cl-lime-ink); }
+.cl-dot {
+    display: inline-grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: 999px;
+    background: #14171a; color: var(--cl-lime);
+}
+.cl-dot.is-lime { background: var(--cl-lime); color: var(--cl-lime-ink); }
+.cl-chip {
+    display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--cl-surface); border: 1px solid var(--cl-line);
+    font-size: 11px; font-weight: 600; color: var(--cl-text); white-space: nowrap;
+}
+.cl-chip.is-ink { background: #14171a; border-color: #14171a; color: #fff; }
+.cl-meter { margin-top: auto; height: 8px; border-radius: 999px; background: var(--cl-line); overflow: hidden; }
+.cl-meter span { display: block; height: 100%; border-radius: 999px; background: var(--cl-ink); }
+
+/* cards */
+.cl-grid { display: grid; gap: 14px; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.cl-card {
+    display: flex; flex-direction: column; gap: 16px; padding: 20px 22px; border-radius: var(--cl-radius);
+    background: var(--cl-surface); border: 1px solid var(--cl-line); box-shadow: var(--cl-shadow); min-width: 0;
+}
+.cl-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.cl-card-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.cl-card h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--cl-ink); }
+.cl-card-head p { margin: 2px 0 0; font-size: 12px; color: var(--cl-muted); }
+.cl-card.is-ink { background: #14171a; border-color: #14171a; color: #c9ced4; box-shadow: none; }
+html.dark .cl-card.is-ink { background: #1e2227; border-color: #2a2f36; }
+.cl-card.is-ink h2 { color: #fff; }
+.cl-card.is-ink .cl-card-head p { color: #8f97a1; }
+
+/* segmented control */
+.cl-seg { display: inline-flex; flex: none; padding: 3px; border-radius: 999px; background: var(--cl-soft); border: 1px solid var(--cl-line); }
+.cl-seg button {
+    padding: 5px 11px; border: 0; border-radius: 999px; background: transparent; cursor: pointer;
+    font-size: 12px; font-weight: 600; color: var(--cl-muted);
+}
+.cl-seg button.is-on { background: var(--cl-surface); color: var(--cl-ink); box-shadow: 0 1px 2px rgba(20, 23, 26, .12); }
+
+/* figures above the chart */
+.cl-figures { display: flex; flex-wrap: wrap; gap: 28px; }
+.cl-figures span { display: block; font-size: 12px; color: var(--cl-muted); }
+.cl-figures b { font-size: 22px; font-weight: 600; letter-spacing: -.02em; color: var(--cl-ink); font-variant-numeric: tabular-nums; }
+
+/* bar chart: 30 days in the page, the period control shows the last 7, 14 or 30 */
+.cl-bars { display: flex; align-items: stretch; gap: 8px; flex: 1; min-height: 190px; margin: 0; padding: 0; list-style: none; }
+.cl-bars li { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.cl-bars[data-shown="14"] li:nth-last-child(n+15), .cl-bars[data-shown="7"] li:nth-last-child(n+8) { display: none; }
+.cl-bars[data-shown="30"] { gap: 4px; }
+.cl-bars[data-shown="30"] .cl-bar-label { display: none; }
+.cl-bars[data-shown="30"] li:nth-last-child(5n+1) .cl-bar-label { display: block; }
+.cl-bar-track {
+    position: relative; flex: 1; width: 100%; max-width: 26px; border-radius: 999px;
+    background: repeating-linear-gradient(to top, transparent 0 46px, var(--cl-line) 46px 47px);
+}
+.cl-bar { position: absolute; left: 0; right: 0; bottom: 0; min-height: 6px; border-radius: 999px; background: var(--cl-ink); }
+.cl-bars li.is-today .cl-bar { background: var(--cl-lime); box-shadow: inset 0 0 0 2px var(--cl-ink); }
+html.dark .cl-bars li.is-today .cl-bar { box-shadow: none; }
+.cl-bar-label { font-size: 11px; color: var(--cl-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cl-bars li.is-today .cl-bar-label { color: var(--cl-ink); font-weight: 600; }
+
+/* the queue (dark card) */
+.cl-big { margin: 0; font-size: 56px; font-weight: 600; letter-spacing: -.04em; line-height: 1; color: #fff; font-variant-numeric: tabular-nums; }
+.cl-big small { margin-left: 8px; font-size: 13px; font-weight: 500; letter-spacing: 0; color: var(--cl-lime); }
+.cl-rows { margin: 0; padding: 0; list-style: none; }
+.cl-rows a {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0;
+    border-top: 1px solid rgba(255, 255, 255, .09); font-size: 13px; color: #c9ced4 !important;
+}
+.cl-rows a:hover span { color: #fff; }
+.cl-rows b { min-width: 26px; padding: 1px 8px; border-radius: 999px; background: rgba(255, 255, 255, .08); color: #8f97a1; font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; }
+.cl-rows b.is-on { background: var(--cl-lime); color: var(--cl-lime-ink); }
+
+/* waiting longest */
+.cl-list { margin: 0; padding: 0; list-style: none; }
+.cl-list a { display: flex; align-items: center; gap: 12px; padding: 11px 8px; margin: 0 -8px; border-radius: 14px; border-top: 1px solid var(--cl-line); }
+.cl-list li:first-child a { border-top-color: transparent; }
+.cl-list a:hover { background: var(--cl-soft); }
+.cl-age { flex: none; min-width: 46px; padding: 4px 8px; border-radius: 999px; background: var(--cl-soft); font-size: 12px; font-weight: 600; text-align: center; color: var(--cl-text); font-variant-numeric: tabular-nums; }
+.cl-age.is-late { background: var(--cl-late-bg); color: var(--cl-late); }
+.cl-list-main { flex: 1; min-width: 0; display: grid; }
+.cl-list-main b { font-size: 13px; font-weight: 600; color: var(--cl-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-list-main span { font-size: 12px; color: var(--cl-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-go { color: var(--cl-muted); }
+.cl-empty { display: flex; align-items: center; gap: 8px; margin: 0; padding: 18px 0; font-size: 13px; color: var(--cl-muted); }
+
+/* factor standards */
+.cl-split { display: flex; gap: 3px; height: 14px; }
+.cl-split span { min-width: 6px; border-radius: 999px; }
+.cl-legend { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.cl-legend li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.cl-legend i { width: 10px; height: 10px; flex: none; border-radius: 999px; }
+.cl-legend span { flex: 1; color: var(--cl-text); }
+.cl-legend b { font-weight: 600; color: var(--cl-ink); font-variant-numeric: tabular-nums; }
+.is-catalogue { background: var(--cl-ink); }
+.is-defra { background: var(--cl-lime); box-shadow: inset 0 0 0 1px rgba(20, 23, 26, .25); }
+.is-ipcc { background: #7d8894; }
+.is-ghg { background: #3f7f5f; }
+.is-mix { background: repeating-linear-gradient(135deg, var(--cl-ink) 0 3px, var(--cl-lime) 3px 6px); }
+.cl-tiles { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: auto; }
+.cl-tiles > * { padding: 10px 12px; border-radius: 14px; background: var(--cl-soft); }
+.cl-tiles span { display: block; font-size: 11px; line-height: 1.3; color: var(--cl-muted); }
+.cl-tiles b { font-size: 17px; font-weight: 600; color: var(--cl-ink); font-variant-numeric: tabular-nums; }
+
+/* platform figures */
+.cl-platform { display: grid; gap: 10px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.cl-stat { display: grid; gap: 4px; padding: 14px 16px; border-radius: 18px; background: var(--cl-surface); border: 1px solid var(--cl-line); }
+.cl-stat:hover { border-color: var(--cl-ink); }
+.cl-stat .material-symbols-outlined { color: var(--cl-muted); }
+.cl-stat span:nth-child(2) { font-size: 12px; color: var(--cl-muted); }
+.cl-stat b { font-size: 20px; font-weight: 600; letter-spacing: -.02em; color: var(--cl-ink); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 1100px) {
+    .cl-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cl-grid { grid-template-columns: minmax(0, 1fr); }
+    .cl-platform { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+    .cl-kpis, .cl-platform { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cl-kpi { min-height: 116px; padding: 14px; }
+    .cl-kpi-value { font-size: 24px; }
+    .cl-card { padding: 16px; }
+    .cl-bars { gap: 4px; min-height: 150px; }
+    .cl-bars[data-shown="14"] li:nth-last-child(even) .cl-bar-label { visibility: hidden; }
+    .cl-tiles { grid-template-columns: minmax(0, 1fr); }
+    .cl-list .cl-chip { display: none; }
+    .cl-actions { width: 100%; }
+    .cl-actions .cl-btn { flex: 1; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cl-desk *, .cl-desk *::before { transition: none !important; animation: none !important; }
+    .cl-btn:hover, .cl-kpi:hover { transform: none; }
+}
+
+/* ── Every admin page ─────────────────────────────────────────────────────────────────────────────── */
+
+/* pill labels in the lists (carbonless_api/admin_ui.py) */
+.cl-tag {
+    display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 18px;
+    white-space: nowrap; background: var(--cl-soft); color: var(--cl-text); border: 1px solid var(--cl-line);
+}
+.cl-tag.is-ink { background: #14171a; border-color: #14171a; color: #fff; }
+.cl-tag.is-lime { background: var(--cl-lime); border-color: var(--cl-lime); color: var(--cl-lime-ink); }
+.cl-tag.is-wait { background: #fff4d6; border-color: #f3dd9c; color: #6b4e00; }
+.cl-tag.is-ok { background: #e3f6e8; border-color: #bfe6c9; color: #14532d; }
+.cl-tag.is-no, .cl-tag.is-late { background: var(--cl-late-bg); border-color: transparent; color: var(--cl-late); }
+html.dark .cl-tag.is-wait { background: #3a2f10; border-color: #5a4a1a; color: #f3d98a; }
+html.dark .cl-tag.is-ok { background: #173323; border-color: #25553a; color: #a7e3bd; }
+html.dark .cl-tag.is-ink { background: #f4f5f6; border-color: #f4f5f6; color: #14171a; }
+
+/* sidebar: the current page is an ink pill, counts are lime */
+#nav-sidebar a.active { background: var(--cl-solid) !important; color: var(--cl-solid-text) !important; border-radius: 999px; }
+#nav-sidebar a.active .material-symbols-outlined { color: inherit !important; }
+#nav-sidebar a[class*="h-[38px]"] { border-radius: 999px; }
+#nav-sidebar a span[class*="bg-red-100"] {
+    background: var(--cl-lime) !important; color: var(--cl-lime-ink) !important; border-radius: 999px; padding: 0 6px;
+}
+
+/* forms: each group of fields is a white card on the canvas */
+fieldset.module > .form-rows, .inline-group .form-rows {
+    background: var(--cl-surface); border-color: var(--cl-line) !important; border-radius: 18px !important; overflow: hidden;
+}
+fieldset.module > h2 { background: transparent !important; padding-left: 4px; }
+
+/* lists: the table is a white card */
+#changelist-form, #changelist .results { border-radius: 18px; }
+table#result_list { background: var(--cl-surface); }
+
+/* dark mode: Unfold paints buttons with primary-600 (our ink), which would vanish on a dark canvas */
+html.dark .bg-primary-600 { background-color: var(--cl-lime) !important; color: var(--cl-lime-ink) !important; }
+html.dark .bg-primary-600 .material-symbols-outlined { color: var(--cl-lime-ink) !important; }
+html.dark .border-primary-600 { border-color: var(--cl-lime) !important; }

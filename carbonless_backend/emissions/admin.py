@@ -59,10 +59,8 @@ class EmissionFactorAdmin(ModelAdmin):
     )
 
     def scope_badge(self, obj):
-        colors = {'scope1': '#ef4444', 'scope2': '#eab308', 'scope3': '#3b82f6'}
-        c = colors.get(obj.scope, '#6b7280')
-        label = obj.scope.replace('scope', 'S')
-        return format_html('<span style="background:{}; color:white; padding:2px 8px; border-radius:4px; font-size:11px;">{}</span>', c, label)
+        from carbonless_api.admin_ui import scope_tag
+        return scope_tag(obj.scope)
     scope_badge.short_description = 'Scope'
 
     def country_flag(self, obj):
@@ -135,10 +133,8 @@ class EmissionEntryAdmin(ModelAdmin):
     factor_name.short_description = 'Source'
 
     def scope_badge(self, obj):
-        colors = {'scope1': '#ef4444', 'scope2': '#eab308', 'scope3': '#3b82f6'}
-        s = obj.emission_factor.scope
-        c = colors.get(s, '#6b7280')
-        return format_html('<span style="background:{}; color:white; padding:2px 8px; border-radius:4px; font-size:11px;">{}</span>', c, s.replace('scope', 'S'))
+        from carbonless_api.admin_ui import scope_tag
+        return scope_tag(obj.emission_factor.scope)
     scope_badge.short_description = 'Scope'
 
     def unit_display(self, obj):
@@ -201,9 +197,10 @@ class CustomEmissionRequestForm(forms.ModelForm):
 @admin.register(CustomEmissionRequest)
 class CustomEmissionRequestAdmin(ModelAdmin):
     form = CustomEmissionRequestForm
-    list_display = ['user', 'source_name', 'scope_badge', 'category_name',
-                    'quantity', 'unit', 'proposed_factor_kg_co2e', 'factor_source_type', 'has_document',
-                    'status_badge', 'created_at']
+    # The advisor's second inbox: how long it has waited, whose it is, what is proposed and on what evidence.
+    list_display = ['waiting', 'company_name', 'source_name', 'kind', 'scope_badge', 'quantity', 'unit',
+                    'proposed', 'factor_source_type', 'has_document', 'status_badge']
+    list_display_links = ['company_name', 'source_name']
     list_filter = ['status', 'factor_source_type', 'auto_accepted', 'scope', 'year']
     search_fields = ['user__username', 'source_name', 'category_name', 'description', 'factor_source']
     readonly_fields = ['user', 'created_at', 'updated_at', 'auto_accepted',
@@ -283,16 +280,36 @@ class CustomEmissionRequestAdmin(ModelAdmin):
     )
 
     def scope_badge(self, obj):
-        colors = {'scope1': '#ef4444', 'scope2': '#eab308', 'scope3': '#3b82f6'}
-        c = colors.get(obj.scope, '#6b7280')
-        return format_html('<span style="background:{}; color:white; padding:2px 8px; border-radius:4px; font-size:11px;">{}</span>', c, obj.scope.replace('scope', 'S'))
+        from carbonless_api.admin_ui import scope_tag
+        return scope_tag(obj.scope)
     scope_badge.short_description = 'Scope'
 
     def status_badge(self, obj):
-        colors = {'pending': '#f59e0b', 'approved': '#10b981', 'rejected': '#ef4444'}
-        c = colors.get(obj.status, '#6b7280')
-        return format_html('<span style="background:{}; color:white; padding:2px 8px; border-radius:4px; font-size:11px;">{}</span>', c, obj.get_status_display())
+        from carbonless_api.admin_ui import status_tag
+        return status_tag(obj.status, obj.get_status_display())
     status_badge.short_description = 'Status'
+
+    @admin.display(description='Waiting', ordering='created_at')
+    def waiting(self, obj):
+        from carbonless_api.admin_ui import waited
+        return waited(obj.created_at, obj.status == 'pending')
+
+    @admin.display(description='Company', ordering='company__legal_entity_name')
+    def company_name(self, obj):
+        return obj.company.legal_entity_name if obj.company_id else '—'
+
+    @admin.display(description='Kind')
+    def kind(self, obj):
+        from carbonless_api.admin_ui import tag
+        if obj.proposed_factor_kg_co2e is None:
+            return tag('Factor request')
+        return tag('Own factor · accepted' if obj.auto_accepted else 'Own factor', 'lime')
+
+    @admin.display(description='Proposed factor', ordering='proposed_factor_kg_co2e')
+    def proposed(self, obj):
+        if obj.proposed_factor_kg_co2e is None:
+            return '—'
+        return f'{obj.proposed_factor_kg_co2e.normalize():f} kg CO2e / {obj.unit}'
 
     def save_model(self, request, obj, form, change):
         if obj.status == 'approved' and obj.approved_factor_kg_co2e and not obj.calculated_co2e_kg:

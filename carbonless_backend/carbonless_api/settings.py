@@ -452,6 +452,16 @@ BACKEND_URL = (os.environ.get('BACKEND_URL', '').strip().rstrip('/')
 # ============================================
 # Colors match the frontend's brand green (#2ABD41 / #175022) so the admin
 # doesn't feel like a bolted-on, unrelated tool.
+def _admin_theme_css(request):
+    """The panel's stylesheet: the hashed file of the static manifest (collectstatic), else the plain path
+    (a checkout where collectstatic has not run: local development, the test suite)."""
+    from django.templatetags.static import static
+    try:
+        return static('css/admin-theme.css')
+    except ValueError:
+        return '/' + STATIC_URL.lstrip('/') + 'css/admin-theme.css'
+
+
 UNFOLD = {
     'SITE_TITLE': 'Carbonless Admin',
     'SITE_HEADER': 'Carbonless',
@@ -461,18 +471,41 @@ UNFOLD = {
     'SHOW_HISTORY': True,
     'SHOW_VIEW_ON_SITE': False,
     'DASHBOARD_CALLBACK': 'carbonless_api.admin_dashboard.dashboard_callback',
+    # The panel's look (static/css/admin-theme.css): a grey canvas, white cards, near-black ink for what you
+    # act with and one lime accent. Unfold paints buttons and links with primary-600 in light mode and
+    # primary-500 in dark mode, so 600 is the ink and 500 the lime.
+    'STYLES': [_admin_theme_css],
+    'BORDER_RADIUS': '12px',
     'COLORS': {
+        'base': {
+            '50': '#f6f7f8', '100': '#eef0f2', '200': '#e3e6e9', '300': '#cfd4d9', '400': '#9aa1aa',
+            '500': '#6c737c', '600': '#4a5058', '700': '#353a41', '800': '#1e2227', '900': '#171a1e',
+            '950': '#0e1013',
+        },
         'primary': {
-            '50': '240 253 244', '100': '222 250 225', '200': '187 247 208',
-            '300': '134 239 172', '400': '74 222 128', '500': '42 189 65',
-            '600': '23 80 34', '700': '21 128 61', '800': '22 101 52',
-            '900': '20 83 45', '950': '5 46 22',
+            '50': '#f7fde6', '100': '#eefbc9', '200': '#e2f79c', '300': '#d5f472', '400': '#c9f24d',
+            '500': '#c9f24d', '600': '#14171a', '700': '#0e1013', '800': '#3d4a10', '900': '#2a3409',
+            '950': '#1d2607',
         },
     },
     'SIDEBAR': {
         'show_search': True,
         'show_all_applications': False,
         'navigation': [
+            {
+                # What the platform advisor decides: first in the menu, with the number waiting.
+                'title': 'Advisor desk',
+                'items': [
+                    {'title': 'Overview', 'icon': 'space_dashboard', 'link': '/admin/'},
+                    {'title': 'Approvals', 'icon': 'fact_check',
+                     'link': '/admin/questionnaire/advisorapproval/?status__exact=pending',
+                     'badge': 'carbonless_api.admin_dashboard.advisor_approvals_badge'},
+                    {'title': 'Own factors & requests', 'icon': 'science',
+                     'link': '/admin/emissions/customemissionrequest/?status__exact=pending',
+                     'badge': 'carbonless_api.admin_dashboard.custom_requests_badge'},
+                    {'title': 'Documents', 'icon': 'description', 'link': '/admin/questionnaire/stepdocument/'},
+                ],
+            },
             {
                 'title': 'Accounts',
                 'items': [
@@ -496,14 +529,14 @@ UNFOLD = {
                     {'title': 'Emission Factors', 'icon': 'science', 'link': '/admin/emissions/emissionfactor/'},
                     {'title': 'Emission Entries', 'icon': 'local_fire_department', 'link': '/admin/emissions/emissionentry/'},
                     {'title': 'Reduction Targets', 'icon': 'target', 'link': '/admin/emissions/reductiontarget/'},
-                    {'title': 'Custom Requests', 'icon': 'rule', 'link': '/admin/emissions/customemissionrequest/'},
                 ],
             },
             {
                 'title': 'Questionnaire',
                 'items': [
                     {'title': 'Sessions', 'icon': 'quiz', 'link': '/admin/questionnaire/questionnairesession/'},
-                    {'title': 'Advisor Approvals', 'icon': 'fact_check', 'link': '/admin/questionnaire/advisorapproval/'},
+                    {'title': 'All approvals', 'icon': 'rule', 'link': '/admin/questionnaire/advisorapproval/'},
+                    {'title': 'All requests', 'icon': 'list_alt', 'link': '/admin/emissions/customemissionrequest/'},
                 ],
             },
             {
