@@ -14,7 +14,10 @@ class QuestionnaireSessionAdmin(ModelAdmin):
 
 @admin.register(AdvisorApproval)
 class AdvisorApprovalAdmin(ModelAdmin):
-    list_display = ['report', 'company', 'question_id', 'reason_code', 'risk_level', 'status', 'what', 'documents', 'created_at']
+    # The advisor's inbox, in the order a decision is made: how long it has waited, whose it is, what is
+    # to be decided, the evidence, and the state.
+    list_display = ['waiting', 'company', 'inventory', 'question_id', 'decide', 'what', 'documents', 'state']
+    list_display_links = ['company', 'decide']
     list_filter = ['status', 'reason_code', 'risk_level', 'trigger_category']
     search_fields = ['question_id', 'reason_code', 'report__id', 'report__company__legal_entity_name', 'description']
     readonly_fields = ['created_at', 'documents']
@@ -22,9 +25,29 @@ class AdvisorApprovalAdmin(ModelAdmin):
     # Pending first: this list is the advisor's inbox (data-quality items carry reason codes ut02 … ut05).
     ordering = ['-status', '-created_at']
 
+    @admin.display(description='Waiting', ordering='created_at')
+    def waiting(self, obj):
+        from carbonless_api.admin_ui import waited
+        return waited(obj.created_at, obj.status == AdvisorApproval.Status.PENDING)
+
     @admin.display(description='Company')
     def company(self, obj):
         return obj.report.company.legal_entity_name if obj.report_id and obj.report.company_id else '—'
+
+    @admin.display(description='Inventory', ordering='report__reporting_year')
+    def inventory(self, obj):
+        year = obj.report.reporting_year if obj.report_id else None
+        return f'{year or "—"} · #{obj.report_id}'
+
+    @admin.display(description='To decide', ordering='reason_code')
+    def decide(self, obj):
+        from carbonless_api.admin_dashboard import REASON_LABELS
+        return REASON_LABELS.get(obj.reason_code, obj.reason_code.replace('_', ' ').capitalize())
+
+    @admin.display(description='State', ordering='status')
+    def state(self, obj):
+        from carbonless_api.admin_ui import status_tag
+        return status_tag(obj.status, obj.get_status_display())
 
     @admin.display(description='What is asked')
     def what(self, obj):
