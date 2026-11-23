@@ -101,3 +101,9 @@ class AdvisorDeskTests(TestCase):
         requests = self.client.get('/admin/emissions/customemissionrequest/?status__exact=pending')
         self.assertContains(requests, 'Own factor')
         self.assertContains(requests, '1.5 kg CO2e / kg')
+
+    def test_a_menu_count_with_nothing_to_count_is_not_shown(self):
+        page = self.client.get('/admin/')                          # nothing waiting: no count, and never the word "None"
+        self.assertNotContains(page, 'cl-nav-count')
+        self.approval('ut02_measurement_document')
+        self.assertContains(self.client.get('/admin/'), '<span class="cl-nav-count">1</span>')

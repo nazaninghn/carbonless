@@ -66,7 +66,7 @@ def _age(created, now):
     return 0, f'{hours} h' if hours else 'now'
 
 
-def _waiting(now, limit=7):
+def _waiting(now, limit=5):
     """The items that have waited longest, oldest first, whatever queue they are in."""
     rows = []
     for a in _pending_approvals().select_related('report__company').order_by('created_at')[:limit]:

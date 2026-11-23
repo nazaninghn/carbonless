@@ -36,7 +36,6 @@ it would silently do nothing).
                 {% if queue_total %}
                     <strong>{{ queue_total }}</strong> {% blocktranslate count n=queue_total %}item waits for your decision.{% plural %}items wait for your decision.{% endblocktranslate %}
                     {% if oldest and oldest.days %}{% blocktranslate with age=oldest.age %}The oldest has waited <strong>{{ age }}</strong>.{% endblocktranslate %}{% endif %}
-                    {% translate "An inventory cannot be signed while its items are open." %}
                 {% else %}
                     {% translate "Nothing waits for your decision. Every inventory can be signed." %}
                 {% endif %}
@@ -71,6 +70,42 @@ it would silently do nothing).
         </a>
     </section>
 
+    <section class="cl-grid is-first">
+        <article class="cl-card is-ink" data-testid="queue-card">
+            <header class="cl-card-head">
+                <div class="cl-card-title"><span class="cl-dot is-lime"><span class="material-symbols-outlined">inbox</span></span>
+                    <div><h2>{% translate "The queue" %}</h2><p>{% translate "By kind. An inventory cannot be signed while its items are open." %}</p></div>
+                </div>
+            </header>
+            <ul class="cl-rows">
+                {% for row in queue_rows %}
+                <li><a href="{{ row.url }}"><span>{{ row.label }}</span><b class="{% if row.count %}is-on{% endif %}">{{ row.count }}</b></a></li>
+                {% endfor %}
+            </ul>
+        </article>
+
+        <article class="cl-card" data-testid="waiting-list">
+            <header class="cl-card-head">
+                <div class="cl-card-title"><div><h2>{% translate "Waiting longest" %}</h2><p>{% translate "Oldest first. Open one to see its documents and decide." %}</p></div></div>
+                <a class="cl-btn is-small" href="/admin/questionnaire/advisorapproval/?status__exact=pending">{% translate "All" %}</a>
+            </header>
+            {% if waiting %}
+            <ul class="cl-list">
+                {% for item in waiting %}
+                <li><a href="{{ item.url }}">
+                    <span class="cl-age {% if item.days >= 7 %}is-late{% endif %}">{{ item.age }}</span>
+                    <span class="cl-list-main"><b>{{ item.company }}</b><span>{{ item.what }} · {{ item.detail }}</span></span>
+                    <span class="cl-chip">{{ item.kind }}</span>
+                    <span class="material-symbols-outlined cl-go">chevron_right</span>
+                </a></li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="cl-empty"><span class="material-symbols-outlined">task_alt</span>{% translate "Nothing is waiting." %}</p>
+            {% endif %}
+        </article>
+    </section>
+
     <section class="cl-grid">
         <article class="cl-card cl-chart" data-testid="entries-chart">
             <header class="cl-card-head">
@@ -97,43 +132,6 @@ it would silently do nothing).
                 </li>
                 {% endfor %}
             </ol>
-        </article>
-
-        <article class="cl-card is-ink" data-testid="queue-card">
-            <header class="cl-card-head">
-                <div class="cl-card-title"><span class="cl-dot is-lime"><span class="material-symbols-outlined">inbox</span></span>
-                    <div><h2>{% translate "The queue" %}</h2><p>{% translate "What is waiting, by kind" %}</p></div>
-                </div>
-            </header>
-            <p class="cl-big">{{ queue_total }}<small>{% translate "open" %}</small></p>
-            <ul class="cl-rows">
-                {% for row in queue_rows %}
-                <li><a href="{{ row.url }}"><span>{{ row.label }}</span><b class="{% if row.count %}is-on{% endif %}">{{ row.count }}</b></a></li>
-                {% endfor %}
-            </ul>
-        </article>
-    </section>
-
-    <section class="cl-grid">
-        <article class="cl-card" data-testid="waiting-list">
-            <header class="cl-card-head">
-                <div class="cl-card-title"><div><h2>{% translate "Waiting longest" %}</h2><p>{% translate "Oldest first. Open one to see its documents and decide." %}</p></div></div>
-                <a class="cl-btn is-small" href="/admin/questionnaire/advisorapproval/?status__exact=pending">{% translate "All" %}</a>
-            </header>
-            {% if waiting %}
-            <ul class="cl-list">
-                {% for item in waiting %}
-                <li><a href="{{ item.url }}">
-                    <span class="cl-age {% if item.days >= 7 %}is-late{% endif %}">{{ item.age }}</span>
-                    <span class="cl-list-main"><b>{{ item.company }}</b><span>{{ item.what }} · {{ item.detail }}</span></span>
-                    <span class="cl-chip">{{ item.kind }}</span>
-                    <span class="material-symbols-outlined cl-go">chevron_right</span>
-                </a></li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="cl-empty"><span class="material-symbols-outlined">task_alt</span>{% translate "Nothing is waiting." %}</p>
-            {% endif %}
         </article>
 
         <article class="cl-card" data-testid="standards-card">
