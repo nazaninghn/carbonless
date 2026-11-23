@@ -68,7 +68,9 @@ export function useDashboardData(selectedYear, inventoryId = null) {
              customRes, notifRes, facilityRes] = await Promise.all([
         api.getSummary(selectedYear, inventoryId),
         api.getEntries(`year=${selectedYear}${inventoryId ? `&inventory_id=${inventoryId}` : ''}`),
-        api.getFactors(),
+        // The sources as the inventory holding this year's form entries calculates them (its factor
+        // standard and year): the form shows the numbers its entries are saved with.
+        api.getFactors(`entry_year=${selectedYear}`),
         api.getTargets(),
         api.getProfile(),
         api.getCustomRequests(),

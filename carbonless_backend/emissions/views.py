@@ -47,8 +47,34 @@ class EmissionFactorViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
     pagination_class = None  # Return all factors at once (small dataset)
 
+    def _inventory(self):
+        """The inventory whose factors are asked for, when the requester may read it, else None:
+        `?inventory_id=` names it; `?entry_year=` asks for the inventory that would hold an entry of that
+        year made in the dashboard form (the only inventory of the year — emissions/entry_standard.py)."""
+        params = self.request.query_params
+        user = getattr(self.request, 'user', None)
+        if user is None or not user.is_authenticated:
+            return None
+        company = get_current_company(user)
+        if params.get('inventory_id') not in (None, ''):
+            from .inventory_link import InventorySelectionError, resolve_inventory
+            try:
+                return resolve_inventory(company, params.get('inventory_id'))
+            except InventorySelectionError:
+                return None
+        if params.get('entry_year') not in (None, ''):
+            from .entry_standard import holding_inventory
+            return holding_inventory(company, params.get('entry_year'))
+        return None
+
     def get_queryset(self):
         qs = super().get_queryset()
+        inventory = self._inventory()
+        if inventory is not None:
+            # The sources as THIS inventory calculates them: each on the row of its factor standard and
+            # year, so the form shows and saves the numbers the questionnaire uses.
+            from .entry_standard import factors_for_inventory
+            qs = EmissionFactor.objects.filter(pk__in=[f.pk for f in factors_for_inventory(inventory)])
         scope = self.request.query_params.get('scope')
         category = self.request.query_params.get('category')
         country = self.request.query_params.get('country')
@@ -62,6 +88,16 @@ class EmissionFactorViewSet(viewsets.ReadOnlyModelViewSet):
         if source:
             qs = qs.filter(source=source)
         return qs
+
+
+def _summary_standard(inventory):
+    from .entry_standard import inventory_standard_of
+    return inventory_standard_of(inventory) if inventory is not None else ''
+
+
+def _summary_off_standard(inventory):
+    from .entry_standard import off_standard_notes
+    return off_standard_notes(inventory) if inventory is not None else []
 
 
 APPROVER_ROLES = ('owner', 'admin', 'manager')
@@ -142,6 +178,28 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
             qs = qs.filter(emission_factor__scope=scope)
         return qs
 
+    @staticmethod
+    def _standard_factor(chosen, company, year, inventory):
+        """The row of the chosen source that the inventory holding the entry calculates with (its factor
+        standard and year) — the same row the questionnaire and the chat use; refused, in both languages,
+        when that standard publishes none (emissions/entry_standard.py)."""
+        from rest_framework.exceptions import ValidationError
+        from .entry_standard import factor_for_entry, split_message
+        factor, error = factor_for_entry(chosen, company, year, inventory)
+        if error:
+            raise ValidationError({
+                'emission_factor': [split_message(error, 'en')], 'code': 'factor_standard',
+                'message_en': split_message(error, 'en'), 'message_tr': split_message(error, 'tr')})
+        return factor
+
+    def _restated_factor(self, instance, vd):
+        """For an edit that changes the source or the year: the row to store, else None."""
+        changed = any(f in vd and vd[f] != getattr(instance, f) for f in ('emission_factor', 'year'))
+        if not changed:
+            return None
+        return self._standard_factor(vd.get('emission_factor', instance.emission_factor), instance.company,
+                                     vd.get('year', instance.year), instance.inventory)
+
     def perform_create(self, serializer):
         company = get_current_company(self.request.user)
         if not company:
@@ -153,6 +211,10 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         from .inventory_link import inventory_for_request
         inventory = inventory_for_request(self.request, company, year=serializer.validated_data.get('year'),
                                           forbid_locked=True)
+        # One factor for one source wherever it is entered: the chosen source is stored on the row of the
+        # inventory's factor standard and year (before the duplicate checks, which compare by factor).
+        serializer.validated_data['emission_factor'] = self._standard_factor(
+            serializer.validated_data.get('emission_factor'), company, serializer.validated_data.get('year'), inventory)
         if not is_confirmed(self.request.data):
             v = serializer.validated_data
             existing = find_duplicate(company, v.get('emission_factor'), v.get('year'), v.get('month'), v.get('quantity'),
@@ -230,6 +292,9 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         vd = serializer.validated_data
         if not any(f in vd and vd[f] != getattr(instance, f) for f in _AMOUNT_FIELDS):
             return None
+        restated = self._restated_factor(instance, vd)
+        if restated is not None:
+            vd['emission_factor'] = restated
         # One waiting change per approved entry: a second edit replaces the
         # first, and a change after a deletion request takes its place.
         _drop_waiting_changes([instance])
@@ -267,6 +332,9 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         before = serializer.instance
         old = _entry_summary(before)
         was_status = before.status
+        restated = self._restated_factor(before, serializer.validated_data)
+        if restated is not None:
+            serializer.validated_data['emission_factor'] = restated
         amount_changed = any(
             f in serializer.validated_data and serializer.validated_data[f] != getattr(before, f)
             for f in _AMOUNT_FIELDS
@@ -679,6 +747,10 @@ def emission_summary(request):
             'employee_band': benchmark_employee_band(company.number_of_employees),
         } if company else None),
         'inventory_in_progress': inventory_in_progress,
+        # The factor standard this inventory is calculated on ('' = the platform catalogue, 'unset' = mixed,
+        # chosen per question) and the entries made outside the questionnaire that are not on it.
+        'factor_standard': _summary_standard(inventory),
+        'off_standard_notes': _summary_off_standard(inventory),
         # Lets the dashboard tell "no data for this year" apart from "no data yet".
         'years_with_data': sorted(
             set(EmissionEntry.objects.filter(company=company).values_list('year', flat=True)),

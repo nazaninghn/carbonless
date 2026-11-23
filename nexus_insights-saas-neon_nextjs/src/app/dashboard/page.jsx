@@ -488,6 +488,8 @@ export default function DashboardPage() {
                 canEdit={perms.canEdit}
                 yearsWithData={effectiveSummary?.years_with_data ?? []}
                 unassignedRecords={effectiveSummary?.unassigned_records ?? null}
+                factorStandard={effectiveSummary?.factor_standard ?? ''}
+                offStandardNotes={effectiveSummary?.off_standard_notes ?? []}
                 onYearChange={setSelectedYear}
               />
             </ErrorBoundary>

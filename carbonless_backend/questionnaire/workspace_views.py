@@ -130,7 +130,10 @@ def _write_workspace_entries(report, user):
     tag_prefix = f'(report {report.id})'
 
     def _upsert(tag, activity_type, quantity, unit):
-        factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit, company, year=year)
+        # On the factor standard of THIS inventory, like its questionnaire answers (emissions/entry_standard.py).
+        from emissions.factor_lookup import inventory_standard_scope
+        with inventory_standard_scope(report):
+            factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit, company, year=year)
         if error:
             logger.warning('Workspace sync skipped %s for report %s: %s', tag, report.id, error)
             return
