@@ -349,6 +349,21 @@ def _data_quality_refusal(report, lang):
     from .uncertainty import pending_data_quality, sync_data_quality_approvals
     sync_data_quality_approvals(report)
     pending = pending_data_quality(report)
+    # The organisation's own emission factors still waiting for the advisor hold the signature as well:
+    # they are part of the inventory and are not counted until they are decided.
+    from emissions.inventory_scope import customs_of
+    own = list(customs_of(report).filter(status='pending', proposed_factor_kg_co2e__isnull=False).order_by('pk'))
+    if own and not pending:
+        names = ', '.join(c.source_name for c in own[:5]) + ('…' if len(own) > 5 else '')
+        msg_tr = (f'Bu envanter henüz imzalanamaz — kendi emisyon faktörünüzle girdiğiniz {len(own)} kaynak danışman '
+                  f'onayı bekliyor ({names}). Onaylandıktan sonra imzalayabilirsiniz.')
+        msg_en = (f'This inventory cannot be signed yet — {len(own)} source{"s" if len(own) != 1 else ""} entered with '
+                  f'your own emission factor {"are" if len(own) != 1 else "is"} waiting for the advisor ({names}). '
+                  f'You can sign once they are decided.')
+        msg = msg_tr if lang == 'tr' else msg_en
+        return {'success': False, 'step': SIGN_OFF_STEP, 'next_step': SIGN_OFF_STEP, 'code': 'own_factor_pending',
+                'error': msg, 'error_tr': msg_tr, 'error_en': msg_en,
+                'pending_own_factors': [c.pk for c in own], 'bot_messages': [f'❌ {msg}']}
     if not pending:
         return None
     steps = list(dict.fromkeys(a.question_id for a in pending))
