@@ -1,0 +1,5 @@
+{% comment %}
+The count next to a menu item. Unfold's own template prints whatever the badge callback returns, so a callback
+with nothing to report ("None") showed the word NONE: here nothing is shown when there is nothing to count.
+{% endcomment %}
+{% if item.badge_callback %}{% with value=item.badge_callback|stringformat:"s" %}{% if value and value != "None" %}<span class="cl-nav-count">{{ value }}</span>{% endif %}{% endwith %}{% elif item.badge %}<span class="cl-nav-count">{{ item.badge }}</span>{% endif %}
