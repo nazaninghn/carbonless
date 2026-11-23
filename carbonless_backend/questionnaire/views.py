@@ -827,6 +827,15 @@ class SubmitStepView(APIView):
                 if before != _saved_answer(report, step):
                     from .notifications import notify_completed_inventory_edited
                     notify_completed_inventory_edited(report, request.user, step)
+                    if step == 'D1':
+                        # The factor standard of the inventory changed: everything it holds is put on the new
+                        # standard at once — its answers are recalculated, and the entries made outside the
+                        # questionnaire (dashboard form, chat) move to the same rows (emissions/entry_standard.py).
+                        from emissions.entry_standard import rebase_outside_entries
+                        from .uncertainty import sync_data_quality_approvals
+                        sync_step_entries(request.user, report.company, report, step)
+                        rebase_outside_entries(report)
+                        sync_data_quality_approvals(report)
 
                 next_step = result['next_step']
                 # Only move current_step forward. Re-submitting an earlier step

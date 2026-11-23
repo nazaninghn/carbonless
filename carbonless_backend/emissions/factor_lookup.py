@@ -624,8 +624,10 @@ def create_entry_from_activity(user, company, activity_type, quantity, unit, yea
     if not company:
         return None, 'No company found. Please create a company first.'
 
-    # On the standard of the inventory the entry joins (the catalogue for a company-level entry).
-    with inventory_standard_scope(inventory):
+    # On the standard of the inventory that holds the entry: the one named, else the only inventory of the
+    # company and year (it reads the company-level rows), else the catalogue — emissions/entry_standard.py.
+    from .entry_standard import entry_standard_scope
+    with entry_standard_scope(company, year, inventory):
         factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit, company, facility, year)
     if error:
         if error == FACILITY_GRID_MISSING:
@@ -665,7 +667,7 @@ def create_entry_from_activity(user, company, activity_type, quantity, unit, yea
     return entry, None
 
 
-def get_emission_factor_reference():
+def get_emission_factor_reference(year=None):
     """
     RAG context block: the real, currently-registered emission factor for every
     activity type this system supports, read live from the DB so any AI prompt
@@ -682,6 +684,12 @@ def get_emission_factor_reference():
     """
     try:
         lines = ['', 'REGISTERED EMISSION FACTORS (kgCO2e per unit — use ONLY these numbers):']
+        standard = active_standard()
+        if standard:
+            label = 'mixed standards, chosen on each questionnaire question' if standard == STANDARD_UNSET \
+                else _STANDARD_LABEL.get(standard, standard)
+            lines.append(f'(Factor standard of the selected inventory: {label}. An activity not listed below has no '
+                         f'factor under it and is NOT calculated in this inventory — say so, never quote another number.)')
         by_activity = {}
         for (activity, unit), slug in ACTIVITY_TO_SLUG.items():
             by_activity.setdefault(activity, []).append((unit, slug))
@@ -689,10 +697,16 @@ def get_emission_factor_reference():
         for activity in sorted(by_activity):
             parts = []
             for unit, slug in by_activity[activity]:
-                factor = (
-                    EmissionFactor.objects.filter(slug=slug, country='turkey', is_active=True, is_default=True, standard='').first()
-                    or EmissionFactor.objects.filter(slug=slug, country='global', is_active=True, is_default=True, standard='').first()
-                )
+                if standard:
+                    # The inventory's own standard and year: the numbers the assistant quotes are the
+                    # numbers its entries are calculated with (a source the standard does not publish is
+                    # not listed — it is not calculated in this inventory).
+                    factor = pick_factor(slug, 'turkey', year) or pick_factor(slug, 'global', year)
+                else:
+                    factor = (
+                        EmissionFactor.objects.filter(slug=slug, country='turkey', is_active=True, is_default=True, standard='').first()
+                        or EmissionFactor.objects.filter(slug=slug, country='global', is_active=True, is_default=True, standard='').first()
+                    )
                 if factor:
                     parts.append(f'{unit}={factor.factor_kg_co2e}')
             if parts:

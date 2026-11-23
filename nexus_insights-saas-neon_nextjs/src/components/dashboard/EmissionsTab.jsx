@@ -96,6 +96,20 @@ function facilityGridSlug(country, connection) {
 }
 const GRID_SLUGS = new Set(['turkey-grid', ...Object.values(TURKEY_GRID_BY_CONNECTION), 'eu-grid', 'grid-average', ...Object.values(GRID_BY_COUNTRY)]);
 
+// The form calculates with the factor standard of the inventory that holds the entry — the same
+// rows as its questionnaire answers and the assistant (backend: emissions/entry_standard.py).
+const standardNote = (name) => ({
+  tr: `Bu yılın envanteri ${name} standardıyla hesaplanıyor: kaynaklar o standardın faktörleriyle gösterilir ve kaydedilir (anket ve asistanla aynı). Standardın faktör yayımlamadığı kaynaklar listede yoktur.`,
+  en: `This year's inventory is calculated on the ${name} standard: sources are shown and saved with that standard's factors (the same as the questionnaire and the assistant). Sources it publishes no factor for are not listed.`,
+});
+const FACTOR_STANDARD_NOTE = {
+  defra: standardNote('DEFRA'), ipcc: standardNote('IPCC'), ghg: standardNote('GHG Protocol'),
+  unset: {
+    tr: 'Bu yılın envanteri karma standartlarla hesaplanıyor; standart her anket sorusunda seçilir. Bu yüzden tutarları ankette girin: burada yalnızca şebeke elektriği kaydedilebilir.',
+    en: 'This year\'s inventory is calculated on mixed standards, chosen on each questionnaire question. Enter amounts in the questionnaire: only grid electricity can be saved here.',
+  },
+};
+
 // A source published for several years (UK grid 2024, 2025): the row of the
 // entry year, else the latest earlier one, else the earliest — as the backend
 // picks it (emissions/factor_lookup.pick_factor).
@@ -281,6 +295,8 @@ export default function EmissionsTab({
   currentUsername,
   yearsWithData = [],
   unassignedRecords = null,
+  factorStandard = '',
+  offStandardNotes = [],
   onYearChange,
 }) {
   const tr    = language === 'tr';
@@ -434,7 +450,9 @@ export default function EmissionsTab({
       } else if (selectedCountry === 'global') {
         m = m && f.country === 'global';
       }
-      if (preferred) m = m && preferred.includes(f.source);
+      // A row of the inventory's factor standard is the one it calculates with: never filtered away
+      // by the older "preferred source" profile answer.
+      if (preferred && !f.standard) m = m && preferred.includes(f.source);
       return m;
     });
     // A facility with a country: of the electricity grids, only that
@@ -935,6 +953,17 @@ export default function EmissionsTab({
       <style>{DASHBOARD_ANIM_STYLES}</style>
 
       <UnassignedRecords year={selectedYear} language={language} info={unassignedRecords} />
+      {offStandardNotes.length > 0 && (
+        <div data-testid="off-standard-notes" role="note"
+          className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+          <p className="font-bold">
+            {tr ? 'Envanterin standardında olmayan kayıtlar' : 'Entries that are not on the inventory\'s standard'}
+          </p>
+          <ul className="mt-1 list-disc space-y-1 pl-4">
+            {offStandardNotes.map(n => <li key={n.entry_id}>{tr ? n.tr : n.en}</li>)}
+          </ul>
+        </div>
+      )}
 
       {/* ── Hero header ───────────────────────────────────────────────── */}
       <div>
@@ -1514,6 +1543,12 @@ export default function EmissionsTab({
                         );
                       })()}
                     </div>
+                  )}
+
+                  {FACTOR_STANDARD_NOTE[factorStandard] && (
+                    <p data-testid="form-factor-standard" className="rounded-2xl border border-[#175022]/15 bg-[#175022]/5 px-4 py-2.5 text-[11px] leading-relaxed text-[#175022]">
+                      {FACTOR_STANDARD_NOTE[factorStandard][tr ? 'tr' : 'en']}
+                    </p>
                   )}
 
                   {selFactorObj && (

@@ -1,4 +1,5 @@
 import contextlib
+import contextvars
 import logging
 import os
 import re
@@ -1014,7 +1015,7 @@ def _call_groq(messages_history, user_context='', ui_language=None):
 
     system_prompt = (
         BASE_SYSTEM_PROMPT + language_directive + _build_platform_knowledge_prompt()
-        + _build_scope_knowledge_prompt() + _build_scope3_category_prompt() + _get_emission_factor_reference() + user_context
+        + _build_scope_knowledge_prompt() + _build_scope3_category_prompt() + _get_emission_factor_reference(_CHAT_YEAR.get()) + user_context
     )
 
     groq_messages = [{'role': 'system', 'content': system_prompt}]
@@ -1083,6 +1084,21 @@ def _session_to_dict(session, include_messages=False):
 # Moved to chat/local_parser.py — imported at module top as try_local_emission_parse.
 
 
+# The reporting year of the inventory the request named: the factor reference in the prompt quotes the
+# edition of that year, the one its entries are calculated with.
+_CHAT_YEAR = contextvars.ContextVar('chat_inventory_year', default=None)
+
+
+def _resolve_amount(activity_type, quantity, unit, company, facility=None, year=None, inventory=None):
+    """resolve_factor_and_amount on the factor standard of the inventory that will hold the entry (the
+    one named, else the only inventory of the company and year, else the catalogue) — the same row the
+    questionnaire and the dashboard form use for that source (emissions/entry_standard.py)."""
+    from emissions.entry_standard import entry_standard_scope
+    from emissions.factor_lookup import resolve_factor_and_amount
+    with entry_standard_scope(company, year, inventory):
+        return resolve_factor_and_amount(activity_type, quantity, unit, company, facility, year)
+
+
 def _build_pending_entries_from_data(emission_blocks, user=None):
     """Resolve emission data dicts to pending entries using factor_lookup.
     `user` picks the company whose country decides the factor (a company
@@ -1100,7 +1116,7 @@ def _build_pending_entries_from_data(emission_blocks, user=None):
         description = entry_data.get('description', '') or f'AI Chat: {activity_type} {quantity} {unit}'
         date_extracted = entry_data.get('date_extracted', False)
 
-        factor, qty, co2e_kg, err = resolve_factor_and_amount(activity_type, quantity, unit, company, year=year)
+        factor, qty, co2e_kg, err = _resolve_amount(activity_type, quantity, unit, company, None, year)
         if factor and co2e_kg is not None:
             pending_entries.append({
                 'fuel_type': activity_type,
@@ -1890,7 +1906,7 @@ def _tag_facility(data, user, content, lang=''):
         pe['facility_id'], pe['facility_name'] = facility.pk, facility.name
         if (pe.get('fuel_type') or '').strip().lower() == 'electricity' and (facility.country or '').strip():
             # The quantity is already in the factor's unit (MWh -> kWh).
-            factor, qty, co2e, err = resolve_factor_and_amount(
+            factor, qty, co2e, err = _resolve_amount(
                 'electricity', pe.get('quantity'), pe.get('factor_unit') or 'kwh', company, facility, pe.get('year'))
             if err == FACILITY_GRID_MISSING:
                 missing.append(facility_grid_missing_message(facility, 'tr' if lang == 'tr' else 'en',
@@ -1947,8 +1963,12 @@ def _chat_standard(request, data):
         inventory = resolve_inventory(_current_company(request.user), explicit_inventory_id(data))
     except Exception:        # an invalid selection is reported by the view itself
         inventory = None
-    with inventory_standard_scope(inventory):
-        yield
+    token = _CHAT_YEAR.set(getattr(inventory, 'reporting_year', None))
+    try:
+        with inventory_standard_scope(inventory):
+            yield
+    finally:
+        _CHAT_YEAR.reset(token)
 
 
 def _send_message(request, session_id):
@@ -2427,9 +2447,9 @@ def _confirm_entry_on_standard(request):
     if not is_confirmed(entry_data):
         from companies.utils import get_current_company
         from emissions.factor_lookup import resolve_factor_and_amount
-        factor, qty, _co2e, _err = resolve_factor_and_amount(
+        factor, qty, _co2e, _err = _resolve_amount(
             entry_data.get('fuel_type', ''), entry_data.get('quantity'), entry_data.get('unit', ''),
-            get_current_company(request.user), chat_facility, entry_data.get('year'))
+            get_current_company(request.user), chat_facility, entry_data.get('year'), chat_inventory)
         now = datetime.now(timezone.utc)
         existing = find_duplicate(
             get_current_company(request.user), factor,
@@ -2462,9 +2482,9 @@ def _confirm_entry_on_standard(request):
         from emissions.duplicates import find_same_period
         from emissions.factor_lookup import resolve_factor_and_amount
         company = get_current_company(request.user)
-        factor, qty, _co2e, _err = resolve_factor_and_amount(
+        factor, qty, _co2e, _err = _resolve_amount(
             entry_data.get('fuel_type', ''), entry_data.get('quantity'), entry_data.get('unit', ''), company,
-            chat_facility, entry_data.get('year'))
+            chat_facility, entry_data.get('year'), chat_inventory)
         now = datetime.now(timezone.utc)
         same = find_same_period(company, factor, entry_data.get('year') or now.year,
                                 entry_data.get('month') or now.month,
